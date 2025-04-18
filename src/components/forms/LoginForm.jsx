@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { FormInput } from './FormInput';
 import { MensajeHead } from './MensajeHead';
@@ -16,21 +16,28 @@ export const LoginForm = () => {
     const [globalError, setGlobalError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleUserTypeChange = (type) => {
-        setUserType(type);
-        setGlobalError('');
-        setFormData(prev => ({
-            ...prev,
-            userType: type,
+    // Efecto para limpiar campos cuando cambia el tipo de usuario
+    useEffect(() => {
+        setFormData({
             username: '',
             password: '',
             email: '',
-            dni: ''
-        }));
+            dni: '',
+            userType: userType
+        });
+    }, [userType]);
+
+    const handleUserTypeChange = (type) => {
+        setUserType(type);
+        setGlobalError('');
     };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        if ((userType === 1 && (name === 'email' || name === 'dni')) ||
+            (userType === 2 && (name === 'username' || name === 'password'))) {
+            return;
+        }
         setFormData(prev => ({
             ...prev,
             [name]: value
@@ -62,11 +69,14 @@ export const LoginForm = () => {
                 setGlobalError('Por favor complete todos los campos');
                 return false;
             }
+            
+            // Validación de correo con mensaje personalizado
             const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
             if (!emailRegex.test(formData.email)) {
-                setGlobalError('El formato del correo electrónico es inválido');
+                setGlobalError('El correo electrónico debe tener un formato válido (ejemplo: usuario@dominio.com)');
                 return false;
             }
+
             const dniRegex = /^[0-9]{10,13}$/;
             if (!dniRegex.test(formData.dni)) {
                 setGlobalError('El DNI debe tener entre 10 y 13 dígitos numéricos');
@@ -107,8 +117,8 @@ export const LoginForm = () => {
                             type="button"
                             className={`px-2 py-1 rounded border-2 transition-colors ${
                                 userType === 1 
-                                    ? 'bg-[#767676] text-white border-[#767676]' 
-                                    : 'bg-white text-[#767676] border-[#767676] hover:border-[#767676] hover:bg-[#767676] hover:text-white'
+                                    ? 'bg-[#c2c2c2] text-white border-[#c2c2c2]' 
+                                    : 'bg-white text-[#898989] border-[#c2c2c2] hover:border-[#c2c2c2] hover:bg-[#c2c2c2] hover:text-black'
                             }`}
                             onClick={() => handleUserTypeChange(1)}
                         >
@@ -118,8 +128,8 @@ export const LoginForm = () => {
                             type="button"
                             className={`px-2 py-1 rounded border-2 transition-colors ${
                                 userType === 2 
-                                    ? 'bg-[#767676] text-white border-[#767676]' 
-                                    : 'bg-white text-[#767676] border-[#767676]  hover:border-[#767676]  hover:bg-[#767676] hover:text-white'
+                                    ? 'bg-[#c2c2c2] text-white border-[#c2c2c2]' 
+                                    : 'bg-white text-[#898989] border-[#c2c2c2]  hover:border-[#c2c2c2]  hover:bg-[#c2c2c2] hover:text-black'
                             }`}
                             onClick={() => handleUserTypeChange(2)}
                         >
@@ -130,7 +140,7 @@ export const LoginForm = () => {
                     <div className="bg-[#0047BB] rounded-lg p-8 shadow-lg">
                         <h2 className="text-2xl font-semibold text-white text-center mb-6">Iniciar Sesión</h2>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                         {userType === 0 && (
                                 <>
                                     <FormInput

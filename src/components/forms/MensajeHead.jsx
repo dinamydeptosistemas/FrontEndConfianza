@@ -7,7 +7,7 @@ export const MensajeHead = ({ mensaje }) => {
     // Usar createPortal para renderizar fuera del root
     return ReactDOM.createPortal(
         <div 
-            className="fixed top-0 left-0 w-full bg-red-500 text-white px-4 py-3 text-center"
+            className="fixed top-0 left-0 w-full bg-[#ff9471] text-white px-4 py-3 text-center"
             style={{ 
                 position: 'fixed',
                 top: '0',
