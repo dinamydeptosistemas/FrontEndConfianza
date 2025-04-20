@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 // Importar los componentes con los nombres correctos
 import LoginGeneral from '../pages/LoginGeneral';
 import DashboardInterno from '../pages/DashboardInterno';
+import DashboardLayout from '../layouts/DashboardLayout';
 
 export const AppRoutes = () => {
     const { user } = useAuth();
@@ -17,28 +18,36 @@ export const AppRoutes = () => {
                 path="/login" 
                 element={
                     user ? (
-                        <Navigate to={sessionStorage.getItem('returnUrl') || '/dashboard/internal'} replace />
+                        <Navigate to={sessionStorage.getItem('returnUrl') || '/dashboard'} replace />
                     ) : (
                         <LoginGeneral />
                     )
                 } 
             />
 
-            {/* Rutas protegidas */}
+            {/* Rutas protegidas con DashboardLayout */}
             <Route
-                path="/dashboard/internal"
+                path="/dashboard"
                 element={
                     <ProtectedRoute>
-                        <DashboardInterno />
+                        <DashboardLayout />
                     </ProtectedRoute>
                 }
-            />
+            >
+                {/* Rutas anidadas dentro del dashboard */}
+                <Route index element={<DashboardInterno />} />
+                <Route path="internal" element={<DashboardInterno />} />
+                
+                {/* Aquí puedes añadir más rutas anidadas para las otras secciones */}
+                {/* <Route path="empresas" element={<EmpresasPage />} /> */}
+                {/* <Route path="usuarios" element={<UsuariosPage />} /> */}
+            </Route>
 
             {/* Redirigir la ruta raíz según el estado de autenticación */}
             <Route
                 path="/"
                 element={
-                    <Navigate to={user ? '/dashboard/internal' : '/login'} replace />
+                    <Navigate to={user ? '/dashboard' : '/login'} replace />
                 }
             />
 
@@ -46,7 +55,7 @@ export const AppRoutes = () => {
             <Route
                 path="*"
                 element={
-                    <Navigate to={user ? '/dashboard/internal' : '/login'} replace />
+                    <Navigate to={user ? '/dashboard' : '/login'} replace />
                 }
             />
         </Routes>

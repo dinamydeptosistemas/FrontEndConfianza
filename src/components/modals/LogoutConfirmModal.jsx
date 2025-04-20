@@ -1,19 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-export const LogoutConfirmModal = ({ isOpen, onConfirm, onCancel, error }) => {
-    const [isLoading, setIsLoading] = useState(false);
-
+export const LogoutConfirmModal = ({ isOpen, onConfirm, onCancel, error, loading }) => {
     if (!isOpen) return null;
-
-    const handleConfirm = async () => {
-        try {
-            setIsLoading(true);
-            await onConfirm();
-        } catch (err) {
-            console.error('Error al cerrar sesión:', err);
-            setIsLoading(false);
-        }
-    };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -35,20 +23,20 @@ export const LogoutConfirmModal = ({ isOpen, onConfirm, onCancel, error }) => {
                 <div className="flex justify-end space-x-3">
                     <button
                         onClick={onCancel}
-                        disabled={isLoading}
-                        className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50"
+                        disabled={loading}
+                        className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-gray-100 disabled:opacity-50"
                     >
                         Cancelar
                     </button>
                     <button
-                        onClick={handleConfirm}
-                        disabled={isLoading}
-                        className="px-4 py-2 bg-red-600 text-white rounded hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center"
+                        onClick={onConfirm}
+                        disabled={loading}
+                        className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50 flex items-center"
                     >
-                        {isLoading ? (
+                        {loading ? (
                             <>
                                 <span className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full"></span>
-                                Cerrando...
+                                Cerrando sesión...
                             </>
                         ) : (
                             'Cerrar Sesión'

@@ -66,8 +66,8 @@ export const LoginForm = () => {
                 setGlobalError('El usuario debe tener al menos 3 caracteres');
                 return false;
             }
-            if (formData.password.length !== 4) {
-                setGlobalError('La contraseña debe tener 4 caracteres');
+            if (formData.password.length < 3 || formData.password.length > 4) {
+                setGlobalError('La contraseña debe tener entre 3 y 4 caracteres');
                 return false;
             }
         } else {
@@ -106,8 +106,32 @@ export const LoginForm = () => {
             console.log(response);
             
             if (response && response.userId) {
-                if (userType === 1 && response.codeFunction === 1) {
-                    navigate('/dashboard-interno');
+                if (userType === 1) {
+                    switch (response.codeFunction) {
+                        case 1:
+                            navigate('/dashboard-interno');
+                            break;
+                        case 2:
+                            navigate('/dashboard-gerencia');
+                            break;
+                        case 3:
+                            navigate('/dashboard-contador');
+                            break;
+                        case 4:
+                            navigate('/dashboard-supervisor');
+                            break;
+                        case 5:
+                            navigate('/dashboard-auxiliar');
+                            break;
+                        case 6:
+                            navigate('/cajero');
+                            break;
+                        case 7:
+                            navigate('/vendedor');
+                            break;
+                        default:
+                            throw new Error('Función no autorizada');
+                    }
                 } else if (userType === 2) {
                     navigate('/dashboard-externo');
                 }

@@ -11,37 +11,15 @@ export const AuthProvider = ({ children }) => {
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
     const cleanupAndRedirect = () => {
-        // Limpiar estado
         setUser(null);
         setError(null);
         setIsLogoutModalOpen(false);
+        localStorage.clear();
+        window.location.href = '/login';
+    };
 
-        // Limpiar localStorage
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('lastActivity');
-        localStorage.removeItem('negocio');
-
-        // Limpiar cookies
-        document.cookie.split(";").forEach(cookie => {
-            const [name] = cookie.split("=");
-            document.cookie = `${name.trim()}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-        });
-
-        // Verificar que todo se haya limpiado
-        const isClean = !localStorage.getItem('token') && 
-                       !localStorage.getItem('user') && 
-                       !localStorage.getItem('lastActivity') &&
-                       !localStorage.getItem('negocio');
-
-        if (isClean) {
-            window.location.href = '/login';
-        } else {
-            console.error('No se pudo limpiar completamente la sesión');
-            // Intentar limpiar todo de nuevo
-            localStorage.clear();
-            window.location.href = '/login';
-        }
+    const logout = () => {
+        setIsLogoutModalOpen(true);
     };
 
     const confirmLogout = async () => {
@@ -51,31 +29,33 @@ export const AuthProvider = ({ children }) => {
             
             const currentUser = authService.getCurrentUser();
             if (!currentUser) {
-                // Si no hay usuario, solo redirigir
-                window.location.href = '/login';
+                cleanupAndRedirect();
                 return;
             }
 
-            // El servicio manejará la limpieza y redirección
-            await authService.logout({
+            const response = await authService.logout({
+                userId: currentUser.userId,
+                userType: currentUser.userType,
                 ventanaInicio: window.location.pathname
             });
 
+            if (response.success) {
+                cleanupAndRedirect();
+            } else {
+                throw new Error(response.message || 'Error al cerrar sesión');
+            }
         } catch (error) {
             console.error('Error en logout:', error);
-            // No necesitamos manejar el error aquí ya que el servicio
-            // se encarga de la limpieza y redirección
+            setError(error.message || 'Error al cerrar sesión');
+        } finally {
+            setLoading(false);
         }
     };
 
     const cancelLogout = () => {
         setIsLogoutModalOpen(false);
         setError(null);
-    };
-
-    const initiateLogout = () => {
-        setIsLogoutModalOpen(true);
-        setError(null);
+        setLoading(false);
     };
 
     useEffect(() => {
@@ -143,7 +123,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         error,
         login,
-        logout: initiateLogout,
+        logout,
         hasPermission
     };
 
@@ -166,6 +146,7 @@ export const AuthProvider = ({ children }) => {
                 onConfirm={confirmLogout}
                 onCancel={cancelLogout}
                 error={error}
+                loading={loading}
             />
         </AuthContext.Provider>
     );
