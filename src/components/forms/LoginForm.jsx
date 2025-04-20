@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { FormInput } from './FormInput';
 import { MensajeHead } from './MensajeHead';
 
 export const LoginForm = () => {
     const { login } = useAuth();
+    const navigate = useNavigate();
     const [userType, setUserType] = useState(0);
     const [formData, setFormData] = useState({
         username: '',
@@ -18,18 +20,21 @@ export const LoginForm = () => {
 
     // Efecto para limpiar campos cuando cambia el tipo de usuario
     useEffect(() => {
-        setFormData({
-            username: '',
-            password: '',
-            email: '',
-            dni: '',
-            userType: userType
-        });
+        if (userType !== 0) {
+            setFormData(prev => ({
+                ...prev,
+                username: '',
+                password: '',
+                email: '',
+                dni: '',
+                userType: userType
+            }));
+            setGlobalError('');
+        }
     }, [userType]);
 
     const handleUserTypeChange = (type) => {
         setUserType(type);
-        setGlobalError('');
     };
 
     const handleInputChange = (e) => {
@@ -40,7 +45,8 @@ export const LoginForm = () => {
         }
         setFormData(prev => ({
             ...prev,
-            [name]: value
+            [name]: value,
+            userType: userType // Mantener el userType actual
         }));
         setGlobalError('');
     };
@@ -70,7 +76,6 @@ export const LoginForm = () => {
                 return false;
             }
             
-            // Validación de correo con mensaje personalizado
             const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
             if (!emailRegex.test(formData.email)) {
                 setGlobalError('El correo electrónico debe tener un formato válido (ejemplo: usuario@dominio.com)');
@@ -94,12 +99,23 @@ export const LoginForm = () => {
             return;
         }
 
-        console.log('[LoginForm] Datos del formulario antes de onSubmit:', formData);
         setIsSubmitting(true);
         try {
-            await login(formData);
+            const response = await login(formData);
+
+            console.log(response);
+            
+            if (response && response.userId) {
+                if (userType === 1 && response.codeFunction === 1) {
+                    navigate('/dashboard-interno');
+                } else if (userType === 2) {
+                    navigate('/dashboard-externo');
+                }
+            } else {
+                throw new Error('Error en la autenticación');
+            }
         } catch (error) {
-            setGlobalError(error.message);
+            setGlobalError(error.message || 'Error en la autenticación');
         } finally {
             setIsSubmitting(false);
         }

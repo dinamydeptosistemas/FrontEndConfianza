@@ -9,8 +9,8 @@ const DashboardInterno = () => {
     const { user, logout } = useAuth();
 
     // Datos simulados (reemplazar con datos reales si es necesario)
-    const negocio = "PINTURAS ROSENVELL";
-    const periodo = 2025;
+    const negocio = localStorage.getItem('negocio');
+    const periodo = new Date().getFullYear();
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-100 max-w-7xl mx-auto shadow-lg overflow-hidden">
@@ -38,9 +38,9 @@ const DashboardInterno = () => {
                         <span>MODULO MANAGER SYSTEM</span>
                     </div>
                     <button 
-                        onClick={logout} 
-                        className="bg-[#1e4e9c] text-white border border-[#a0b4d1] px-3 py-3 font-bold rounded w-full shadow-inner mt-8 shrink-0 hover:bg-[#163a75]"
-                    >
+                       
+                        className="bg-[#1e4e9c] text-white border border-[#a0b4d1] px-3 py-3 font-bold rounded w-full shadow-inner mt-8 shrink-0 hover:bg-[#163a75]"  onClick={logout} 
+                    > 
                         SALIR DEL MODULO
                     </button>
                 </aside>
@@ -53,7 +53,8 @@ const DashboardInterno = () => {
                             <span className="font-bold text-gray-600 mr-1">USER:</span>
                             <span className="value">{user?.username || 'Usuario'}</span>
                         </div>
-                        <button className="bg-white border border-[#f39c12] text-[#f39c12] px-3 py-1 text-xs rounded font-bold text-center w-[83px] leading-tight transition-colors duration-200 hover:bg-[#C06500] hover:text-white hover:border-[#C06500]">
+                        <button className="bg-white border border-[#f39c12] text-[#f39c12] px-3 py-1 text-xs rounded font-bold text-center w-[83px] leading-tight transition-colors duration-200 hover:bg-[#C06500] hover:text-white hover:border-[#C06500]" onClick={logout}>
+                        
                             CAMBIAR USUARIO
                         </button>
                     </div>

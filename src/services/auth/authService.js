@@ -70,6 +70,7 @@ const authService = {
      * @param {string} credentials.email - Correo electrónico (opcional)
      * @param {string} credentials.dni - DNI (opcional)
      * @param {number} credentials.userType - Tipo de usuario (1: interno, 2: externo)
+     * @param {string} credentials.ventanaInicio - Ruta actual de la aplicación
      * @returns {Promise<Object>} Datos del usuario y token
      */
     async login(credentials) {
@@ -84,7 +85,8 @@ const authService = {
                 password: credentials.password || '',
                 email: credentials.email || '',
                 dni: credentials.dni || '',
-                userType: credentials.userType
+                userType: credentials.userType,
+                ventanaInicio: credentials.ventanaInicio || '/login'
             };
 
             const response = await fetchWithConfig('/auth/login', {
@@ -104,7 +106,7 @@ const authService = {
 
                 localStorage.setItem('token', response.token);
                 localStorage.setItem('user', JSON.stringify(userData));
-
+                localStorage.setItem('negocio', response.nameEntity);
                 return {
                     ...response,
                     redirectTo: this.getRedirectPath(userData)
@@ -134,9 +136,11 @@ const authService = {
 
     /**
      * Cierra la sesión del usuario
+     * @param {Object} options - Opciones de cierre de sesión
+     * @param {string} options.ventanaInicio - Ruta actual de la aplicación
      * @returns {Promise<Object>} Resultado del cierre de sesión
      */
-    async logout() {
+    async logout(options = {}) {
         try {
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             const response = await fetchWithConfig('/auth/logout', {
@@ -144,14 +148,28 @@ const authService = {
                 body: JSON.stringify({ 
                     userId: user.userId,
                     userType: user.userType,
-                    token: localStorage.getItem('token')
+                    token: localStorage.getItem('token'),
+                    ventanaInicio: options.ventanaInicio || '/login'
                 })
             });
             
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+            // Limpiar todo el localStorage
+            localStorage.clear();
+            
+            // Limpiar cookies
+            document.cookie.split(";").forEach(cookie => {
+                const [name] = cookie.split("=");
+                document.cookie = `${name.trim()}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+            });
+
+            // Redirigir al login
+            window.location.href = '/login';
+
             return response;
         } catch (error) {
+            // Aún si hay error, limpiar todo y redirigir
+            localStorage.clear();
+            window.location.href = '/login';
             throw new Error(error.message || 'Error al cerrar sesión');
         }
     },
@@ -218,6 +236,40 @@ const authService = {
     isAdminUser() {
         const user = this.getCurrentUser();
         return user?.userType === 1 && user?.userFunction === 1;
+    },
+
+    /**
+     * Maneja el proceso completo de cierre de sesión
+     * @param {Object} options - Opciones de cierre de sesión
+     * @param {string} options.ventanaInicio - Ruta actual de la aplicación
+     * @returns {Promise<boolean>} True si el cierre fue exitoso
+     */
+    async handleLogout(options = {}) {
+        try {
+            const response = await this.logout(options);
+            
+            if (response.success) {
+                // Verificar que todo se haya limpiado
+                const isClean = !localStorage.getItem('token') && 
+                              !localStorage.getItem('user') && 
+                              !localStorage.getItem('lastActivity') &&
+                              !localStorage.getItem('negocio');
+
+                if (!isClean) {
+                    // Forzar limpieza si algo quedó
+                    localStorage.clear();
+                }
+                
+                return true;
+            }
+            
+            throw new Error(response.message || 'Error al cerrar la sesión');
+        } catch (error) {
+            console.error('[authService] Error en handleLogout:', error);
+            // Intentar limpiar incluso si hay error
+            localStorage.clear();
+            throw error;
+        }
     }
 };
 
