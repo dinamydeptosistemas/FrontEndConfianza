@@ -18,7 +18,6 @@ export const LoginForm = () => {
     const [globalError, setGlobalError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Efecto para limpiar campos cuando cambia el tipo de usuario
     useEffect(() => {
         if (userType !== 0) {
             setFormData(prev => ({
@@ -46,7 +45,7 @@ export const LoginForm = () => {
         setFormData(prev => ({
             ...prev,
             [name]: value,
-            userType: userType // Mantener el userType actual
+            userType: userType
         }));
         setGlobalError('');
     };
@@ -78,7 +77,7 @@ export const LoginForm = () => {
             
             const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
             if (!emailRegex.test(formData.email)) {
-                setGlobalError('El correo electrónico debe tener un formato válido (ejemplo: usuario@dominio.com)');
+                setGlobalError('El correo electrónico debe tener un formato válido');
                 return false;
             }
 
@@ -102,38 +101,37 @@ export const LoginForm = () => {
         setIsSubmitting(true);
         try {
             const response = await login(formData);
-
-            console.log(response);
             
             if (response && response.userId) {
                 if (userType === 1) {
                     switch (response.codeFunction) {
                         case 1:
-                            navigate('/dashboard-interno');
+                            navigate('/dashboard/internal');
                             break;
                         case 2:
-                            navigate('/dashboard-gerencia');
+                            navigate('/dashboard/gerencia');
                             break;
                         case 3:
-                            navigate('/dashboard-contador');
+                            navigate('/dashboard-lighter/contador');
                             break;
                         case 4:
-                            navigate('/dashboard-supervisor');
+                            navigate('/dashboard-lighter/supervisor');
                             break;
                         case 5:
-                            navigate('/dashboard-auxiliar');
+                            navigate('/dashboard-lighter/auxiliar');
                             break;
                         case 6:
-                            navigate('/cajero');
+                            navigate('/dashboard-lighter/cajero');
                             break;
                         case 7:
-                            navigate('/vendedor');
+                            navigate('/dashboard-lighter/vendedor');
                             break;
                         default:
-                            throw new Error('Función no autorizada');
+                            setGlobalError('Función no autorizada');
+                            return;
                     }
                 } else if (userType === 2) {
-                    navigate('/dashboard-externo');
+                    navigate('/dashboard-lighter/externo');
                 }
             } else {
                 throw new Error('Error en la autenticación');
@@ -261,7 +259,7 @@ export const LoginForm = () => {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => console.log('Ir a registro')}
+                                    onClick={() => navigate('/registrar-usuario-interno')}
                                     className="block w-full text-white hover:underline text-sm"
                                 >
                                     ¿No tienes Cuenta? Regístrate

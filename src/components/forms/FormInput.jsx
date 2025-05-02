@@ -20,7 +20,7 @@ export const FormInput = ({
                 value={value}
                 onChange={onChange}
                 disabled={disabled}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 
+                className={`w-full px-3 py-2 border rounded-md text-[#000000] focus:outline-none focus:ring-2 
                     ${disabled 
                         ? 'bg-gray-100 cursor-not-allowed' 
                         : 'border-gray-300 focus:ring-[#0047BB]'

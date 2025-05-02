@@ -94,29 +94,111 @@ const authService = {
                 body: JSON.stringify(loginData)
             });
 
-            if (response.success) {
-                const userData = {
-                    userId: response.userId,
-                    username: response.username,
-                    email: response.email,
-                    userType: credentials.userType,
-                    userFunction: response.userFunction,
-                    permissions: response.permissions
-                };
-
-                localStorage.setItem('token', response.token);
-                localStorage.setItem('user', JSON.stringify(userData));
-                localStorage.setItem('negocio', response.nameEntity);
-                return {
-                    ...response,
-                    redirectTo: this.getRedirectPath(userData)
-                };
+            // Verificar si la respuesta es exitosa (usando Success con S mayúscula)
+            if (!response.Success) {
+                throw new Error(response.Message || 'Error en la autenticación');
             }
 
-            throw new Error(response.message || 'Error en la autenticación');
+            // Limpiar las barras invertidas de los permisos
+            let cleanPermissions = response.Permissions;
+            if (cleanPermissions) {
+                try {
+                    // Si es un string, limpiar las barras invertidas
+                    if (typeof cleanPermissions === 'string') {
+                        cleanPermissions = cleanPermissions.replace(/\\/g, '');
+                        // Intentar parsear el JSON limpio
+                        cleanPermissions = JSON.parse(cleanPermissions);
+                    }
+                } catch (error) {
+                    console.error('[authService] Error al limpiar permisos:', error);
+                }
+            }
+
+            // Crear objeto de usuario con solo los campos necesarios
+            const userData = {
+                userId: response.UserId,
+                username: response.Username,
+                userFunction: response.UserFunction,
+                codeFunction: response.CodeFunction,
+                codeEntity: response.CodeEntity,
+                nameEntity: response.NameEntity,
+                permissions: cleanPermissions,
+                tipoUsuario: response.TipoUsuario,
+                estadousuario: response.estadousuario
+            };
+
+            // Guardar token y datos esenciales
+            localStorage.setItem('token', response.TokenSession);
+            localStorage.setItem('user', JSON.stringify(userData));
+            localStorage.setItem('userId', response.UserId);
+            localStorage.setItem('negocio', response.NameEntity);
+            
+            // Determinar la ruta de redirección según el tipo de usuario y función
+            let redirectPath = '/login';
+            if (response.TipoUsuario === 'INTERNO') {
+                switch (response.CodeFunction) {
+                    case 1:
+                        redirectPath = '/dashboard/internal';
+                        break;
+                    case 2:
+                        redirectPath = '/dashboard/gerencia';
+                        break;
+                    case 3:
+                        redirectPath = '/dashboard-lighter/contador';
+                        break;
+                    case 4:
+                        redirectPath = '/dashboard-lighter/supervisor';
+                        break;
+                    case 5:
+                        redirectPath = '/dashboard-lighter/auxiliar';
+                        break;
+                    case 6:
+                        redirectPath = '/dashboard-lighter/cajero';
+                        break;
+                    case 7:
+                        redirectPath = '/dashboard-lighter/vendedor';
+                        break;
+                    default:
+                        redirectPath = '/dashboard';
+                }
+            } else if (response.TipoUsuario === 'EXTERNO') {
+                redirectPath = '/dashboard-lighter/externo';
+            }
+            
+            // Si existe globalState disponible, actualizar el estado global
+            if (typeof window !== 'undefined' && window.globalState) {
+                window.globalState.setLoginResponse?.(response);
+                window.globalState.setUser?.(userData);
+                window.globalState.setUserId?.(response.UserId);
+            }
+            
+            return {
+                success: true,
+                message: response.Message || 'Inicio de sesión exitoso',
+                statusCode: response.StatusCode,
+                userId: response.UserId,
+                username: response.Username,
+                userFunction: response.UserFunction,
+                codeFunction: response.CodeFunction,
+                codeEntity: response.CodeEntity,
+                nameEntity: response.NameEntity,
+                permissions: cleanPermissions,
+                estadousuario: response.estadousuario,
+                tipoUsuario: response.TipoUsuario,
+                token: response.TokenSession,
+                newBitacoraRegAcceso: response.NewBitacoraRegAcceso,
+                redirectTo: redirectPath
+            };
+
         } catch (error) {
             console.error('[authService] Error en login:', error);
-            throw error;
+            // Limpiar cualquier dato de sesión en caso de error
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('negocio');
+            
+            throw new Error(error.message || 'Error en la autenticación. Por favor, verifica tus credenciales.');
         }
     },
 
@@ -126,31 +208,57 @@ const authService = {
      * @returns {string} Ruta de redirección
      */
     getRedirectPath(userData) {
-        if (userData.userType === 1) {
+        if (userData.tipoUsuario === 'INTERNO') {
             return '/dashboard/internal';
-        } else if (userData.userType === 2) {
+        } else if (userData.tipoUsuario === 'EXTERNO') {
             return '/dashboard/external';
         }
         return '/login';
     },
 
-    /**
-     * Cierra la sesión del usuario
-     * @param {Object} options - Opciones de cierre de sesión
-     * @param {string} options.ventanaInicio - Ruta actual de la aplicación
-     * @returns {Promise<Object>} Resultado del cierre de sesión
-     */
+ 
     async logout(options = {}) {
         try {
+            // Obtener loginResponse del localStorage
+            let loginResponse = null;
+            try {
+                const storedResponse = localStorage.getItem('loginResponse');
+                if (storedResponse) {
+                    loginResponse = JSON.parse(storedResponse);
+                }
+            } catch (error) {
+                console.error('[authService] Error al obtener loginResponse:', error);
+            }
+            
+            // Obtener userId de todas las fuentes posibles
             const user = JSON.parse(localStorage.getItem('user') || '{}');
-            const response = await fetchWithConfig('/auth/logout', {
-                method: 'POST',
-                body: JSON.stringify({ 
-                    userId: user.userId,
-                    userType: user.userType,
-                    token: localStorage.getItem('token'),
-                    ventanaInicio: options.ventanaInicio || '/login'
-                })
+            const userId = user.userId || 
+                           user.UserId || 
+                           user.userid || 
+                           loginResponse?.userId ||
+                           localStorage.getItem('userId') || 
+                           0;
+            
+            console.log('[authService] UserId para logout:', userId);
+            
+            // Obtener userType de todas las fuentes posibles
+            const userType = user.userType || 
+                             loginResponse?.userType || 
+                             loginResponse?.TipoUsuario;
+            
+            // Crear el objeto de logout con los parámetros requeridos
+            const logoutData = {
+                userId: userId,
+                VentanaInicio: options.ventanaInicio || '/login'
+            };
+            
+            // Agregar userType solo si está disponible
+            if (userType) {
+                logoutData.userType = userType;
+            }
+            
+            const response = await fetchWithConfig('/auth/logout-cookie', {
+                method: 'POST'
             });
             
             // Limpiar todo el localStorage
@@ -217,7 +325,7 @@ const authService = {
      */
     isInternalUser() {
         const user = this.getCurrentUser();
-        return user?.userType === 1;
+        return user?.tipoUsuario === 'INTERNO';
     },
 
     /**
@@ -226,7 +334,7 @@ const authService = {
      */
     isExternalUser() {
         const user = this.getCurrentUser();
-        return user?.userType === 2;
+        return user?.tipoUsuario === 'EXTERNO';
     },
 
     /**
@@ -235,7 +343,7 @@ const authService = {
      */
     isAdminUser() {
         const user = this.getCurrentUser();
-        return user?.userType === 1 && user?.userFunction === 1;
+        return user?.tipoUsuario === 'INTERNO' && user?.codeFunction === 1;
     },
 
     /**

@@ -12,6 +12,7 @@ module.exports = {
         },
         purple: {
           600: '#764ba2',
+          
         },
       },
     },

@@ -1,13 +1,22 @@
 import React from 'react';
-import { AppProviders } from './providers/AppProviders';
+import { BrowserRouter } from 'react-router-dom';
+import { useSessionTimeout } from './hooks/useSessionTimeout';
 import { AppRoutes } from './routes/AppRoutes';
+import { AuthProvider } from './contexts/AuthContext';
 
-function App() {
+const AppContent = () => {
+    useSessionTimeout(); // Implementar el timeout de sesión
+    return <AppRoutes />;
+};
+
+const App = () => {
     return (
-        <AppProviders>
-            <AppRoutes />
-        </AppProviders>
+        <BrowserRouter>
+            <AuthProvider>
+                <AppContent />
+            </AuthProvider>
+        </BrowserRouter>
     );
-}
+};
 
 export default App; 
