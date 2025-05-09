@@ -1,7 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
-const DashboardInterno = () => {
+const ManagerSystemPage = () => {
+    const { user } = useAuth();
     return (
         <div className="w-full">
             {/* Manager System Title */}
@@ -68,16 +70,18 @@ const DashboardInterno = () => {
                 </div>
 
                 {/* Diagrama */}
-                <div className="mt-6 mb-8">
-                    <img 
-                        src="/diagrama_de_flujo_usuarios.png" 
-                        alt="Diagrama de flujo"
-                        style={{ maxWidth: '377px', width: '100%', height: '270px' }}
-                    />
-                </div>
+                {(user?.codeFunction === 1 || user?.codeFunction === "1") && (
+                  <div className="mt-6 mb-8">
+                      <img 
+                          src="/diagrama_de_flujo_usuarios.png" 
+                          alt="Diagrama de flujo"
+                          style={{ maxWidth: '377px', width: '100%', height: '270px' }}
+                      />
+                  </div>
+                )}
             </div>
         </div>
     );
 };
 
-export default DashboardInterno;
+export default ManagerSystemPage;

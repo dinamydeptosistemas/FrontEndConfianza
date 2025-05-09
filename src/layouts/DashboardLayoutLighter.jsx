@@ -24,7 +24,7 @@ const DashboardLayoutLighter = () => {
                     </div>
                     <div className="flex items-center">
                         <span className="font-semibold">USER:</span>
-                        <span className="text-[#1e4e9c] ml-2">{user?.username?.toUpperCase()}</span>
+                        <span className="text-[#1e4e9c] ml-2">{user?.Username?.toUpperCase()}</span>
                     </div>
                     <button 
                         onClick={handleLogout}
@@ -41,7 +41,7 @@ const DashboardLayoutLighter = () => {
                 <div className="bg-[#f5a623] w-full">
                     <div className="w-full py-2 px-4 h-[55px]">
                         <h2 className="text-lg font-bold text-white">
-                            <span className="text-base ml-2">{user?.userFunction || 'Usuario'} :</span>
+                            <span className="text-base ml-2">{user?.UserFunction || 'Usuario'} :</span>
                         </h2>
                     </div>
                 </div>

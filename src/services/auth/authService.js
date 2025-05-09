@@ -12,13 +12,6 @@ const fetchWithConfig = async (url, options = {}) => {
     const fullUrl = `${API_BASE}${url}`;
     const token = localStorage.getItem('token');
     
-    // Log de la petición
-    console.log('[authService] Enviando petición:', {
-        url: fullUrl,
-        method: options.method || 'GET',
-        data: options.body
-    });
-
     try {
         const response = await fetch(fullUrl, {
             ...options,
@@ -32,12 +25,6 @@ const fetchWithConfig = async (url, options = {}) => {
         });
 
         const data = await response.json();
-        
-        // Log de la respuesta
-        console.log('[authService] Respuesta recibida:', {
-            status: response.status,
-            data
-        });
 
         // Manejo de errores HTTP
         if (!response.ok) {
@@ -51,8 +38,6 @@ const fetchWithConfig = async (url, options = {}) => {
 
         return data;
     } catch (error) {
-        console.error('[authService] Error detallado:', error);
-        
         if (!navigator.onLine) {
             throw new Error(`No se pudo conectar al servidor (${API_URL}). Por favor, verifica tu conexión a internet.`);
         }
@@ -75,11 +60,6 @@ const authService = {
      */
     async login(credentials) {
         try {
-            console.log('[authService] Intentando login con:', {
-                ...credentials,
-                password: '[PROTECTED]'
-            });
-
             const loginData = {
                 username: credentials.username || '',
                 password: credentials.password || '',
@@ -191,7 +171,6 @@ const authService = {
             };
 
         } catch (error) {
-            console.error('[authService] Error en login:', error);
             // Limpiar cualquier dato de sesión en caso de error
             localStorage.removeItem('token');
             localStorage.removeItem('user');
@@ -238,8 +217,6 @@ const authService = {
                            loginResponse?.userId ||
                            localStorage.getItem('userId') || 
                            0;
-            
-            console.log('[authService] UserId para logout:', userId);
             
             // Obtener userType de todas las fuentes posibles
             const userType = user.userType || 
@@ -373,7 +350,6 @@ const authService = {
             
             throw new Error(response.message || 'Error al cerrar la sesión');
         } catch (error) {
-            console.error('[authService] Error en handleLogout:', error);
             // Intentar limpiar incluso si hay error
             localStorage.clear();
             throw error;

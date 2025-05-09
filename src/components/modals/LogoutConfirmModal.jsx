@@ -4,16 +4,12 @@ export const LogoutConfirmModal = ({ isOpen, onConfirm, onCancel, error, loading
     if (!isOpen) return null;
 
     const handleConfirm = () => {
-        console.log('Modal: Botón Confirmar Logout clickeado');
         onConfirm();
     };
 
     const handleCancel = () => {
-        console.log('Modal: Botón Cancelar Logout clickeado');
         onCancel();
     };
-
-    console.log('Modal de logout renderizado, isOpen:', isOpen);
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

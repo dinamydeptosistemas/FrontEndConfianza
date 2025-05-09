@@ -27,19 +27,12 @@ axiosInstance.interceptors.request.use(
 
 // Interceptor para manejar errores de autenticación
 axiosInstance.interceptors.response.use(
-    (response) => {
-        // Asegurarse de que la respuesta no se guarde en caché
-        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
-        response.headers['Pragma'] = 'no-cache';
-        response.headers['Expires'] = '0';
+    response => {
         return response;
     },
-    (error) => {
+    error => {
         if (error.response?.status === 401) {
-            // Limpiar localStorage
-            localStorage.clear();
-            // No intentamos limpiar cookies desde JavaScript
-            window.location.href = '/login';
+            // No redirigimos aquí, dejamos que AuthContext maneje la redirección
         }
         return Promise.reject(error);
     }

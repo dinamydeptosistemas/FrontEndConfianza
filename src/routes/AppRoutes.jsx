@@ -1,69 +1,64 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
-import { PublicOnlyRoute } from '../components/auth/PublicOnlyRoute';
-
-// Importar los componentes con los nombres correctos
 import LoginGeneral from '../pages/LoginGeneral';
-import DashboardInterno from '../pages/DashboardInterno';
-import DashboardExterno from '../pages/DashboardExterno';
-import DashboardGerencia from '../pages/DashboardGerencia';
 import DashboardLayout from '../layouts/DashboardLayout';
 import DashboardLayoutLight from '../layouts/DashboardLayoutLight';
 import DashboardLayoutLighter from '../layouts/DashboardLayoutLighter';
-import RegisterUserInternal from '../pages/registrer/RegisterUserInternal';
+import ManagerSystemPage from '../pages/ManagerSystemPage';
+import DashboardExterno from '../pages/DashboardExterno';
+import DashboardGerencia from '../pages/DashboardGerencia';
 
 export const AppRoutes = () => {
-    const { user } = useAuth();
+    const { user, loading, isInitialized } = useAuth();
+
+    // Verificación más estricta del estado de autenticación
+    const isAuthenticated = user && user.StatusCode === 200;
+    const isManagerSystem = isAuthenticated && (user.CodeFunction === 1 || user.UserFunction === 'MANAGER SYSTEM');
+    const isAdministracion = isAuthenticated && (user.CodeFunction === 2 || user.UserFunction === 'ADMINISTRACION');
+
+    // No renderizar nada hasta que la verificación inicial esté completa
+    if (!isInitialized) {
+        return null;
+    }
+
+    // Mostrar loading solo si estamos inicializados pero aún cargando
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
 
     return (
         <Routes>
-            {/* Ruta pública - Login */}
+            {/* Rutas públicas */}
             <Route 
                 path="/login" 
-                element={
-                    user ? (
-                        <Navigate to={sessionStorage.getItem('returnUrl') || '/dashboard'} replace />
-                    ) : (
-                        <LoginGeneral />
-                    )
-                } 
+                element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginGeneral />} 
             />
 
-            {/* Ruta pública para registro de usuario interno */}
+            {/* Rutas protegidas */}
             <Route 
-                path="/registrar-usuario-interno" 
-                element={
-                    <PublicOnlyRoute>
-                        <RegisterUserInternal />
-                    </PublicOnlyRoute>
-                } 
-            />
-
-            {/* Rutas protegidas con DashboardLayout (Admin) */}
-            <Route
-                path="/dashboard"
-                element={
-                    <ProtectedRoute>
-                        <DashboardLayout />
-                    </ProtectedRoute>
-                }
+                path="/dashboard/*" 
+                element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" replace />}
             >
-                <Route index element={<DashboardInterno />} />
-                <Route path="internal" element={<DashboardInterno />} />
-                <Route path="External" element={<DashboardExterno />} />
-                <Route path="Gerencia" element={<DashboardGerencia />} />
+                <Route index element={<ManagerSystemPage />} />
+                <Route path="internal" element={isManagerSystem ? <ManagerSystemPage /> : <Navigate to="/dashboard" replace />} />
+                <Route path="gerencia" element={isAdministracion ? <DashboardGerencia /> : <Navigate to="/dashboard" replace />} />
+                <Route path="empresas" element={<ManagerSystemPage />} />
+                <Route path="perfil-acceso" element={<ManagerSystemPage />} />
+                <Route path="usuarios" element={<ManagerSystemPage />} />
+                <Route path="permisos" element={<ManagerSystemPage />} />
+                <Route path="bitacora" element={<ManagerSystemPage />} />
+                <Route path="tramites" element={<ManagerSystemPage />} />
+                <Route path="email-redes" element={<ManagerSystemPage />} />
             </Route>
 
-            {/* Rutas protegidas con DashboardLayoutLight (Gerencia) */}
-            <Route
-                path="/dashboard-light"
-                element={
-                    <ProtectedRoute>
-                        <DashboardLayoutLight />
-                    </ProtectedRoute>
-                }
+            <Route 
+                path="/dashboard-light/*" 
+                element={isAuthenticated ? <DashboardLayoutLight /> : <Navigate to="/login" replace />}
             >
                 <Route path="gerencia/usuarios" element={<DashboardGerencia />} />
                 <Route path="gerencia/configuracion-inicial" element={<DashboardGerencia />} />
@@ -72,38 +67,22 @@ export const AppRoutes = () => {
                 <Route path="gerencia/reportes" element={<DashboardGerencia />} />
             </Route>
 
-            {/* Rutas protegidas con DashboardLayoutLighter (Otros roles) */}
-            <Route
-                path="/dashboard-lighter"
-                element={
-                    <ProtectedRoute>
-                        <DashboardLayoutLighter />
-                    </ProtectedRoute>
-                }
+            <Route 
+                path="/dashboard-lighter/*" 
+                element={isAuthenticated ? <DashboardLayoutLighter /> : <Navigate to="/login" replace />}
             >
-                <Route path="contador" element={<DashboardGerencia />} />
-                <Route path="supervisor" element={<DashboardGerencia />} />
-                <Route path="auxiliar" element={<DashboardGerencia />} />
-                <Route path="cajero" element={<DashboardGerencia />} />
-                <Route path="vendedor" element={<DashboardGerencia />} />
-                <Route path="externo" element={<DashboardGerencia />} />
+                <Route path="external" element={<DashboardExterno />} />
             </Route>
 
-            {/* Redirigir la ruta raíz según el estado de autenticación */}
-            <Route
-                path="/"
-                element={
-                    <Navigate to={user ? '/dashboard' : '/login'} replace />
-                }
-            />
+            {/* Rutas de roles específicos */}
+            <Route path="contador" element={isAuthenticated ? <DashboardGerencia /> : <Navigate to="/login" replace />} />
+            <Route path="supervisor" element={isAuthenticated ? <DashboardGerencia /> : <Navigate to="/login" replace />} />
+            <Route path="auxiliar" element={isAuthenticated ? <DashboardGerencia /> : <Navigate to="/login" replace />} />
+            <Route path="cajero" element={isAuthenticated ? <DashboardGerencia /> : <Navigate to="/login" replace />} />
+            <Route path="vendedor" element={isAuthenticated ? <DashboardGerencia /> : <Navigate to="/login" replace />} />
 
-            {/* Ruta para cualquier otra URL no definida */}
-            <Route
-                path="*"
-                element={
-                    <Navigate to={user ? '/dashboard' : '/login'} replace />
-                }
-            />
+            {/* Ruta por defecto */}
+            <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} />
         </Routes>
     );
 }; 

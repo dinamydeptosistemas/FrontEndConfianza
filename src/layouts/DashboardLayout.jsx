@@ -1,13 +1,89 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
+import DashboardGerencia from '../pages/DashboardGerencia';
+import ManagerSystemPage from '../pages/ManagerSystemPage';
 
 const DashboardLayout = () => {
-    const { user, negocio, logout } = useAuth();
+    const { user, negocio, logout, loading, error } = useAuth();
 
-    const handleLogout = () => {
-        // La función logout en el contexto Auth ya maneja la apertura del modal y el proceso completo
-        logout();
+    // Lógica de roles basada solo en el contexto
+    const isAdmin = user?.CodeFunction === 2;
+    const isManagerSystem = user?.UserFunction === 'MANAGER SYSTEM';
+
+    // Mostrar loading state
+    if (loading) {
+        return (
+            <div className="h-screen w-full flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1e4e9c] mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Cargando...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Mostrar error state
+    if (error) {
+        return (
+            <div className="h-screen w-full flex items-center justify-center">
+                <div className="text-center">
+                    <p className="text-red-600 mb-4">Error: {error}</p>
+                    <button 
+                        onClick={() => window.location.reload()}
+                        className="bg-[#1e4e9c] text-white px-4 py-2 rounded hover:bg-[#173d7a]"
+                    >
+                        Reintentar
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Título del módulo
+    const getModuleTitle = () => {
+        if (isAdmin) {
+            return (
+                <>
+                    <span>MODULO</span><br />
+                    <span>ADMINISTRACION</span>
+                </>
+            );
+        }
+        if (isManagerSystem) {
+            return (
+                <>
+                    <span>MODULO</span><br />
+                    <span>MANAGER</span><br />
+                    <span>SYSTEM</span>
+                </>
+            );
+        }
+        return (
+            <>
+                <span>MODULO</span><br />
+                <span>{user?.UserFunction || 'USUARIO'}</span>
+            </>
+        );
+    };
+
+    // Mostrar función del usuario
+    const getUserFunctionDisplay = () => {
+        if (isAdmin) return 'ADMINISTRACION:';
+        if (isManagerSystem) return 'MANAGER SYSTEM:';
+        return `${user?.UserFunction || 'Usuario'}:`;
+    };
+
+    // Redirección si no hay usuario
+    if (!user) {
+        return <Navigate to="/login" replace />;
+    }
+
+    // Renderizado según rol
+    const renderContent = () => {
+        if (isAdmin) return <DashboardGerencia />;
+        if (isManagerSystem) return <ManagerSystemPage />;
+        return <Outlet />;
     };
 
     return (
@@ -36,13 +112,13 @@ const DashboardLayout = () => {
                     </div>
 
                     <div className="bg-gray-300 mx-4 my-4 p-4 flex-grow flex items-start justify-center rounded-lg w-[140px]">
-                        <div className="text-center text-gray-700  font-bold text-sm">
-                            MODULO<br />MANAGER<br />SYSTEM
+                        <div className="text-center text-gray-700 font-bold text-sm">
+                            {getModuleTitle()}
                         </div>
                     </div>
 
                     <button
-                        onClick={handleLogout}
+                        onClick={logout}
                         className="bg-[#1e4e9c] text-white border border-r-2 border-white mx-auto w-[110px] mb-4 py-2 hover:bg-[#173d7a] text-sm rounded"
                     >
                         SALIR DEL<br />MODULO
@@ -56,11 +132,11 @@ const DashboardLayout = () => {
                         <div className="w-full py-2 px-4 flex justify-between text-xs">
                             <div className="flex">
                                 <span className="font-semibold">USER:</span>
-                                <span className="text-[#1e4e9c] ml-1">{user?.username?.toUpperCase() || 'XAVIER'}</span>
+                                <span className="text-[#1e4e9c] ml-1">{user?.Username?.toUpperCase() || user?.NombreCompleto?.toUpperCase() || 'XAVIER'}</span>
                             </div>
                             <button 
-                                onClick={handleLogout}
-                                className="bg-white text-[#f5a623] px-5 hover:text-[#f3f3f3]  hover:bg-[#f5a623] border border-[#f5a623] px-3 py-1 text-xs rounded"
+                                onClick={logout}
+                                className="bg-white text-[#f5a623] px-5 hover:text-[#f3f3f3] hover:bg-[#f5a623] border border-[#f5a623] px-3 py-1 text-xs rounded"
                             >
                                 CAMBIAR <br /> USUARIO
                             </button>
@@ -69,13 +145,17 @@ const DashboardLayout = () => {
 
                     {/* Manager System bar */}
                     <div className="flex justify-between bg-[#f5a623] mx-[40px] w-[87%]">
-                        <div className="w-full py-2 px-4  h-[55px]">
-                            <h2 className="text-lg font-bold text-white"> <span className="text-base ml-2">{user?.userFunction || 'Admin Sistema'} :</span></h2>
+                        <div className="w-full py-2 px-4 h-[55px]">
+                            <h2 className="text-lg font-bold text-white"> 
+                                <span className="text-base ml-2">
+                                    {getUserFunctionDisplay()}
+                                </span>
+                            </h2>
                         </div>
                     </div>
 
                     <div className="bg-white shadow-md min-h-full flex-1 w-full">
-                        <Outlet />
+                        {renderContent()}
                     </div>
                 </div>
             </div>
