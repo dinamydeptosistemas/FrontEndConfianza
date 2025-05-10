@@ -40,13 +40,7 @@ const DashboardGerencia = () => {
                 </div>
 
                 {/* Diagrama */}
-                <div className="mt-6 mb-8">
-                    <img 
-                        src="/diagrama_gerencial.png" 
-                        alt="Diagrama gerencial"
-                        style={{ maxWidth: '377px', width: '100%', height: '270px' }}
-                    />
-                </div>
+     
             </div>
         </div>
     );

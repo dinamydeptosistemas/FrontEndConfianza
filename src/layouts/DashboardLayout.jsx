@@ -74,6 +74,12 @@ const DashboardLayout = () => {
         return `${user?.UserFunction || 'Usuario'}:`;
     };
 
+    const getNegocioDisplay = () => {
+        if (negocio?.nombre) return negocio.nombre;
+        if (user?.NameEntity) return user.NameEntity;
+        return 'NA';
+    };
+
     // Redirección si no hay usuario
     if (!user) {
         return <Navigate to="/login" replace />;
@@ -92,7 +98,7 @@ const DashboardLayout = () => {
             <div className="bg-[#e9e9e9] py-2 flex justify-between items-center px-8 text-xs border-b border-gray-500 w-[90.8%]">
                 <div className="flex items-center">
                     <span className="font-semibold">NEGOCIO:</span>
-                    <span className="text-[#1e4e9c] ml-2">{negocio?.nombre || 'COMPANIA DE PRUEBA'}</span>
+                    <span className="text-[#1e4e9c] ml-2">{getNegocioDisplay()}</span>
                 </div>
                 <div className="flex items-center">
                     <span className="font-semibold">PERIODO:</span>

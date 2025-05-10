@@ -142,6 +142,7 @@ export const AuthProvider = ({ children }) => {
                     UserType: userData.UserType || userData.userType,
                     UserFunction: userData.UserFunction || userData.userFunction,
                     CodeFunction: userData.CodeFunction || userData.codeFunction,
+                    NameEntity: userData.NameEntity || userData.nameEntity,
                     StatusCode: userData.StatusCode || userData.statusCode,
                     Username: userData.Username || userData.username,
                 };
@@ -149,11 +150,12 @@ export const AuthProvider = ({ children }) => {
                 setUser(normalizedUser);
                 localStorage.setItem('status', '200');
                 
-                if (response.data.NameEntity) {
+                if (normalizedUser.NameEntity) {
                     const negocioData = {
-                        nombre: response.data.NameEntity,
-                        codigo: response.data.CodeEntity
+                        nombre: normalizedUser.NameEntity,
+                        codigo: normalizedUser.CodeEntity
                     };
+                    setNegocio(negocioData);
                     localStorage.setItem('negocio', JSON.stringify(negocioData));
                     sessionStorage.setItem('negocio', JSON.stringify(negocioData));
                 }
@@ -172,6 +174,16 @@ export const AuthProvider = ({ children }) => {
 
     const fetchCurrentUser = useCallback(async () => {
         try {
+            const storedNegocio = localStorage.getItem('negocio');
+            if (storedNegocio) {
+                try {
+                    const negocioData = JSON.parse(storedNegocio);
+                    setNegocio(negocioData);
+                } catch (e) {
+                    console.error('Error al parsear negocio del localStorage:', e);
+                }
+            }
+
             const response = await axiosInstance.get('/api/auth/current-user', {
                 withCredentials: true,
                 headers: {
@@ -197,6 +209,7 @@ export const AuthProvider = ({ children }) => {
                     UserType: userData.UserType || userData.userType,
                     UserFunction: userData.UserFunction || userData.userFunction,
                     CodeFunction: userData.CodeFunction || userData.codeFunction,
+                    NameEntity: userData.NameEntity || userData.nameEntity,
                     StatusCode: userData.StatusCode || userData.statusCode,
                     Username: userData.Username || userData.username,
                 };
@@ -204,11 +217,12 @@ export const AuthProvider = ({ children }) => {
                 setUser(normalizedUser);
                 localStorage.setItem('status', '200');
 
-                if (response.data.NameEntity) {
+                if (normalizedUser.NameEntity) {
                     const negocioData = {
-                        nombre: response.data.NameEntity,
-                        codigo: response.data.CodeEntity
+                        nombre: normalizedUser.NameEntity,
+                        codigo: normalizedUser.CodeEntity
                     };
+                    setNegocio(negocioData);
                     localStorage.setItem('negocio', JSON.stringify(negocioData));
                     sessionStorage.setItem('negocio', JSON.stringify(negocioData));
                 }
