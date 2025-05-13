@@ -8,6 +8,7 @@ import DashboardLayoutLighter from '../layouts/DashboardLayoutLighter';
 import ManagerSystemPage from '../pages/ManagerSystemPage';
 import DashboardExterno from '../pages/DashboardExterno';
 import DashboardGerencia from '../pages/DashboardGerencia';
+import EmpresasDashboard from '../pages/empresa/EmpresasDashboard';
 
 export const AppRoutes = () => {
     const { user, loading, isInitialized } = useAuth();
@@ -39,6 +40,12 @@ export const AppRoutes = () => {
                 element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginGeneral />} 
             />
 
+            {/* Ruta independiente para empresas */}
+            <Route 
+                path="/dashboard/empresas" 
+                element={isAuthenticated && isManagerSystem ? <EmpresasDashboard /> : <Navigate to="/login" replace />} 
+            />
+
             {/* Rutas protegidas */}
             <Route 
                 path="/dashboard/*" 
@@ -47,7 +54,6 @@ export const AppRoutes = () => {
                 <Route index element={<ManagerSystemPage />} />
                 <Route path="internal" element={isManagerSystem ? <ManagerSystemPage /> : <Navigate to="/dashboard" replace />} />
                 <Route path="gerencia" element={isAdministracion ? <DashboardGerencia /> : <Navigate to="/dashboard" replace />} />
-                <Route path="empresas" element={<ManagerSystemPage />} />
                 <Route path="perfil-acceso" element={<ManagerSystemPage />} />
                 <Route path="usuarios" element={<ManagerSystemPage />} />
                 <Route path="permisos" element={<ManagerSystemPage />} />

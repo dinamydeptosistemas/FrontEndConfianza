@@ -1,8 +1,7 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Outlet, Navigate } from 'react-router-dom';
-import DashboardGerencia from '../pages/DashboardGerencia';
-import ManagerSystemPage from '../pages/ManagerSystemPage';
+import { Outlet, Navigate  } from 'react-router-dom';
+
 
 const DashboardLayout = () => {
     const { user, negocio, logout, loading, error } = useAuth();
@@ -85,13 +84,6 @@ const DashboardLayout = () => {
         return <Navigate to="/login" replace />;
     }
 
-    // Renderizado según rol
-    const renderContent = () => {
-        if (isAdmin) return <DashboardGerencia />;
-        if (isManagerSystem) return <ManagerSystemPage />;
-        return <Outlet />;
-    };
-
     return (
         <div className="h-screen w-full flex flex-col">
             {/* Header superior */}
@@ -161,7 +153,7 @@ const DashboardLayout = () => {
                     </div>
 
                     <div className="bg-white shadow-md min-h-full flex-1 w-full">
-                        {renderContent()}
+                        <Outlet />
                     </div>
                 </div>
             </div>
