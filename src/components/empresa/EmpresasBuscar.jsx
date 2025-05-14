@@ -1,57 +1,51 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 
-export default function EmpresasBuscar({ onBuscar }) {
-  const [filtro, setFiltro] = useState('');
-
-  // Usar useCallback para evitar recreaciones innecesarias de la función
-  const handleSearch = useCallback(() => {
-    console.log('Ejecutando búsqueda con término:', filtro); // Debug
-    if (typeof onBuscar === 'function') {
-      onBuscar(filtro);
-    } else {
-      console.error('onBuscar no es una función:', onBuscar); // Debug
-    }
-  }, [filtro, onBuscar]);
-
-  const handleKeyPress = useCallback((e) => {
-    console.log('Tecla presionada:', e.key); // Debug
+export default function EmpresasBuscar({ onBuscar, filtro, setFiltro, filtroActivo, setFiltroActivo, mostrarEtiqueta = true, inputWidth = '80px' }) {
+  const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
-      e.preventDefault(); // Prevenir comportamiento por defecto
-      console.log('Enter presionado, ejecutando búsqueda'); // Debug
-      handleSearch();
+      onBuscar(filtro);
     }
-  }, [handleSearch]);
+  };
 
-  const handleChange = useCallback((e) => {
-    const newValue = e.target.value;
-    console.log('Input cambiado:', newValue); // Debug
-    setFiltro(newValue);
-  }, []);
-
-  const handleClick = useCallback(() => {
-    console.log('Botón buscar clickeado'); // Debug
-    handleSearch();
-  }, [handleSearch]);
+  const handleClear = () => {
+    setFiltro('');
+    setFiltroActivo('');
+    onBuscar('');
+  };
 
   return (
-    <div className="mb-4 flex gap-2 w-full">
+    <div className="flex gap-2 items-center">
       <input
         type="text"
-        className="border border-gray-300 rounded px-2 py-1 w-[15%] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        style={{ width: inputWidth }}
         placeholder="Buscar por RUC o nombre de empresa..."
         value={filtro}
-        onChange={handleChange}
+        onChange={e => setFiltro(e.target.value)}
         onKeyPress={handleKeyPress}
         aria-label="Buscar empresas"
       />
       <button
         type="button"
         className="bg-blue-700 text-white px-4 py-1 rounded hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        onClick={handleClick}
+        onClick={() => onBuscar(filtro)}
         aria-label="Buscar"
       >
         Buscar
       </button>
+      {mostrarEtiqueta && filtroActivo && (
+        <span className="ml-2 bg-gray-200 px-2 py-1 rounded flex items-center">
+          {filtroActivo}
+          <button
+            onClick={handleClear}
+            className="ml-1 text-red-500 hover:text-red-700 font-bold"
+            aria-label="Limpiar búsqueda"
+            style={{ fontSize: '1.1em', lineHeight: 1 }}
+          >
+            ×
+          </button>
+        </span>
+      )}
     </div>
   );
 } 

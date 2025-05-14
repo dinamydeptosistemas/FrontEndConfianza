@@ -42,7 +42,7 @@ export default function EmpresasTable({ empresas, onEdit, onDelete }) {
               <td className="p-2 text-center">
                 <button
                   className="text-red-600 hover:text-red-900 border border-red-400 rounded px-1"
-                  onClick={() => onDelete(e.codeEntity)}
+                  onClick={() => onDelete(e)}
                   title="Borrar"
                 >□</button>
               </td>

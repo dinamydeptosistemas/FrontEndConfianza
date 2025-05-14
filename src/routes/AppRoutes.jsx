@@ -9,6 +9,7 @@ import ManagerSystemPage from '../pages/ManagerSystemPage';
 import DashboardExterno from '../pages/DashboardExterno';
 import DashboardGerencia from '../pages/DashboardGerencia';
 import EmpresasDashboard from '../pages/empresa/EmpresasDashboard';
+import RegisterUserInternal from '../pages/registrer/RegisterUserInternal';
 
 export const AppRoutes = () => {
     const { user, loading, isInitialized } = useAuth();
@@ -32,12 +33,18 @@ export const AppRoutes = () => {
         );
     }
 
+    console.log('Ruta actual en AppRoutes:', window.location.pathname);
+    const publicRoutes = ['/login', '/registrar-usuario-interno'];
     return (
         <Routes>
             {/* Rutas públicas */}
             <Route 
                 path="/login" 
                 element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginGeneral />} 
+            />
+            <Route
+                path="/registrar-usuario-interno"
+                element={<RegisterUserInternal />} 
             />
 
             {/* Ruta independiente para empresas */}
@@ -88,7 +95,11 @@ export const AppRoutes = () => {
             <Route path="vendedor" element={isAuthenticated ? <DashboardGerencia /> : <Navigate to="/login" replace />} />
 
             {/* Ruta por defecto */}
-            <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} />
+            <Route path="*" element={
+                publicRoutes.includes(window.location.pathname)
+                    ? null
+                    : <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
+            } />
         </Routes>
     );
 }; 

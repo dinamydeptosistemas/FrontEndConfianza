@@ -15,7 +15,7 @@ const MensajeHead = ({ mensaje, color }) => {
                 zIndex: 2147483647,
                 backgroundColor: color || '#f16363',
                 boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                height: '48px'
+                height: '40px'
             }}
         >
             <span className="font-semibold text-lg">{mensaje}</span>

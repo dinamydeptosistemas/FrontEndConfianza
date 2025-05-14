@@ -2,10 +2,14 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import axiosInstance from '../config/axios';
 import { LogoutConfirmModal } from '../components/modals/LogoutConfirmModal';
 import { jwtDecode } from "jwt-decode";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import TimeoutModal from '../components/modals/TimeoutModal';
+import SessionTimeoutHandler from '../components/SessionTimeoutHandler';
 
 const AuthContext = createContext();
-const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutos en milisegundos
+const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 15 minutos en milisegundos
+
+const publicRoutes = ['/login', '/registrar-usuario-interno'];
 
 export const useAuth = () => {
     return useContext(AuthContext);
@@ -19,7 +23,9 @@ export const AuthProvider = ({ children }) => {
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const [lastActivity, setLastActivity] = useState(Date.now());
     const [isInitialized, setIsInitialized] = useState(false);
+    const [showTimeoutModal, setShowTimeoutModal] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
 
     const cleanupAndRedirect = useCallback(() => {
         setLoading(true);
@@ -55,7 +61,7 @@ export const AuthProvider = ({ children }) => {
         }
     }, [cleanupAndRedirect]);
 
-    const directLogout = async () => {
+    const directLogout = useCallback(async () => {
         try {
             setLoading(true);
             localStorage.setItem('status', '404');
@@ -67,7 +73,7 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem('status', '404');
             cleanupAndRedirect();
         }
-    };
+    }, [cleanupAndRedirect]);
 
     const handleInactivityLogout = useCallback(async () => {
         try {
@@ -174,6 +180,7 @@ export const AuthProvider = ({ children }) => {
 
     const fetchCurrentUser = useCallback(async () => {
         try {
+            console.log('Ruta actual:', location.pathname, '¿Es pública?', publicRoutes.includes(location.pathname));
             const storedNegocio = localStorage.getItem('negocio');
             if (storedNegocio) {
                 try {
@@ -227,15 +234,25 @@ export const AuthProvider = ({ children }) => {
                     sessionStorage.setItem('negocio', JSON.stringify(negocioData));
                 }
             } else {
-                cleanupAndRedirect();
+                
+                if (!publicRoutes.includes(location.pathname)) {
+                    cleanupAndRedirect();
+                }
             }
         } catch (error) {
-            cleanupAndRedirect();
+           
+            if (
+                error?.response?.status === 401 &&
+                !publicRoutes.includes(location.pathname)
+
+            ) {
+                cleanupAndRedirect();
+            }
         } finally {
             setLoading(false);
             setIsInitialized(true);
         }
-    }, [cleanupAndRedirect]);
+    }, [cleanupAndRedirect, location]);
 
     // Verificación inicial de sesión
     useEffect(() => {
@@ -251,6 +268,20 @@ export const AuthProvider = ({ children }) => {
         checkSession();
     }, [fetchCurrentUser]);
 
+    const handleShowTimeoutModal = useCallback(() => {
+        setShowTimeoutModal(true);
+    }, []);
+
+    const handleContinueTimeout = useCallback(() => {
+        setShowTimeoutModal(false);
+        setLastActivity(Date.now()); // Reinicia el timeout
+    }, []);
+
+    const handleLogoutTimeout = useCallback(() => {
+        setShowTimeoutModal(false);
+        directLogout();
+    }, [directLogout]);
+
     const value = {
         user,
         negocio,
@@ -262,7 +293,10 @@ export const AuthProvider = ({ children }) => {
         directLogout,
         confirmLogout,
         cleanupAndRedirect,
-        fetchCurrentUser
+        fetchCurrentUser,
+        showTimeoutModal: handleShowTimeoutModal,
+        handleContinueTimeout,
+        handleLogoutTimeout
     };
 
     if (!isInitialized) {
@@ -271,6 +305,7 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider value={value}>
+            <SessionTimeoutHandler />
             {children}
             <LogoutConfirmModal
                 isOpen={isLogoutModalOpen}
@@ -278,6 +313,11 @@ export const AuthProvider = ({ children }) => {
                 onCancel={cancelLogout}
                 error={error}
                 loading={loading}
+            />
+            <TimeoutModal
+                open={showTimeoutModal}
+                onContinue={handleContinueTimeout}
+                onLogout={handleLogoutTimeout}
             />
         </AuthContext.Provider>
     );

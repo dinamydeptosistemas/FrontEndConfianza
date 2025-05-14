@@ -1,25 +1,13 @@
 import React from 'react';
 
-export default function EmpresasBotonera({ onNueva, onEditar, onBorrar }) {
+export default function EmpresasBotonera({ onNueva }) {
   return (
-    <div className="flex gap-2 mb-4">
+    <div className="flex gap-2">
       <button
-        className="bg-white border border-blue-700 text-blue-700 px-4 py-1 rounded hover:bg-blue-50"
         onClick={onNueva}
+        className="bg-white border-[#1e4e9c] border font-bold text-[#1e4e9c] px-8 py-1 hover:text-white rounded hover:bg-[#1e4e9c]"
       >
         Nueva
-      </button>
-      <button
-        className="bg-white border border-blue-700 text-blue-700 px-4 py-1 rounded hover:bg-blue-50"
-        onClick={onEditar}
-      >
-        Editar
-      </button>
-      <button
-        className="bg-red-600 border border-red-700 text-white px-4 py-1 rounded hover:bg-red-700"
-        onClick={onBorrar}
-      >
-        Borrar
       </button>
     </div>
   );
