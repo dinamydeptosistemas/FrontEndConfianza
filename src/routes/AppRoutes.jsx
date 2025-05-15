@@ -10,6 +10,7 @@ import DashboardExterno from '../pages/DashboardExterno';
 import DashboardGerencia from '../pages/DashboardGerencia';
 import EmpresasDashboard from '../pages/empresa/EmpresasDashboard';
 import RegisterUserInternal from '../pages/registrer/RegisterUserInternal';
+import PerfilAccesoDashboard from '../pages/perfilAcceso/PerfilAccesoDashboard';
 
 export const AppRoutes = () => {
     const { user, loading, isInitialized } = useAuth();
@@ -52,6 +53,11 @@ export const AppRoutes = () => {
                 path="/dashboard/empresas" 
                 element={isAuthenticated && isManagerSystem ? <EmpresasDashboard /> : <Navigate to="/login" replace />} 
             />
+             {/* Ruta independiente para perfiles de acceso */}
+             <Route 
+                path="/dashboard/perfil-acceso" 
+                element={isAuthenticated && isManagerSystem ? <PerfilAccesoDashboard /> : <Navigate to="/login" replace />} 
+            />
 
             {/* Rutas protegidas */}
             <Route 
@@ -61,7 +67,6 @@ export const AppRoutes = () => {
                 <Route index element={<ManagerSystemPage />} />
                 <Route path="internal" element={isManagerSystem ? <ManagerSystemPage /> : <Navigate to="/dashboard" replace />} />
                 <Route path="gerencia" element={isAdministracion ? <DashboardGerencia /> : <Navigate to="/dashboard" replace />} />
-                <Route path="perfil-acceso" element={<ManagerSystemPage />} />
                 <Route path="usuarios" element={<ManagerSystemPage />} />
                 <Route path="permisos" element={<ManagerSystemPage />} />
                 <Route path="bitacora" element={<ManagerSystemPage />} />

@@ -7,13 +7,18 @@ const TIMEOUT_DURATION = 10 * 60 * 1000; // 10 minutos en milisegundos
 export const useSessionTimeout = ({ disabled } = {}) => {
     const auth = useAuth();
     const timeoutRef = useRef(null);
+    const lastActivityRef = useRef(Date.now());
 
     const resetTimeout = useCallback(() => {
         if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
         }
+        lastActivityRef.current = Date.now();
         timeoutRef.current = setTimeout(() => {
-            auth.showTimeoutModal();
+            const timeSinceLastActivity = Date.now() - lastActivityRef.current;
+            if (timeSinceLastActivity >= TIMEOUT_DURATION) {
+                auth.showTimeoutModal();
+            }
         }, TIMEOUT_DURATION);
     }, [auth]);
 
@@ -31,17 +36,22 @@ export const useSessionTimeout = ({ disabled } = {}) => {
 
         // Función para resetear el timeout
         const handleUserActivity = () => {
+            lastActivityRef.current = Date.now();
             resetTimeout();
         };
 
         // Agregar listeners para cada evento
         events.forEach(event => {
-            window.addEventListener(event, handleUserActivity);
+            window.addEventListener(event, handleUserActivity, { passive: true });
         });
 
         // Interceptor para manejar errores de JWT
         const interceptor = axiosInstance.interceptors.response.use(
-            response => response,
+            response => {
+                // Reiniciar el timeout en cada respuesta exitosa
+                resetTimeout();
+                return response;
+            },
             error => {
                 if (error.response?.status === 401) {
                     // Si el error es por JWT expirado, cerrar sesión directamente

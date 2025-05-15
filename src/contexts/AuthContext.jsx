@@ -7,7 +7,7 @@ import TimeoutModal from '../components/modals/TimeoutModal';
 import SessionTimeoutHandler from '../components/SessionTimeoutHandler';
 
 const AuthContext = createContext();
-const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 15 minutos en milisegundos
+const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutos en milisegundos
 
 const publicRoutes = ['/login', '/registrar-usuario-interno'];
 
@@ -269,12 +269,16 @@ export const AuthProvider = ({ children }) => {
     }, [fetchCurrentUser]);
 
     const handleShowTimeoutModal = useCallback(() => {
-        setShowTimeoutModal(true);
-    }, []);
+        if (!publicRoutes.includes(location.pathname)) {
+            setShowTimeoutModal(true);
+        }
+    }, [location.pathname]);
 
     const handleContinueTimeout = useCallback(() => {
         setShowTimeoutModal(false);
-        setLastActivity(Date.now()); // Reinicia el timeout
+        // Reiniciar el timeout manualmente
+        const event = new Event('mousedown');
+        window.dispatchEvent(event);
     }, []);
 
     const handleLogoutTimeout = useCallback(() => {
@@ -296,11 +300,12 @@ export const AuthProvider = ({ children }) => {
         fetchCurrentUser,
         showTimeoutModal: handleShowTimeoutModal,
         handleContinueTimeout,
-        handleLogoutTimeout
+        handleLogoutTimeout,
+        isTimeoutModalOpen: showTimeoutModal
     };
 
     if (!isInitialized) {
-        return null; // No renderizar nada hasta que la verificación inicial esté completa
+        return null;
     }
 
     return (

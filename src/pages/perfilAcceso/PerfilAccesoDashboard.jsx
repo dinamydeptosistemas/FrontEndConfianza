@@ -1,52 +1,53 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { getEmpresas, deleteEmpresa } from '../../services/company/CompanyService';
-import EmpresasTable from '../../components/empresa/EmpresasTable';
+import { getPerfilesAcceso, deletePerfilAcceso, putPerfilAcceso } from '../../services/accessProfile/AccessProfileService';
+import PerfilesAccesoTable from '../../components/accessprofile/PerfilesAccesoTable';
 import ButtonGroup from '../../components/common/ButtonGroup';
 import SearchBar from '../../components/common/SearchBar';
-import EmpresaUpdateModal from '../../components/empresa/EmpresaUpdateModal';
-import EmpresaCreateModal from '../../components/empresa/EmpresaCreateModal';
+import PerfilAccesoUpdateModal from '../../components/accessprofile/PerfilAccesoUpdateModal';
+import PerfilAccesoCreateModal from '../../components/accessprofile/PerfilAccesoCreateModal';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
-export default function EmpresasDashboard() {
-  const [empresasOriginales, setEmpresasOriginales] = useState([]);
-  const [empresas, setEmpresas] = useState([]);
+export default function PerfilAccesoDashboard() {
+  const [perfilesOriginales, setPerfilesOriginales] = useState([]);
+  const [perfiles, setPerfiles] = useState([]);
   const [filtro, setFiltro] = useState('');
   const [filtroActivo, setFiltroActivo] = useState('');
-  const [empresaAEliminar, setEmpresaAEliminar] = useState(null);
+  const [perfilAEliminar, setPerfilAEliminar] = useState(null);
   const [mostrarModal, setMostrarModal] = useState(false);
-  const [empresaAEditar, setEmpresaAEditar] = useState(null);
+  const [mostrarModalBloqueo, setMostrarModalBloqueo] = useState(false);
+  const [perfilAEditar, setPerfilAEditar] = useState(null);
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [loadingBusqueda, setLoadingBusqueda] = useState(false);
+  const [modalExito, setModalExito] = useState({ open: false, mensaje: '' });
   const navigate = useNavigate();
   const location = useLocation();
   const { user, negocio } = useAuth();
 
-  const cargarEmpresas = useCallback(async (pagina = 1, filtroBusqueda = '') => {
+  const cargarPerfiles = useCallback(async (pagina = 1, filtroBusqueda = '') => {
     const params = { page: pagina };
     if (filtroBusqueda) {
       params.searchTerm = filtroBusqueda;
     }
-    const data = await getEmpresas(params);
-    setEmpresasOriginales(data.companies || []);
-    setEmpresas(data.companies || []);
+    const data = await getPerfilesAcceso(params);
+    setPerfilesOriginales(data.accessProfiles || []);
+    setPerfiles(data.accessProfiles || []);
     setPaginaActual(pagina);
     setTotalPaginas(data.totalPages || 1);
   }, []);
 
   useEffect(() => {
-    cargarEmpresas(1, '');
-  }, [cargarEmpresas]);
+    cargarPerfiles(1, '');
+  }, [cargarPerfiles]);
 
-  const buscarEnEmpresas = (empresasArr, filtro) => {
-    if (!filtro) return empresasArr;
-    return empresasArr.filter(e =>
-      (e.businessName && e.businessName.toLowerCase().includes(filtro.toLowerCase())) ||
-      (e.ruc && e.ruc.toLowerCase().includes(filtro.toLowerCase())) ||
-      (e.commercialName && e.commercialName.toLowerCase().includes(filtro.toLowerCase()))
+  const buscarEnPerfiles = (perfilesArr, filtro) => {
+    if (!filtro) return perfilesArr;
+    return perfilesArr.filter(p =>
+      (p.functionName && p.functionName.toLowerCase().includes(filtro.toLowerCase())) ||
+      (p.code && p.code.toLowerCase().includes(filtro.toLowerCase()))
     );
   };
 
@@ -54,123 +55,114 @@ export default function EmpresasDashboard() {
     setFiltro(nuevoFiltro);
     setFiltroActivo(nuevoFiltro);
     if (!nuevoFiltro) {
-      cargarEmpresas(1, '');
+      cargarPerfiles(1, '');
       return;
     }
     setLoadingBusqueda(true);
     let pagina = 1;
-    let encontrados = buscarEnEmpresas(empresasOriginales, nuevoFiltro);
-    let empresasAcumuladas = [...empresasOriginales];
+    let encontrados = buscarEnPerfiles(perfilesOriginales, nuevoFiltro);
+    let perfilesAcumulados = [...perfilesOriginales];
     let totalPaginasLocal = totalPaginas;
-    while (encontrados.length === 0 && (pagina < totalPaginasLocal || empresasAcumuladas.length === 0)) {
+    while (encontrados.length === 0 && (pagina < totalPaginasLocal || perfilesAcumulados.length === 0)) {
       pagina++;
       try {
-        const data = await getEmpresas({ page: pagina });
-        if (data.companies && data.companies.length > 0) {
-          empresasAcumuladas = [...empresasAcumuladas, ...data.companies];
-          setEmpresasOriginales(empresasAcumuladas);
+        const data = await getPerfilesAcceso({ page: pagina });
+        if (data.accessProfiles && data.accessProfiles.length > 0) {
+          perfilesAcumulados = [...perfilesAcumulados, ...data.accessProfiles];
+          setPerfilesOriginales(perfilesAcumulados);
           totalPaginasLocal = data.totalPages || totalPaginasLocal;
-          encontrados = buscarEnEmpresas(empresasAcumuladas, nuevoFiltro);
+          encontrados = buscarEnPerfiles(perfilesAcumulados, nuevoFiltro);
         } else {
           break;
         }
       } catch (error) {
-        console.error('Error al buscar empresas:', error);
-        alert('Error al buscar empresas. Por favor, intente nuevamente.');
+        alert('Error al buscar perfiles de acceso. Por favor, intente nuevamente.');
         setLoadingBusqueda(false);
         return;
       }
     }
-    setEmpresas(encontrados);
+    setPerfiles(encontrados);
     setPaginaActual(1);
     setTotalPaginas(1);
     setLoadingBusqueda(false);
   };
 
-  const handleDeleteClick = (empresa) => {
-    console.log('Empresa seleccionada para eliminar:', {
-      codeEntity: empresa.codeEntity,
-      businessName: empresa.businessName,
-      ruc: empresa.ruc,
-      empresaCompleta: empresa
-    });
-    setEmpresaAEliminar(empresa);
-    setMostrarModal(true);
+  const handleDeleteClick = (perfil) => {
+    setPerfilAEliminar(perfil);
+    if (perfil.idFunction > 11) {
+      setMostrarModal(true);
+    } else {
+      setMostrarModalBloqueo(true);
+    }
   };
 
   const handleConfirmDelete = async () => {
-    const codeEntity = empresaAEliminar?.codeEntity;
-    if (codeEntity) {
-      console.log('Intentando eliminar empresa con codeEntity:', codeEntity);
+    const idFunction = perfilAEliminar?.idFunction;
+    if (idFunction) {
       try {
-        await deleteEmpresa(codeEntity);
-        console.log('Llamada a deleteEmpresa completada para:', codeEntity);
-
-        console.log('Recargando lista de empresas...');
-        const data = await getEmpresas();
-        console.log('Empresas recibidas después de eliminar:', data.companies);
-
-        setEmpresasOriginales(data.companies || []);
+        await deletePerfilAcceso(idFunction);
+        const data = await getPerfilesAcceso({ page: 1 });
+        setPerfilesOriginales(data.accessProfiles || []);
         const filtroActual = filtroActivo;
         if (!filtroActual) {
-          setEmpresas(data.companies || []);
+          setPerfiles(data.accessProfiles || []);
         } else {
-          const filtradas = (data.companies || []).filter(e =>
-            (e.businessName && e.businessName.toLowerCase().includes(filtroActual.toLowerCase())) ||
-            (e.ruc && e.ruc.toLowerCase().includes(filtroActual.toLowerCase()))
+          const filtrados = (data.accessProfiles || []).filter(p =>
+            (p.functionName && p.functionName.toLowerCase().includes(filtroActual.toLowerCase())) ||
+            (p.code && p.code.toLowerCase().includes(filtroActual.toLowerCase()))
           );
-          setEmpresas(filtradas);
+          setPerfiles(filtrados);
         }
-        
+        setPaginaActual(1);
       } catch (error) {
-        console.error('Error durante el proceso de eliminación:', error);
-        alert(`Error al eliminar la empresa: ${error.message || 'Error desconocido. Revisa la consola para más detalles.'}`);
+        alert('Error al eliminar el perfil de acceso.');
       } finally {
-        console.log('Cerrando modal y reseteando empresaAEliminar.');
-        setEmpresaAEliminar(null);
+        setPerfilAEliminar(null);
         setMostrarModal(false);
       }
     } else {
-      console.warn('handleConfirmDelete llamado sin codeEntity válido:', empresaAEliminar);
-      alert('No se ha seleccionado una empresa para eliminar o falta el identificador.');
+      alert('No se ha seleccionado un perfil para eliminar o falta el identificador.');
       setMostrarModal(false);
     }
   };
 
   const handleCancelDelete = () => {
-    setEmpresaAEliminar(null);
+    setPerfilAEliminar(null);
     setMostrarModal(false);
   };
 
-  const handleEditClick = (empresa) => {
-    setEmpresaAEditar(empresa);
+  const handleEditClick = (perfil) => {
+    setPerfilAEditar(perfil);
     setMostrarModalEdicion(true);
   };
 
-  const handleUpdateEmpresa = async (empresaActualizada) => {
+  const handleUpdatePerfil = async (perfilActualizado) => {
     try {
-      const data = await getEmpresas({ page: paginaActual });
-      setEmpresasOriginales(data.companies || []);
-      setEmpresas(data.companies || []);
+      await putPerfilAcceso(perfilActualizado);
+      const data = await getPerfilesAcceso({ page: paginaActual });
+      setPerfilesOriginales(data.accessProfiles || []);
+      setPerfiles(data.accessProfiles || []);
       handleBuscar(filtroActivo);
-      setEmpresaAEditar(null);
+      setPerfilAEditar(null);
       setMostrarModalEdicion(false);
+      setModalExito({ open: true, mensaje: 'Registro actualizado exitosamente.' });
     } catch (error) {
-      console.error('Error al actualizar la empresa:', error);
-      alert('Error al actualizar la empresa. Por favor, intente nuevamente.');
+      alert('Error al actualizar el perfil de acceso.');
     }
   };
 
-  const handleSaveEmpresa = async (nuevaEmpresa) => {
+  const handleSavePerfil = async (nuevoPerfil) => {
     try {
-      const data = await getEmpresas({ page: paginaActual });
-      setEmpresasOriginales(data.companies || []);
-      setEmpresas(data.companies || []);
+      await putPerfilAcceso(nuevoPerfil);
+      const data = await getPerfilesAcceso({ page: 1 });
+      setPerfilesOriginales(data.accessProfiles || []);
+      setPerfiles(data.accessProfiles || []);
       handleBuscar(filtroActivo);
+      setPaginaActual(1);
       setMostrarModalCreacion(false);
+      setModalExito({ open: true, mensaje: 'Registro guardado exitosamente.' });
     } catch (error) {
-      console.error('Error al crear la empresa:', error);
-      alert('Error al crear la empresa. Por favor, intente nuevamente.');
+      alert('Error al crear el perfil de acceso.');
     }
   };
 
@@ -189,13 +181,13 @@ export default function EmpresasDashboard() {
           <span className="font-bold text-gray-500">USER:</span> <span className="text-gray-500">{user?.Username || user?.NombreCompleto || user?.nombre || '---'}</span>
         </div>
         <div className="flex gap-2 items-center">
-          <button 
+          <button
             className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/empresas' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300'}`}
             onClick={() => navigate('/dashboard/empresas')}
           >
             Empresa
           </button>
-          <button  
+          <button
             className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/perfil-acceso' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300'}`}
             onClick={() => navigate('/dashboard/perfil-acceso')}
           >
@@ -205,27 +197,30 @@ export default function EmpresasDashboard() {
           <button className="bg-white border border-gray-300 px-3 py-1 rounded">Permiso</button>
           <button className="bg-white border border-gray-300 px-3 py-1 rounded">Bitacora</button>
           <button className="bg-white border border-gray-300 px-3 py-1 rounded">User Activos</button>
-          <button className="ml-auto bg-orange-500 text-white px-4 py-1 rounded" onClick={() => navigate('/dashboard-internal')}>SALIR</button>
+          <button
+            className="ml-auto bg-orange-500 text-white px-4 py-1 rounded"
+            onClick={() => navigate('/dashboard-internal')}
+          >
+            SALIR
+          </button>
         </div>
       </div>
-      <div className="bg-blue-900 text-white text-lg font-bold px-4 py-2 rounded-t">EMPRESAS / NEGOCIOS:</div>
+      <div className="bg-blue-900 text-white text-lg font-bold px-4 py-2 rounded-t">PERFILES DE ACCESO:</div>
       <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
         <div className="relative flex gap-2 mb-4 items-center justify-between min-h-[48px]">
           <ButtonGroup
-            buttons={[
-              {
-                label: 'Nuevo',
-                onClick: () => setMostrarModalCreacion(true),
-                variant: 'normal',
-                  className: 'bg-white border-[#1e4e9c]  border px-8 py-1 font-bold  hover:text-white hover:bg-[#1e4e9c]'
-              }
-            ]}
+            buttons={[{
+              label: 'Nuevo',
+              onClick: () => setMostrarModalCreacion(true),
+              variant: 'normal',
+              className: 'bg-white border-[#1e4e9c]  border px-8 py-1 font-bold  hover:text-white hover:bg-[#1e4e9c]'
+            }]}
           />
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
             <div className="flex items-center justify-center gap-2">
               <button
                 className="w-8 h-8 flex items-center justify-center rounded-md bg-blue-600 text-white font-bold hover:bg-blue-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                onClick={() => cargarEmpresas(paginaActual - 1, filtroActivo)}
+                onClick={() => cargarPerfiles(paginaActual - 1, filtroActivo)}
                 disabled={paginaActual === 1}
                 title="Página anterior"
               >
@@ -236,7 +231,7 @@ export default function EmpresasDashboard() {
               </span>
               <button
                 className="w-8 h-8 flex items-center justify-center rounded-md bg-blue-600 text-white font-bold hover:bg-blue-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                onClick={() => cargarEmpresas(paginaActual + 1, filtroActivo)}
+                onClick={() => cargarPerfiles(paginaActual + 1, filtroActivo)}
                 disabled={paginaActual === totalPaginas}
                 title="Página siguiente"
               >
@@ -262,13 +257,13 @@ export default function EmpresasDashboard() {
               onSearch={handleBuscar}
               value={filtro}
               onChange={setFiltro}
-              placeholder="Buscar por RUC o nombre de empresa..."
+              placeholder="Buscar por nombre o código de función..."
               className="w-[300px]"
-              debounceTime={300}
+              showClearButton={true}
             />
           </div>
         </div>
-        <EmpresasTable empresas={empresas} onEdit={handleEditClick} onDelete={handleDeleteClick} />
+        <PerfilesAccesoTable perfiles={perfiles} onEdit={handleEditClick} onDelete={handleDeleteClick} />
         {loadingBusqueda && (
           <div className="text-center text-blue-600 font-semibold py-2">Buscando en todas las páginas...</div>
         )}
@@ -276,29 +271,54 @@ export default function EmpresasDashboard() {
       {mostrarModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
           <div className="bg-white p-6 rounded shadow-lg">
-            <p>¿Seguro que deseas eliminar la empresa <b>{empresaAEliminar?.businessName}</b>?</p>
+            <p>¿Seguro que deseas eliminar el perfil <b>{perfilAEliminar?.functionName}</b>?</p>
             <div className="flex justify-end gap-2 mt-4">
-              <button onClick={handleCancelDelete} className="px-4 py-2 bg-gray-300 rounded">Cancelar</button>
-              <button onClick={handleConfirmDelete} className="px-4 py-2 bg-red-600 text-white rounded">Eliminar</button>
+              <button onClick={handleCancelDelete} className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancelar</button>
+              <button onClick={handleConfirmDelete} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {mostrarModalBloqueo && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
+          <div className="bg-white p-6 rounded shadow-lg">
+            <p>No se puede eliminar este perfil porque forma parte de la lógica básica del sistema.</p>
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setMostrarModalBloqueo(false)} className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800">Aceptar</button>
             </div>
           </div>
         </div>
       )}
       {mostrarModalEdicion && (
-        <EmpresaUpdateModal
-          empresa={empresaAEditar}
+        <PerfilAccesoUpdateModal
+          perfil={perfilAEditar}
           onClose={() => {
-            setEmpresaAEditar(null);
+            setPerfilAEditar(null);
             setMostrarModalEdicion(false);
           }}
-          onUpdate={handleUpdateEmpresa}
+          onUpdate={handleUpdatePerfil}
         />
       )}
       {mostrarModalCreacion && (
-        <EmpresaCreateModal
+        <PerfilAccesoCreateModal
           onClose={() => setMostrarModalCreacion(false)}
-          onSave={handleSaveEmpresa}
+          onSave={handleSavePerfil}
         />
+      )}
+      {modalExito.open && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
+          <div className="bg-white p-6 rounded shadow-lg">
+            <p className="text-green-700 font-semibold">{modalExito.mensaje}</p>
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setModalExito({ open: false, mensaje: '' })}
+                className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800"
+              >
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
