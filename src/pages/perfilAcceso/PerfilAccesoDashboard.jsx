@@ -7,6 +7,7 @@ import PerfilAccesoUpdateModal from '../../components/accessprofile/PerfilAcceso
 import PerfilAccesoCreateModal from '../../components/accessprofile/PerfilAccesoCreateModal';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import Paginador from '../../components/common/Paginador';
 
 export default function PerfilAccesoDashboard() {
   const [perfilesOriginales, setPerfilesOriginales] = useState([]);
@@ -20,8 +21,7 @@ export default function PerfilAccesoDashboard() {
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
   const [paginaActual, setPaginaActual] = useState(1);
-  const [totalPaginas, setTotalPaginas] = useState(1);
-  const [loadingBusqueda, setLoadingBusqueda] = useState(false);
+  const [totalPaginas, setTotalPaginas] = useState(1)
   const [modalExito, setModalExito] = useState({ open: false, mensaje: '' });
   const navigate = useNavigate();
   const location = useLocation();
@@ -58,7 +58,6 @@ export default function PerfilAccesoDashboard() {
       cargarPerfiles(1, '');
       return;
     }
-    setLoadingBusqueda(true);
     let pagina = 1;
     let encontrados = buscarEnPerfiles(perfilesOriginales, nuevoFiltro);
     let perfilesAcumulados = [...perfilesOriginales];
@@ -77,14 +76,12 @@ export default function PerfilAccesoDashboard() {
         }
       } catch (error) {
         alert('Error al buscar perfiles de acceso. Por favor, intente nuevamente.');
-        setLoadingBusqueda(false);
         return;
       }
     }
     setPerfiles(encontrados);
     setPaginaActual(1);
     setTotalPaginas(1);
-    setLoadingBusqueda(false);
   };
 
   const handleDeleteClick = (perfil) => {
@@ -182,23 +179,43 @@ export default function PerfilAccesoDashboard() {
         </div>
         <div className="flex gap-2 items-center">
           <button
-            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/empresas' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300'}`}
+            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/empresas' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
             onClick={() => navigate('/dashboard/empresas')}
           >
             Empresa
           </button>
           <button
-            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/perfil-acceso' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300'}`}
+            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/perfil-acceso' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
             onClick={() => navigate('/dashboard/perfil-acceso')}
           >
             Perfil Acceso
           </button>
-          <button className="bg-white border border-gray-300 px-3 py-1 rounded">Usuario</button>
-          <button className="bg-white border border-gray-300 px-3 py-1 rounded">Permiso</button>
-          <button className="bg-white border border-gray-300 px-3 py-1 rounded">Bitacora</button>
-          <button className="bg-white border border-gray-300 px-3 py-1 rounded">User Activos</button>
           <button
-            className="ml-auto bg-orange-500 text-white px-4 py-1 rounded"
+            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/usuarios' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
+            onClick={() => navigate('/dashboard/usuarios')}
+          >
+            Usuario
+          </button>
+          <button
+            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/permisos' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
+            onClick={() => navigate('/dashboard/permisos')}
+          >
+            Permiso
+          </button>
+          <button
+            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/bitacora' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
+            onClick={() => navigate('/dashboard/bitacora')}
+          >
+            Bitacora
+          </button>
+          <button
+            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/usuarios-activos' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
+            onClick={() => navigate('/dashboard/usuarios-activos')}
+          >
+            User Activos
+          </button>
+          <button
+            className="ml-auto bg-orange-500 text-white px-4 py-1 rounded hover:bg-orange-600 transition-colors"
             onClick={() => navigate('/dashboard-internal')}
           >
             SALIR
@@ -207,39 +224,25 @@ export default function PerfilAccesoDashboard() {
       </div>
       <div className="bg-blue-900 text-white text-lg font-bold px-4 py-2 rounded-t">PERFILES DE ACCESO:</div>
       <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
-        <div className="relative flex gap-2 mb-4 items-center justify-between min-h-[48px]">
-          <ButtonGroup
-            buttons={[{
-              label: 'Nuevo',
-              onClick: () => setMostrarModalCreacion(true),
-              variant: 'normal',
-              className: 'bg-white border-[#1e4e9c]  border px-8 py-1 font-bold  hover:text-white hover:bg-[#1e4e9c]'
-            }]}
-          />
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-            <div className="flex items-center justify-center gap-2">
-              <button
-                className="w-8 h-8 flex items-center justify-center rounded-md bg-blue-600 text-white font-bold hover:bg-blue-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                onClick={() => cargarPerfiles(paginaActual - 1, filtroActivo)}
-                disabled={paginaActual === 1}
-                title="Página anterior"
-              >
-                &#171;
-              </button>
-              <span className="px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 font-semibold">
-                {paginaActual} / {totalPaginas}
-              </span>
-              <button
-                className="w-8 h-8 flex items-center justify-center rounded-md bg-blue-600 text-white font-bold hover:bg-blue-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                onClick={() => cargarPerfiles(paginaActual + 1, filtroActivo)}
-                disabled={paginaActual === totalPaginas}
-                title="Página siguiente"
-              >
-                &#187;
-              </button>
-            </div>
+        <div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
+          <div>
+            <ButtonGroup
+              buttons={[{
+                label: 'Nuevo',
+                onClick: () => setMostrarModalCreacion(true),
+                variant: 'normal',
+                className: 'bg-white border-[#1e4e9c] border px-8 py-1 font-bold hover:text-white hover:bg-[#1e4e9c]'
+              }]}
+            />
           </div>
-          <div className='flex flex-1 justify-end items-center gap-2'>
+          <div className="flex justify-center">
+            <Paginador
+              paginaActual={paginaActual}
+              totalPaginas={totalPaginas}
+              onPageChange={(p) => cargarPerfiles(p, filtroActivo)}
+            />
+          </div>
+          <div className='flex justify-end items-center gap-2'>
             {filtroActivo && (
               <span className="bg-gray-200 px-2 py-1 rounded flex items-center ml-4">
                 {filtroActivo}
@@ -264,9 +267,6 @@ export default function PerfilAccesoDashboard() {
           </div>
         </div>
         <PerfilesAccesoTable perfiles={perfiles} onEdit={handleEditClick} onDelete={handleDeleteClick} />
-        {loadingBusqueda && (
-          <div className="text-center text-blue-600 font-semibold py-2">Buscando en todas las páginas...</div>
-        )}
       </div>
       {mostrarModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">

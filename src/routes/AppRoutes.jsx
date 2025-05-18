@@ -11,6 +11,7 @@ import DashboardGerencia from '../pages/DashboardGerencia';
 import EmpresasDashboard from '../pages/empresa/EmpresasDashboard';
 import RegisterUserInternal from '../pages/registrer/RegisterUserInternal';
 import PerfilAccesoDashboard from '../pages/perfilAcceso/PerfilAccesoDashboard';
+import UsuarioDashboard from '../pages/usuario/UsuarioDashboard';
 
 export const AppRoutes = () => {
     const { user, loading, isInitialized } = useAuth();
@@ -53,10 +54,30 @@ export const AppRoutes = () => {
                 path="/dashboard/empresas" 
                 element={isAuthenticated && isManagerSystem ? <EmpresasDashboard /> : <Navigate to="/login" replace />} 
             />
-             {/* Ruta independiente para perfiles de acceso */}
-             <Route 
+            {/* Ruta independiente para perfiles de acceso */}
+            <Route 
                 path="/dashboard/perfil-acceso" 
                 element={isAuthenticated && isManagerSystem ? <PerfilAccesoDashboard /> : <Navigate to="/login" replace />} 
+            />
+            {/* Ruta independiente para usuarios */}
+            <Route 
+                path="/dashboard/usuarios" 
+                element={isAuthenticated && isManagerSystem ? <UsuarioDashboard /> : <Navigate to="/login" replace />} 
+            />
+            {/* Ruta para permisos */}
+            <Route 
+                path="/dashboard/permisos" 
+                element={isAuthenticated && isManagerSystem ? <Navigate to="/dashboard/usuarios" replace /> : <Navigate to="/login" replace />} 
+            />
+            {/* Ruta para bitácora */}
+            <Route 
+                path="/dashboard/bitacora" 
+                element={isAuthenticated && isManagerSystem ? <Navigate to="/dashboard/usuarios" replace /> : <Navigate to="/login" replace />} 
+            />
+            {/* Ruta para usuarios activos */}
+            <Route 
+                path="/dashboard/usuarios-activos" 
+                element={isAuthenticated && isManagerSystem ? <Navigate to="/dashboard/usuarios" replace /> : <Navigate to="/login" replace />} 
             />
 
             {/* Rutas protegidas */}
@@ -67,7 +88,7 @@ export const AppRoutes = () => {
                 <Route index element={<ManagerSystemPage />} />
                 <Route path="internal" element={isManagerSystem ? <ManagerSystemPage /> : <Navigate to="/dashboard" replace />} />
                 <Route path="gerencia" element={isAdministracion ? <DashboardGerencia /> : <Navigate to="/dashboard" replace />} />
-                <Route path="usuarios" element={<ManagerSystemPage />} />
+                <Route path="usuarios" element={<UsuarioDashboard />} />
                 <Route path="permisos" element={<ManagerSystemPage />} />
                 <Route path="bitacora" element={<ManagerSystemPage />} />
                 <Route path="tramites" element={<ManagerSystemPage />} />
