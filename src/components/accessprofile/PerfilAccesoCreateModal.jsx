@@ -44,7 +44,7 @@ export default function PerfilAccesoCreateModal({ onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-[600px] max-h-[90vh] overflow-y-auto relative">
+      <div className="bg-white py-6 px-14 rounded-lg shadow-lg w-[800px] max-h-[90vh] overflow-y-auto relative">
         <button
           type="button"
           onClick={onClose}
@@ -53,16 +53,16 @@ export default function PerfilAccesoCreateModal({ onClose, onSave }) {
         >
           ×
         </button>
-        <h2 className="text-xl font-bold mb-4 py-2 text-gray-800">Nuevo Perfil de Acceso</h2>
-        <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
-          <div className="col-span-2">
+        <h2 className="text-xl font-bold mb-4 text-gray-800 pt-4">Nuevo Perfil de Acceso</h2>
+        <form onSubmit={handleSubmit} className="grid grid-cols-3 gap-4">
+          <div className="col-span-3">
             <label className="block text-sm font-medium text-gray-700">Nombre de Función</label>
             <input
               type="text"
               name="functionName"
               value={formData.functionName}
               onChange={handleChange}
-              className="mt-1 block w-full h-10 rounded-md border border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-2 py-1 outline-none"
+              className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
               required
             />
           </div>
@@ -73,7 +73,7 @@ export default function PerfilAccesoCreateModal({ onClose, onSave }) {
               name="grantPermissions"
               checked={formData.grantPermissions}
               onChange={handleChange}
-              className="mr-2"
+              className="mt-1 h-4 w-4 text-[#285398] focus:ring-[#285398] border-gray-300 rounded"
             />
           </div>
           <div>
@@ -83,7 +83,7 @@ export default function PerfilAccesoCreateModal({ onClose, onSave }) {
               name="allModules"
               checked={formData.allModules}
               onChange={handleChange}
-              className="mr-2"
+              className="mt-1 h-4 w-4 text-[#285398] focus:ring-[#285398] border-gray-300 rounded"
             />
           </div>
           <div>
@@ -150,17 +150,17 @@ export default function PerfilAccesoCreateModal({ onClose, onSave }) {
             <label className="block text-sm font-medium text-gray-700">Módulos Externos</label>
             <input type="checkbox" name="externalModules" checked={formData.externalModules} onChange={handleChange} className="mr-2" />
           </div>
-          <div className="col-span-2 flex justify-end gap-2 mt-4">
+          <div className="col-span-2 flex justify-end mt-6 space-x-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+              className="px-6 py-2 border-2 border-gray-400 rounded text-base font-semibold hover:bg-gray-100"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800"
+              className="px-6 py-2 bg-[#285398] text-white rounded hover:bg-[#1e3d6b]"
             >
               Guardar
             </button>

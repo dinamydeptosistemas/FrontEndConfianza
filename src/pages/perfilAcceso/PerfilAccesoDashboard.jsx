@@ -1,15 +1,17 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { getPerfilesAcceso, deletePerfilAcceso, putPerfilAcceso } from '../../services/accessProfile/AccessProfileService';
-import PerfilesAccesoTable from '../../components/accessprofile/PerfilesAccesoTable';
+import ManagementDashboardLayout from '../../layouts/ManagementDashboardLayout';
 import ButtonGroup from '../../components/common/ButtonGroup';
+import ConfirmEliminarModal from '../../components/common/ConfirmEliminarModal';
 import SearchBar from '../../components/common/SearchBar';
+import GenericTable from '../../components/common/GenericTable';
 import PerfilAccesoUpdateModal from '../../components/accessprofile/PerfilAccesoUpdateModal';
 import PerfilAccesoCreateModal from '../../components/accessprofile/PerfilAccesoCreateModal';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Paginador from '../../components/common/Paginador';
 
 export default function PerfilAccesoDashboard() {
+  const { user, negocio } = useAuth();
   const [perfilesOriginales, setPerfilesOriginales] = useState([]);
   const [perfiles, setPerfiles] = useState([]);
   const [filtro, setFiltro] = useState('');
@@ -23,9 +25,7 @@ export default function PerfilAccesoDashboard() {
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1)
   const [modalExito, setModalExito] = useState({ open: false, mensaje: '' });
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { user, negocio } = useAuth();
+
 
   const cargarPerfiles = useCallback(async (pagina = 1, filtroBusqueda = '') => {
     const params = { page: pagina };
@@ -164,66 +164,9 @@ export default function PerfilAccesoDashboard() {
   };
 
   return (
-    <div className="pt-0 px-4 bg-gray-100">
-      <div className="flex justify-between items-center bg-gray-200 border-b border-gray-400 px-4 py-2 mb-0 rounded-t rounded-b p-0 mt-0">
-        <div>
-          <span className="font-bold text-gray-500">EMPRESA:</span> <span className="text-gray-500">{negocio?.nombre || '---'}</span>
-        </div>
-        <div>
-          <span className="font-bold text-gray-500">PERIODO:</span> <span className="text-gray-500">2025</span>
-        </div>
-      </div>
-      <div className="bg-white mb-0 p-2 px-8">
-        <div className="mb-2">
-          <span className="font-bold text-gray-500">USER:</span> <span className="text-gray-500">{user?.Username || user?.NombreCompleto || user?.nombre || '---'}</span>
-        </div>
-        <div className="flex gap-2 items-center">
-          <button
-            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/empresas' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
-            onClick={() => navigate('/dashboard/empresas')}
-          >
-            Empresa
-          </button>
-          <button
-            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/perfil-acceso' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
-            onClick={() => navigate('/dashboard/perfil-acceso')}
-          >
-            Perfil Acceso
-          </button>
-          <button
-            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/usuarios' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
-            onClick={() => navigate('/dashboard/usuarios')}
-          >
-            Usuario
-          </button>
-          <button
-            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/permisos' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
-            onClick={() => navigate('/dashboard/permisos')}
-          >
-            Permiso
-          </button>
-          <button
-            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/bitacora' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
-            onClick={() => navigate('/dashboard/bitacora')}
-          >
-            Bitacora
-          </button>
-          <button
-            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/usuarios-activos' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
-            onClick={() => navigate('/dashboard/usuarios-activos')}
-          >
-            User Activos
-          </button>
-          <button
-            className="ml-auto bg-orange-500 text-white px-4 py-1 rounded hover:bg-orange-600 transition-colors"
-            onClick={() => navigate('/dashboard-internal')}
-          >
-            SALIR
-          </button>
-        </div>
-      </div>
-      <div className="bg-blue-900 text-white text-lg font-bold px-4 py-2 rounded-t">PERFILES DE ACCESO:</div>
-      <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
+    <ManagementDashboardLayout title="Perfiles de Acceso" user={user} negocio={negocio}>
+   
+      <div className="bg-white border-white border-l border-r rounded-b p-2 w-full">
         <div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
           <div>
             <ButtonGroup
@@ -260,59 +203,54 @@ export default function PerfilAccesoDashboard() {
               onSearch={handleBuscar}
               value={filtro}
               onChange={setFiltro}
-              placeholder="Buscar por nombre o código de función..."
+              placeholder="Buscar perfil de acceso..."
               className="w-[300px]"
-              showClearButton={true}
+              debounceTime={300}
             />
           </div>
         </div>
-        <PerfilesAccesoTable perfiles={perfiles} onEdit={handleEditClick} onDelete={handleDeleteClick} />
-      </div>
-      {mostrarModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-          <div className="bg-white p-6 rounded shadow-lg">
-            <p>¿Seguro que deseas eliminar el perfil <b>{perfilAEliminar?.functionName}</b>?</p>
-            <div className="flex justify-end gap-2 mt-4">
-              <button onClick={handleCancelDelete} className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancelar</button>
-              <button onClick={handleConfirmDelete} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Eliminar</button>
-            </div>
-          </div>
-        </div>
-      )}
+         <GenericTable
+          columns={[
+            { key: 'idFunction', label: 'ID Función' },
+            { key: 'functionName', label: 'Nombre de Función' },
+            { key: 'grantPermissions', label: 'Permisos', render: row => row.grantPermissions ? 'SI' : 'NO' },
+            { key: 'allModules', label: 'Todos los Módulos', render: row => row.allModules ? 'SI' : 'NO' },
+            { key: 'administration', label: 'Administración', render: row => row.administration ? 'SI' : 'NO' },
+            { key: 'product', label: 'Producto', render: row => row.product ? 'SI' : 'NO' },
+            { key: 'inventory', label: 'Inventario', render: row => row.inventory ? 'SI' : 'NO' },
+            { key: 'purchase', label: 'Compra', render: row => row.purchase ? 'SI' : 'NO' },
+            { key: 'sale', label: 'Venta', render: row => row.sale ? 'SI' : 'NO' },
+            { key: 'cashRegister', label: 'Caja', render: row => row.cashRegister ? 'SI' : 'NO' },
+            { key: 'bank', label: 'Banco', render: row => row.bank ? 'SI' : 'NO' },
+            { key: 'accounting', label: 'Contabilidad', render: row => row.accounting ? 'SI' : 'NO' },
+            { key: 'payroll', label: 'Nómina', render: row => row.payroll ? 'SI' : 'NO' },
+            { key: 'generalCash', label: 'Caja General', render: row => row.generalCash ? 'SI' : 'NO' },
+            { key: 'closeCashGen', label: 'Cierre Caja Gen.', render: row => row.closeCashGen ? 'SI' : 'NO' },
+            { key: 'cashRegister001', label: 'Caja 001', render: row => row.cashRegister001 ? 'SI' : 'NO' },
+            { key: 'cashRegister002', label: 'Caja 002', render: row => row.cashRegister002 ? 'SI' : 'NO' },
+            { key: 'cashRegister003', label: 'Caja 003', render: row => row.cashRegister003 ? 'SI' : 'NO' },
+            { key: 'cashRegister004', label: 'Caja 004', render: row => row.cashRegister004 ? 'SI' : 'NO' },
+            { key: 'externalModules', label: 'Módulos Externos', render: row => row.externalModules ? 'SI' : 'NO' },
+          ]}
+          data={perfiles}
+          onDelete={handleDeleteClick}
+          onEdit={handleEditClick}
+          actions={true}
+        />
+      <ConfirmEliminarModal
+        isOpen={mostrarModal}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        mensaje={`¿Está seguro que desea eliminar el perfil de acceso${perfilAEliminar ? ` "${perfilAEliminar.functionName || perfilAEliminar.nombre || perfilAEliminar.code || perfilAEliminar.codigo || perfilAEliminar.id || 'Sin nombre'}"` : ''}?`}
+      />
       {mostrarModalBloqueo && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
           <div className="bg-white p-6 rounded shadow-lg">
-            <p>No se puede eliminar este perfil porque forma parte de la lógica básica del sistema.</p>
-            <div className="flex justify-end gap-2 mt-4">
-              <button onClick={() => setMostrarModalBloqueo(false)} className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800">Aceptar</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {mostrarModalEdicion && (
-        <PerfilAccesoUpdateModal
-          perfil={perfilAEditar}
-          onClose={() => {
-            setPerfilAEditar(null);
-            setMostrarModalEdicion(false);
-          }}
-          onUpdate={handleUpdatePerfil}
-        />
-      )}
-      {mostrarModalCreacion && (
-        <PerfilAccesoCreateModal
-          onClose={() => setMostrarModalCreacion(false)}
-          onSave={handleSavePerfil}
-        />
-      )}
-      {modalExito.open && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-          <div className="bg-white p-6 rounded shadow-lg">
-            <p className="text-green-700 font-semibold">{modalExito.mensaje}</p>
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setModalExito({ open: false, mensaje: '' })}
-                className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800"
+            <p>No se puede eliminar este perfil de acceso.</p>
+            <div className="flex justify-end mt-4">
+              <button 
+                onClick={() => setMostrarModalBloqueo(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
                 Aceptar
               </button>
@@ -321,5 +259,31 @@ export default function PerfilAccesoDashboard() {
         </div>
       )}
     </div>
-  );
-} 
+    {mostrarModalEdicion && (
+      <PerfilAccesoUpdateModal
+        perfil={perfilAEditar}
+        onClose={() => {
+          setPerfilAEditar(null);
+          setMostrarModalEdicion(false);
+        }}
+        onUpdate={handleUpdatePerfil}
+      />
+    )}
+    {mostrarModalCreacion && (
+      <PerfilAccesoCreateModal
+        onClose={() => setMostrarModalCreacion(false)}
+        onSave={handleSavePerfil}
+      />
+    )}
+    {modalExito.open && (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
+        <div className="bg-white p-6 rounded shadow-lg">
+          {/* Modal éxito contenido aquí */}
+        </div>
+      </div>
+    )}
+    
+  </ManagementDashboardLayout>
+);
+
+}

@@ -87,14 +87,14 @@ const DashboardLayout = () => {
     return (
         <div className="h-screen w-full flex flex-col">
             {/* Header superior */}
-            <div className="bg-[#e9e9e9] py-4 flex justify-between items-center px-8 text-xs border-b border-gray-400 w-[90.8%]">
+            <div className="bg-[#e9e9e9] py-3 flex justify-between items-center px-8 text-xs border-b border-[#dadada] w-[90.8%]">
                 <div className="flex items-center px-[200px]">
-                    <span className="font-bold text-[#444444]">NEGOCIO:</span>
-                    <span className="text-[#444444] ml-2">{getNegocioDisplay()}</span>
+                    <span className="font-bold text-[#7a7a7a] text-[14px]">NEGOCIO:</span>
+                    <span className="text-[#444444] text-[14px] ml-2">{getNegocioDisplay()}</span>
                 </div>
                 <div className="flex items-center">
-                    <span className="font-bold text-[#444444]">PERIODO:</span>
-                    <span className="text-[#444444] ml-2">2025</span>
+                    <span className="font-bold text-[#7a7a7a] text-[14px]">PERIODO:</span>
+                    <span className="text-[#444444] text-[14px] ml-2">2025</span>
                 </div>
             </div>
 
@@ -103,14 +103,14 @@ const DashboardLayout = () => {
                 {/* Sidebar izquierdo */}
                 <div className="w-[180px] bg-[#1e4e9c] flex flex-col flex-shrink-0">
                     <div className="text-white text-center py-4">
-                        <h1 className="text-xl font-bold">CONFIANZA</h1>
-                        <h2 className="text-xl font-bold">2.5</h2>
-                        <p className="text-xs mt-1">Sistema de Control</p>
-                        <p className="text-xs">de Negocios</p>
+                        <h1 className="text-[18px] font-bold">CONFIANZA</h1>
+                        <h2 className="text-[18px] font-bold">2.5</h2>
+                        <p className="text-xs mt-1">Sistema de Gestión y<br></br></p>
+                        <p className="text-xs">Control de Negocios</p>
                     </div>
 
                     <div className="bg-[#4a4a4a] mx-4 my-4 p-4 flex-grow flex items-start justify-center rounded-lg w-[140px]">
-                        <div className="text-center text-white font-bold text-sm">
+                        <div className="text-center text-white leading-[1.1] font-bold text-md">
                             {getModuleTitle()}
                         </div>
                     </div>
@@ -129,8 +129,8 @@ const DashboardLayout = () => {
                     <div className="flex bg-white mx-[40px] w-[87%] border-b">
                         <div className="w-full py-2 px-4 flex justify-between text-xs">
                             <div className="flex">
-                                <span className="font-bold text-[#444444] mt-4">USER:</span>
-                                <span className="text-[#5f5f5f]  ml-1 mt-4">{user?.Username?.toUpperCase() || user?.NombreCompleto?.toUpperCase() || 'XAVIER'}</span>
+                                <span className="font-bold text-[#7a7a7a] text-[14px] mt-4">USER:</span>
+                                <span className="text-[#7a7a7a] text-[14px] ml-1 mt-4">{user?.Username?.toUpperCase() || user?.NombreCompleto?.toUpperCase() || 'XAVIER'}</span>
                             </div>
                             <button 
                                 onClick={logout}
@@ -142,10 +142,10 @@ const DashboardLayout = () => {
                     </div>
 
                     {/* Manager System bar */}
-                    <div className="flex justify-between bg-[#1e4e9c] mx-[40px] w-[87%]">
-                        <div className="w-full py-2 px-4 h-[55px]">
+                    <div className="flex justify-between bg-[#1e4e9c] mx-[40px] w-[87%] ">
+                        <div className="w-full py-1 px-4 h-[50px] flex items-center">
                             <h2 className="text-lg font-bold text-white"> 
-                                <span className="text-base ml-2">
+                                <span className="text-base ml-2 text-[20px]">
                                     {getUserFunctionDisplay()}
                                 </span>
                             </h2>

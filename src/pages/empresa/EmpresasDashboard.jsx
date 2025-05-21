@@ -1,15 +1,17 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { getEmpresas, deleteEmpresa } from '../../services/company/CompanyService';
-import EmpresasTable from '../../components/empresa/EmpresasTable';
+import ManagementDashboardLayout from '../../layouts/ManagementDashboardLayout';
+import GenericTable from '../../components/common/GenericTable';
 import ButtonGroup from '../../components/common/ButtonGroup';
+import ConfirmEliminarModal from '../../components/common/ConfirmEliminarModal';
 import SearchBar from '../../components/common/SearchBar';
 import EmpresaUpdateModal from '../../components/empresa/EmpresaUpdateModal';
 import EmpresaCreateModal from '../../components/empresa/EmpresaCreateModal';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Paginador from '../../components/common/Paginador';
 
 export default function EmpresasDashboard() {
+  const { user, negocio } = useAuth();
   const [empresasOriginales, setEmpresasOriginales] = useState([]);
   const [empresas, setEmpresas] = useState([]);
   const [filtro, setFiltro] = useState('');
@@ -21,9 +23,7 @@ export default function EmpresasDashboard() {
   const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { user, negocio } = useAuth();
+
 
   const cargarEmpresas = useCallback(async (pagina = 1, filtroBusqueda = '') => {
     const params = { page: pagina };
@@ -172,66 +172,11 @@ export default function EmpresasDashboard() {
   };
 
   return (
-    <div className="pt-0 px-4 bg-gray-100">
-      <div className="flex justify-between items-center bg-gray-200 border-b border-gray-400 px-4 py-2 mb-0 rounded-t rounded-b p-0 mt-0">
-        <div>
-          <span className="font-bold text-gray-500">EMPRESA:</span> <span className="text-gray-500">{negocio?.nombre || '---'}</span>
-        </div>
-        <div>
-          <span className="font-bold text-gray-500">PERIODO:</span> <span className="text-gray-500">2025</span>
-        </div>
-      </div>
-      <div className="bg-white mb-0 p-2 px-8">
-        <div className="mb-2">
-          <span className="font-bold text-gray-500">USER:</span> <span className="text-gray-500">{user?.Username || user?.NombreCompleto || user?.nombre || '---'}</span>
-        </div>
-        <div className="flex gap-2 items-center">
-          <button 
-            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/empresas' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
-            onClick={() => navigate('/dashboard/empresas')}
-          >
-            Empresa
-          </button>
-          <button  
-            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/perfil-acceso' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
-            onClick={() => navigate('/dashboard/perfil-acceso')}
-          >
-            Perfil Acceso
-          </button>
-          <button
-            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/usuarios' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
-            onClick={() => navigate('/dashboard/usuarios')}
-          >
-            Usuario
-          </button>
-          <button
-            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/permisos' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
-            onClick={() => navigate('/dashboard/permisos')}
-          >
-            Permiso
-          </button>
-          <button
-            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/bitacora' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
-            onClick={() => navigate('/dashboard/bitacora')}
-          >
-            Bitacora
-          </button>
-          <button
-            className={`px-3 py-1 rounded border ${location.pathname === '/dashboard/usuarios-activos' ? 'bg-[#1e4e9c] text-white' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
-            onClick={() => navigate('/dashboard/usuarios-activos')}
-          >
-            User Activos
-          </button>
-          <button 
-            className="ml-auto bg-orange-500 text-white px-4 py-1 rounded hover:bg-orange-600 transition-colors" 
-            onClick={() => navigate('/dashboard-internal')}
-          >
-            SALIR
-          </button>
-        </div>
-      </div>
-      <div className="bg-blue-900 text-white text-lg font-bold px-4 py-2 rounded-t">EMPRESAS / NEGOCIOS:</div>
-      <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
+    <ManagementDashboardLayout title="EMPRESAS / NEGOCIOS" user={user} negocio={negocio}>
+
+
+        
+      <div className="bg-white border-white border-l border-r  rounded-b p-2 w-full">
         <div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
           <div>
             <ButtonGroup
@@ -274,19 +219,37 @@ export default function EmpresasDashboard() {
             />
           </div>
         </div>
-        <EmpresasTable empresas={empresas} onEdit={handleEditClick} onDelete={handleDeleteClick} />
-      </div>
-      {mostrarModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-          <div className="bg-white p-6 rounded shadow-lg">
-            <p>¿Seguro que deseas eliminar la empresa <b>{empresaAEliminar?.businessName}</b>?</p>
-            <div className="flex justify-end gap-2 mt-4">
-              <button onClick={handleCancelDelete} className="px-4 py-2 bg-gray-300 rounded">Cancelar</button>
-              <button onClick={handleConfirmDelete} className="px-4 py-2 bg-red-600 text-white rounded">Eliminar</button>
-            </div>
-          </div>
-        </div>
-      )}
+        <GenericTable
+        columns={[
+          { key: 'codeEntity', label: 'Codigo Entidad' },
+          { key: 'typeEntity', label: 'Tipo Entidad' },
+          { key: 'matrix', label: 'Matr', render: (row) => typeof row.matrix === 'boolean' ? (row.matrix ? 'SI' : 'NO') : '-' },
+          { key: 'typeEntity', label: 'Tipo Contribuyente' },
+          { key: 'ruc', label: 'Ruc' },
+          { key: 'businessName', label: 'Razon Social' },
+          { key: 'commercialName', label: 'Nombre Comercial' },
+          { key: 'city', label: 'Ciudad' },
+          { key: 'phone', label: 'Telefono' },
+          { key: 'email', label: 'Email' },
+          { key: 'economicActivity', label: 'Actividad Económica' },
+          { key: 'salesReceipt', label: 'Comprobante de Venta' },
+          { key: 'taxRegime', label: 'Régimen Tributario' },
+          { key: 'regimeLegend', label: 'Leyenda de Régimen' },
+          { key: 'keepsAccounting', label: 'Mantiene Contabilidad', render: (row) => typeof row.keepsAccounting === 'boolean' ? (row.keepsAccounting ? 'SI' : 'NO') : '-' },
+          { key: 'retentionAgent', label: 'Agente Retención', render: (row) => typeof row.retentionAgent === 'boolean' ? (row.retentionAgent ? 'SI' : 'NO') : '-' },
+          { key: 'nameGroup', label: 'Nombre Grupo' },
+        ]}
+        data={empresas}
+        onEdit={handleEditClick}
+        onDelete={handleDeleteClick}
+        rowKey="codeEntity"
+      />
+      <ConfirmEliminarModal
+        isOpen={mostrarModal}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        mensaje={`¿Está seguro que desea eliminar la empresa${empresaAEliminar ? ` "${empresaAEliminar.businessName || empresaAEliminar.nombre || ''}${empresaAEliminar.ruc ? ' (RUC: ' + empresaAEliminar.ruc + ')' : ''}"` : ''}?`}
+      />
       {mostrarModalEdicion && (
         <EmpresaUpdateModal
           empresa={empresaAEditar}
@@ -304,5 +267,6 @@ export default function EmpresasDashboard() {
         />
       )}
     </div>
+    </ManagementDashboardLayout>
   );
-} 
+}

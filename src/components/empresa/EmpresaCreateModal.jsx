@@ -78,7 +78,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
   return (
     <>
       <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-        <div className="bg-white p-6 rounded-lg px-20 shadow-lg w-[800px] max-h-[90vh] overflow-y-auto relative">
+        <div className="bg-white py-6 px-14 rounded-lg shadow-lg w-[800px] max-h-[90vh] overflow-y-auto relative">
           <button
             type="button"
             onClick={onClose}
@@ -87,7 +87,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
           >
             ×
           </button>
-          <h2 className="text-xl font-bold mb-4 py-2 text-gray-800">Nueva Empresa</h2>
+          <h2 className="text-xl font-bold mb-4 text-gray-800 pt-4">Nueva Empresa</h2>
           <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">RUC</label>
@@ -96,7 +96,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
                 name="ruc"
                 value={formData.ruc}
                 onChange={handleChange}
-                className="mt-1 block w-full h-10 rounded-md border border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-2 py-1 outline-none"
+                className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
                 required
               />
             </div>
@@ -108,7 +108,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
                 name="commercialName"
                 value={formData.commercialName}
                 onChange={handleChange}
-                className="mt-1 block w-full h-10 rounded-md border border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-2 py-1 outline-none"
+                className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
               />
             </div>
 
@@ -118,7 +118,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
                 name="typeEntity"
                 value={formData.typeEntity}
                 onChange={handleChange}
-                className="mt-1 block w-full h-10 rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 outline-none px-2 py-1 bg-white hover:bg-gray-50 transition-colors"
+                className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
                 required
               >
                 <option value="">Seleccione tipo</option>
@@ -134,7 +134,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
                 name="businessName"
                 value={formData.businessName}
                 onChange={handleChange}
-                className="mt-1 block w-full h-10 rounded-md border border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-2 py-1 outline-none"
+                className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
                 required
               />
             </div>
@@ -147,7 +147,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
                     name="province"
                     value={provinciaSeleccionada}
                     onChange={handleProvinciaChange}
-                    className="mt-1 block w-full h-10 rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 outline-none px-2 py-1 bg-white hover:bg-gray-50 transition-colors"
+                    className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
                   >
                     <option value="">Seleccione una provincia</option>
                     {provincias.map(provincia => (
@@ -164,7 +164,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
                     value={formData.city}
                     onChange={handleChange}
                     disabled={!formData.province}
-                    className="mt-1 block w-full h-10 rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 outline-none px-2 py-1 bg-white hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none disabled:bg-gray-100 disabled:cursor-not-allowed disabled:border-gray-200"
                   >
                     <option value="">Seleccione una ciudad</option>
                     {ciudadesDisponibles.map(ciudad => (
@@ -184,7 +184,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
-                className="mt-1 block w-full h-10 rounded-md border border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-2 py-1 outline-none"
+                className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
               />
             </div>
 
@@ -195,7 +195,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                className="mt-1 block w-full h-10 rounded-md border border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-2 py-1 outline-none"
+                className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
               />
             </div>
 
@@ -206,7 +206,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="mt-1 block w-full h-10 rounded-md border border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-2 py-1 outline-none"
+                className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
               />
             </div>
 
@@ -217,7 +217,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
                 name="economicActivity"
                 value={formData.economicActivity}
                 onChange={handleChange}
-                className="mt-1 block w-full h-10 rounded-md border border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-2 py-1 outline-none"
+                className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
               />
             </div>
 
@@ -228,7 +228,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
                 name="salesReceipt"
                 value={formData.salesReceipt}
                 onChange={handleChange}
-                className="mt-1 block w-full h-10 rounded-md border border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 outline-none"
+                className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
               />
             </div>
 
@@ -239,7 +239,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
                 name="taxRegime"
                 value={formData.taxRegime}
                 onChange={handleChange}
-                className="mt-1 block w-full h-10 rounded-md border border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 outline-none"
+                className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
               />
             </div>
 
@@ -250,7 +250,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
                 name="regimeLegend"
                 value={formData.regimeLegend}
                 onChange={handleChange}
-                className="mt-1 block w-full h-10 rounded-md border border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 outline-none"
+                className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
               />
             </div>
 
@@ -261,7 +261,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
                   name="nameGroup"
                   value={formData.nameGroup}
                   onChange={handleChange}
-                  className="mt-1 block w-full h-10 rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 outline-none px-2 py-1 bg-white hover:bg-gray-50 transition-colors"
+                  className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
                 >
                   <option value="">Seleccione un grupo</option>
                   {grupos.map((grupo, index) => (
@@ -284,7 +284,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
                     value={nuevoGrupo}
                     onChange={(e) => setNuevoGrupo(e.target.value)}
                     placeholder="Nombre del nuevo grupo"
-                    className="mt-1 block w-full h-10 rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 outline-none px-2 py-1 outline-none bg-white hover:bg-gray-50 transition-colors"
+                    className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
                     onKeyPress={(e) => e.key === 'Enter' && handleAddGrupo()}
                   />
                   <button
@@ -308,7 +308,7 @@ export default function EmpresaCreateModal({ onClose, onSave }) {
               )}
             </div>
 
-            <div className="col-span-2 flex items-center gap-4">
+            <div className="col-span-2 flex items-center gap-4 mt-4">
               <div className="flex items-center">
                 <input
                   type="checkbox"

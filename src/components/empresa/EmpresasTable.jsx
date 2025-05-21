@@ -28,8 +28,8 @@ export default function EmpresasTable({ empresas, onEdit, onDelete }) {
           </tr>
         </thead>
         <tbody>
-          {empresas.map((e) => (
-            <tr key={e.codeEntity} className="border-t">
+          {empresas.map((e, idx) => (
+            <tr key={e.codeEntity || e.ruc || e.businessName || idx} className="border-t">
               <td className="p-2 text-center">
                 <button
                   className="text-blue-600 hover:text-blue-900"
@@ -46,23 +46,23 @@ export default function EmpresasTable({ empresas, onEdit, onDelete }) {
                   title="Borrar"
                 >□</button>
               </td>
-              <td className="p-2">{e.codeEntity}</td>
-              <td className="p-2">{e.typeEntity}</td>
-              <td className="p-2">{e.matrix ? 'SI' : 'NO'}</td>
-              <td className="p-2">{e.typeEntity}</td>
-              <td className="p-2">{e.ruc}</td>
-              <td className="p-2">{e.businessName}</td>
-              <td className="p-2">{e.commercialName}</td>
-              <td className="p-2">{e.city}</td>
-              <td className="p-2">{e.phone}</td>
-              <td className="p-2">{e.email}</td>
-              <td className="p-2">{e.economicActivity}</td>
-              <td className="p-2">{e.salesReceipt}</td>
-              <td className="p-2">{e.taxRegime}</td>
-              <td className="p-2">{e.regimeLegend}</td>
+              <td className="p-2">{e.codeEntity || '-'}</td>
+              <td className="p-2">{e.typeEntity || '-'}</td>
+              <td className="p-2">{typeof e.matrix === 'boolean' ? (e.matrix ? 'SI' : 'NO') : '-'}</td>
+              <td className="p-2">{e.typeEntity || '-'}</td>
+              <td className="p-2">{e.ruc || '-'}</td>
+              <td className="p-2">{e.businessName || '-'}</td>
+              <td className="p-2">{e.commercialName || '-'}</td>
+              <td className="p-2">{e.city || '-'}</td>
+              <td className="p-2">{e.phone || '-'}</td>
+              <td className="p-2">{e.email || '-'}</td>
+              <td className="p-2">{e.economicActivity || '-'}</td>
+              <td className="p-2">{e.salesReceipt || '-'}</td>
+              <td className="p-2">{e.taxRegime || '-'}</td>
+              <td className="p-2">{e.regimeLegend || '-'}</td>
               <td className="p-2">{e.keepsAccounting ? 'SI' : 'NO'}</td>
               <td className="p-2">{e.retentionAgent ? 'SI' : 'NO'}</td>
-              <td className="p-2">{e.nameGroup}</td>
+              <td className="p-2">{e.nameGroup || '-'}</td>
 
             </tr>
           ))}

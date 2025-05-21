@@ -12,6 +12,8 @@ import EmpresasDashboard from '../pages/empresa/EmpresasDashboard';
 import RegisterUserInternal from '../pages/registrer/RegisterUserInternal';
 import PerfilAccesoDashboard from '../pages/perfilAcceso/PerfilAccesoDashboard';
 import UsuarioDashboard from '../pages/usuario/UsuarioDashboard';
+import PermisosDashboard from '../pages/permisos/PermisosDashboard';
+import BitacoraDashboard from '../pages/bitacora/BitacoraDashboard';
 
 export const AppRoutes = () => {
     const { user, loading, isInitialized } = useAuth();
@@ -67,12 +69,12 @@ export const AppRoutes = () => {
             {/* Ruta para permisos */}
             <Route 
                 path="/dashboard/permisos" 
-                element={isAuthenticated && isManagerSystem ? <Navigate to="/dashboard/usuarios" replace /> : <Navigate to="/login" replace />} 
+                element={isAuthenticated && isManagerSystem ? <PermisosDashboard /> : <Navigate to="/login" replace />} 
             />
             {/* Ruta para bitácora */}
             <Route 
                 path="/dashboard/bitacora" 
-                element={isAuthenticated && isManagerSystem ? <Navigate to="/dashboard/usuarios" replace /> : <Navigate to="/login" replace />} 
+                element={isAuthenticated && isManagerSystem ? <BitacoraDashboard /> : <Navigate to="/login" replace />} 
             />
             {/* Ruta para usuarios activos */}
             <Route 
@@ -89,8 +91,8 @@ export const AppRoutes = () => {
                 <Route path="internal" element={isManagerSystem ? <ManagerSystemPage /> : <Navigate to="/dashboard" replace />} />
                 <Route path="gerencia" element={isAdministracion ? <DashboardGerencia /> : <Navigate to="/dashboard" replace />} />
                 <Route path="usuarios" element={<UsuarioDashboard />} />
-                <Route path="permisos" element={<ManagerSystemPage />} />
-                <Route path="bitacora" element={<ManagerSystemPage />} />
+                <Route path="permisos" element={isAuthenticated && isManagerSystem ? <PermisosDashboard /> : <Navigate to="/login" replace />} />
+                <Route path="bitacora" element={isAuthenticated && isManagerSystem ? <BitacoraDashboard /> : <Navigate to="/login" replace />} />
                 <Route path="tramites" element={<ManagerSystemPage />} />
                 <Route path="email-redes" element={<ManagerSystemPage />} />
             </Route>
