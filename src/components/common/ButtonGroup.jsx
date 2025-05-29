@@ -18,7 +18,7 @@ const ButtonGroup = ({ buttons, className = '' }) => {
               : button.variant === 'danger'
               ? 'bg-red-600 text-white hover:bg-red-700'
               : button.variant === 'normal'
-              ? 'bg-white text-[#1e4e9c] hover:bg-gray-200 hover:text-[#1e4e9c]]'
+              ? 'bg-white text-[#1e4e9c] hover:bg-gray-200 hover:text-blue-600'
               : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
             }
             ${button.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}

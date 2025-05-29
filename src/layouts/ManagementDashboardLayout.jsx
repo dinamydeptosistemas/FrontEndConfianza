@@ -37,7 +37,7 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
                 </span>
               </div>
               <button 
-                className="border border-orange-500 text-orange-500 px-3 h-8 text-xs sm:text-sm font-bold rounded bg-white hover:bg-orange-50 transition-colors" 
+                className="border border-orange-500 text-orange-500 px-6 h-9 text-xs sm:text-sm font-bold rounded bg-white hover:bg-orange-50 transition-colors" 
                 onClick={() => navigate('/dashboard-internal')}
               >
                 SALIR
@@ -79,6 +79,16 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
                 </button>
                 <button
                   className={`w-[125px] h-[30px] hover:bg-[#1e4e9c] hover:text-white border border-gray-300 text-gray-600 text-sm rounded-md flex items-center justify-center transition-colors duration-200 flex-shrink-0 ${
+                    location.pathname === '/dashboard/permisos' 
+                      ? 'bg-[#1e4e9c] text-white border-[#1e4e9c]' 
+                      : 'bg-white'
+                  }`}
+                  onClick={() => navigate('/dashboard/permisos')}
+                >
+                  Permisos
+                </button>
+                <button
+                  className={`w-[125px] h-[30px] hover:bg-[#1e4e9c] hover:text-white border border-gray-300 text-gray-600 text-sm rounded-md flex items-center justify-center transition-colors duration-200 flex-shrink-0 ${
                     location.pathname === '/dashboard/bitacora' 
                       ? 'bg-[#1e4e9c] text-white border-[#1e4e9c]' 
                       : 'bg-white'
@@ -86,16 +96,6 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
                   onClick={() => navigate('/dashboard/bitacora')}
                 >
                   Bitácora
-                </button>
-                <button
-                  className={`w-[125px] h-[30px] hover:bg-[#1e4e9c] hover:text-white border border-gray-300 text-gray-600 text-sm rounded-md flex items-center justify-center transition-colors duration-200 flex-shrink-0 ${
-                    location.pathname === '/dashboard/permisos' 
-                      ? 'bg-[#1e4e9c] text-white border-[#1e4e9c]' 
-                      : 'bg-white'
-                  }`}
-                  onClick={() => navigate('/dashboard/permisos')}
-                >
-                  Permiso
                 </button>
                 <button
                   className={`w-[125px] h-[30px] hover:bg-[#1e4e9c] hover:text-white border border-gray-300 text-gray-600 text-sm rounded-md flex items-center justify-center transition-colors duration-200 flex-shrink-0 ${
@@ -114,10 +114,14 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
           {/* Área de contenido */}
           <div className="flex-1 flex flex-col items-center bg-[#f8f9fb] pt-5">
             <div className="w-full px-2 sm:px-3 md:px-4 lg:px-6 xl:px-8">
-              <div className="flex justify-center items-center mx-auto my-1 sm:my-2 overflow-hidden">
-                <h2 className="bg-[#1e4e9c] py-1 px-4 h-[50px] flex items-center text-white font-bold text-sm sm:text-base w-full text-center">
-                  {title}
-                </h2>
+              <div className="flex justify-between bg-[#1e4e9c] w-full">
+                <div className="w-full py-1 px-4 h-[50px] flex items-center">
+                  <h2 className="text-lg font-bold text-white"> 
+                    <span className="text-base ml-2 text-[1.1rem]">
+                      {title}
+                    </span>
+                  </h2>
+                </div>
               </div>
               <div className="w-full mt-1 sm:mt-2">
                 {children}

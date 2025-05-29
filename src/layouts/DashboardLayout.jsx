@@ -145,7 +145,7 @@ const DashboardLayout = () => {
                     <div className="flex justify-between bg-[#1e4e9c] mx-[40px] w-[87%] ">
                         <div className="w-full py-1 px-4 h-[50px] flex items-center">
                             <h2 className="text-lg font-bold text-white"> 
-                                <span className="text-base ml-2 text-[20px]">
+                                <span className="text-base ml-2 text-[1.1rem]">
                                     {getUserFunctionDisplay()}
                                 </span>
                             </h2>

@@ -144,7 +144,7 @@ export default function UsuarioDashboard() {
 
 
     return (
-        <ManagementDashboardLayout title="Usuarios" user={user} negocio={negocio}>
+        <ManagementDashboardLayout title="USUARIOS:" user={user} negocio={negocio}>
             <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
                 <div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
           <div>
@@ -189,7 +189,7 @@ export default function UsuarioDashboard() {
           </div>
         </div>
                 <div className="mb-4 overflow-x-auto">
-                    <GenericTable
+                    <GenericTable 
                         columns={[
                             { key: 'idUser', label: 'ID' },
                             { key: 'nombreUser', label: 'Nombre' },
@@ -197,23 +197,8 @@ export default function UsuarioDashboard() {
                             { key: 'identificacion', label: 'Identificación' },
                             { key: 'username', label: 'Usuario' },
                             { 
-                                key: 'password', 
-                                label: 'Contraseña',
-                                render: (row) => row.password 
-                                    ? `${row.password.substring(0, 2)}${'*'.repeat(row.password.length - 2)}`
-                                    : ''
-                            },
-                            { 
                                 key: 'emailUsuario', 
                                 label: 'Email'
-                            },
-                            { 
-                                key: 'celularUsuario', 
-                                label: 'Celular'
-                            },
-                            { 
-                                key: 'tipoUser', 
-                                label: 'Tipo'
                             },
                             { 
                                 key: 'usuarioActivo', 
@@ -226,15 +211,14 @@ export default function UsuarioDashboard() {
                                     </span>
                                 )
                             }
-                        ]}
-                        data={usuarios}
+                        ]} 
+                        data={usuarios} 
+                        rowKey="idUser"
+                        actions={true}
                         onEdit={handleEditar}
                         onDelete={handleEliminar}
-                        rowKey="idUser"
                     />
                 </div>
-
-            
 
                 <ConfirmEliminarModal
                     isOpen={mostrarModal}

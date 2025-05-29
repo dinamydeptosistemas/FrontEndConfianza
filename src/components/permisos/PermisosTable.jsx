@@ -33,7 +33,28 @@ export default function PermisosTable({ permisos, onEdit, onDelete }) {
                 </button>
               </td>
               <td className="p-2 text-center">
-                <button className="text-red-600 hover:text-red-900 border border-red-400 rounded px-1" onClick={() => onDelete(permiso)} title="Borrar"></button>
+                <button 
+                  className="text-red-600 hover:text-red-900 hover:bg-red-100 p-1 rounded" 
+                  onClick={() => onDelete(permiso)} 
+                  title="Borrar"
+                >
+                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                </button>
+              </td>
+              <td className="p-2 text-center">
+                <button 
+                  className="text-green-600 hover:text-green-900 hover:bg-green-100 p-1 rounded" 
+                  onClick={() => onUpdatePermissions && onUpdatePermissions(permiso)} 
+                  title="Actualizar Permisos"
+                >
+                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M12 15l8.385-8.415a2.1 2.1 0 00-2.976-2.968L9 12.01V15h2.99z"></path>
+                    <path d="M18 10l-8 8"></path>
+                    <path d="M12 3a9 9 0 11-6 15.364"></path>
+                  </svg>
+                </button>
               </td>
               <td className="p-2">{permiso.regPermiso}</td>
               <td className="p-2">{permiso.idUser}</td>

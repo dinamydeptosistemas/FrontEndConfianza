@@ -164,7 +164,7 @@ export default function PerfilAccesoDashboard() {
   };
 
   return (
-    <ManagementDashboardLayout title="Perfiles de Acceso" user={user} negocio={negocio}>
+    <ManagementDashboardLayout title="PERFILES DE ACCESO:" user={user} negocio={negocio}>
    
       <div className="bg-white border-white border-l border-r rounded-b p-2 w-full">
         <div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
@@ -178,12 +178,14 @@ export default function PerfilAccesoDashboard() {
               }]}
             />
           </div>
-          <div className="flex justify-center">
-            <Paginador
-              paginaActual={paginaActual}
-              totalPaginas={totalPaginas}
-              onPageChange={(p) => cargarPerfiles(p, filtroActivo)}
-            />
+          <div className="w-full flex justify-center">
+            <div className="w-full sm:w-auto">
+              <Paginador
+                paginaActual={paginaActual}
+                totalPaginas={totalPaginas}
+                onPageChange={(p) => cargarPerfiles(p, filtroActivo)}
+              />
+            </div>
           </div>
           <div className='flex justify-end items-center gap-2'>
             {filtroActivo && (
@@ -209,34 +211,66 @@ export default function PerfilAccesoDashboard() {
             />
           </div>
         </div>
-         <GenericTable
-          columns={[
-            { key: 'idFunction', label: 'ID Función' },
-            { key: 'functionName', label: 'Nombre de Función' },
-            { key: 'grantPermissions', label: 'Permisos', render: row => row.grantPermissions ? 'SI' : 'NO' },
-            { key: 'allModules', label: 'Todos los Módulos', render: row => row.allModules ? 'SI' : 'NO' },
-            { key: 'administration', label: 'Administración', render: row => row.administration ? 'SI' : 'NO' },
-            { key: 'product', label: 'Producto', render: row => row.product ? 'SI' : 'NO' },
-            { key: 'inventory', label: 'Inventario', render: row => row.inventory ? 'SI' : 'NO' },
-            { key: 'purchase', label: 'Compra', render: row => row.purchase ? 'SI' : 'NO' },
-            { key: 'sale', label: 'Venta', render: row => row.sale ? 'SI' : 'NO' },
-            { key: 'cashRegister', label: 'Caja', render: row => row.cashRegister ? 'SI' : 'NO' },
-            { key: 'bank', label: 'Banco', render: row => row.bank ? 'SI' : 'NO' },
-            { key: 'accounting', label: 'Contabilidad', render: row => row.accounting ? 'SI' : 'NO' },
-            { key: 'payroll', label: 'Nómina', render: row => row.payroll ? 'SI' : 'NO' },
-            { key: 'generalCash', label: 'Caja General', render: row => row.generalCash ? 'SI' : 'NO' },
-            { key: 'closeCashGen', label: 'Cierre Caja Gen.', render: row => row.closeCashGen ? 'SI' : 'NO' },
-            { key: 'cashRegister001', label: 'Caja 001', render: row => row.cashRegister001 ? 'SI' : 'NO' },
-            { key: 'cashRegister002', label: 'Caja 002', render: row => row.cashRegister002 ? 'SI' : 'NO' },
-            { key: 'cashRegister003', label: 'Caja 003', render: row => row.cashRegister003 ? 'SI' : 'NO' },
-            { key: 'cashRegister004', label: 'Caja 004', render: row => row.cashRegister004 ? 'SI' : 'NO' },
-            { key: 'externalModules', label: 'Módulos Externos', render: row => row.externalModules ? 'SI' : 'NO' },
-          ]}
-          data={perfiles}
-          onDelete={handleDeleteClick}
-          onEdit={handleEditClick}
-          actions={true}
-        />
+        <div className="mb-4 overflow-x-auto">
+          <GenericTable
+            columns={[
+              { key: 'idFunction', label: 'ID' },
+              { key: 'functionName', label: 'Nombre del Perfil' },
+              { 
+                key: 'grantPermissions', 
+                label: 'Permisos', 
+                render: row => (
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    row.grantPermissions ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {row.grantPermissions ? 'Concedidos' : 'No concedidos'}
+                  </span>
+                )
+              },
+              { 
+                key: 'allModules', 
+                label: 'Acceso Total', 
+                render: row => (
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    row.allModules ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {row.allModules ? 'Sí' : 'No'}
+                  </span>
+                )
+              },
+              { 
+                key: 'administration', 
+                label: 'Admin',
+                render: row => row.administration ? 'Sí' : 'No'
+              },
+              { 
+                key: 'sale', 
+                label: 'Ventas',
+                render: row => row.sale ? 'Sí' : 'No'
+              },
+              { 
+                key: 'inventory', 
+                label: 'Inventario',
+                render: row => row.inventory ? 'Sí' : 'No'
+              },
+              { 
+                key: 'accounting', 
+                label: 'Contabilidad',
+                render: row => row.accounting ? 'Sí' : 'No'
+              },
+              { 
+                key: 'cashRegister', 
+                label: 'Caja',
+                render: row => row.cashRegister ? 'Sí' : 'No'
+              }
+            ]}
+            data={perfiles}
+            rowKey="idFunction"
+            actions={true}
+            onEdit={handleEditClick}
+            onDelete={handleDeleteClick}
+          />
+        </div>
       <ConfirmEliminarModal
         isOpen={mostrarModal}
         onConfirm={handleConfirmDelete}

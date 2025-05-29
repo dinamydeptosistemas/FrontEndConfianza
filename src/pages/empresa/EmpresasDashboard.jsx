@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { getEmpresas, deleteEmpresa } from '../../services/company/CompanyService';
 import ManagementDashboardLayout from '../../layouts/ManagementDashboardLayout';
 import GenericTable from '../../components/common/GenericTable';
@@ -23,65 +23,135 @@ export default function EmpresasDashboard() {
   const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
-
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  
+  const searchTimeoutRef = useRef(null);
 
   const cargarEmpresas = useCallback(async (pagina = 1, filtroBusqueda = '') => {
-    const params = { page: pagina };
-    if (filtroBusqueda) {
-      params.searchTerm = filtroBusqueda;
+    setIsLoading(true);
+    try {
+      const params = { 
+        page: pagina,
+        pageSize: 10, // Tamaño de página fijo
+        ...(filtroBusqueda && { searchTerm: filtroBusqueda })
+      };
+
+      // Obtener solo la página solicitada
+      const response = await getEmpresas(params);
+      console.log('Respuesta del servidor:', response);
+      
+      // Manejar diferentes formatos de respuesta
+      let listaEmpresas = [];
+      let totalDePaginas = 1;
+      let paginaActualRespuesta = pagina;
+
+      if (Array.isArray(response)) {
+        listaEmpresas = response;
+      } else if (response && typeof response === 'object') {
+        // Si la respuesta es un objeto, buscar el array de empresas en diferentes propiedades
+        if (Array.isArray(response.companies)) {
+          listaEmpresas = response.companies;
+          totalDePaginas = response.totalPages || 1;
+          paginaActualRespuesta = response.page || pagina;
+        } else if (Array.isArray(response.data)) {
+          listaEmpresas = response.data;
+          totalDePaginas = response.last_page || response.totalPages || 1;
+          paginaActualRespuesta = response.current_page || response.page || pagina;
+        } else if (Array.isArray(response)) {
+          listaEmpresas = response;
+        }
+      }
+
+      // Asegurarse de que siempre tengamos un array
+      if (!Array.isArray(listaEmpresas)) {
+        listaEmpresas = [];
+      }
+
+      // Eliminar duplicados basados en codeCompany
+      const empresasUnicas = Array.from(new Map(
+        listaEmpresas.map(empresa => [empresa.codeCompany || empresa.codeEntity, empresa])
+      ).values());
+
+      console.log('Empresas únicas:', empresasUnicas);
+
+      setEmpresasOriginales(empresasUnicas);
+      setEmpresas(empresasUnicas);
+      setPaginaActual(paginaActualRespuesta);
+      setTotalPaginas(totalDePaginas);
+    } catch (error) {
+      console.error('Error al cargar empresas:', error);
+   
+    } finally {
+      setIsLoading(false);
+      setIsSearching(false);
     }
-    const data = await getEmpresas(params);
-    setEmpresasOriginales(data.companies || []);
-    setEmpresas(data.companies || []);
-    setPaginaActual(pagina);
-    setTotalPaginas(data.totalPages || 1);
   }, []);
 
   useEffect(() => {
     cargarEmpresas(1, '');
   }, [cargarEmpresas]);
 
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [filtro]);
+
   const buscarEnEmpresas = (empresasArr, filtro) => {
     if (!filtro) return empresasArr;
-    return empresasArr.filter(e =>
-      (e.businessName && e.businessName.toLowerCase().includes(filtro.toLowerCase())) ||
-      (e.ruc && e.ruc.toLowerCase().includes(filtro.toLowerCase())) ||
-      (e.commercialName && e.commercialName.toLowerCase().includes(filtro.toLowerCase()))
+    return empresasArr.filter(empresa =>
+      (empresa.businessName && empresa.businessName.toLowerCase().includes(filtro.toLowerCase())) ||
+      (empresa.ruc && empresa.ruc.toLowerCase().includes(filtro.toLowerCase())) ||
+      (empresa.commercialName && empresa.commercialName.toLowerCase().includes(filtro.toLowerCase()))
     );
   };
 
-  const handleBuscar = async (nuevoFiltro) => {
-    setFiltro(nuevoFiltro);
-    setFiltroActivo(nuevoFiltro);
-    if (!nuevoFiltro) {
-      cargarEmpresas(1, '');
+  const handleBuscar = (valor) => {
+    setFiltro(valor);
+    
+    // Si el filtro está vacío, limpiar búsqueda inmediatamente
+    if (!valor.trim()) {
+      handleClearSearch();
       return;
     }
-    let pagina = 1;
-    let encontrados = buscarEnEmpresas(empresasOriginales, nuevoFiltro);
-    let empresasAcumuladas = [...empresasOriginales];
-    let totalPaginasLocal = totalPaginas;
-    while (encontrados.length === 0 && (pagina < totalPaginasLocal || empresasAcumuladas.length === 0)) {
-      pagina++;
+    
+    // Usar debounce para búsquedas locales
+    searchTimeoutRef.current = setTimeout(() => {
+      setFiltroActivo(valor);
+      setIsSearching(true);
+      
       try {
-        const data = await getEmpresas({ page: pagina });
-        if (data.companies && data.companies.length > 0) {
-          empresasAcumuladas = [...empresasAcumuladas, ...data.companies];
-          setEmpresasOriginales(empresasAcumuladas);
-          totalPaginasLocal = data.totalPages || totalPaginasLocal;
-          encontrados = buscarEnEmpresas(empresasAcumuladas, nuevoFiltro);
-        } else {
-          break;
-        }
+        const filtradas = buscarEnEmpresas(empresasOriginales, valor);
+        setEmpresas(filtradas);
       } catch (error) {
-        console.error('Error al buscar empresas:', error);
-        alert('Error al buscar empresas. Por favor, intente nuevamente.');
-        return;
+        console.error('Error en búsqueda local:', error);
+   
+      } finally {
+        setIsSearching(false);
       }
+    }, 300); // 300ms de debounce
+  };
+
+  const handleClearSearch = () => {
+    // Limpiar timeout si existe
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
     }
-    setEmpresas(encontrados);
-    setPaginaActual(1);
-    setTotalPaginas(1);
+    
+    setFiltro('');
+    setFiltroActivo('');
+    
+    // Si hay empresas originales, restaurarlas
+    if (empresasOriginales.length > 0) {
+      setEmpresas(empresasOriginales);
+    } else {
+      // Si no hay empresas cargadas, hacer una nueva petición
+      cargarEmpresas(1, '');
+    }
   };
 
   const handleDeleteClick = (empresa) => {
@@ -98,37 +168,18 @@ export default function EmpresasDashboard() {
   const handleConfirmDelete = async () => {
     const codeEntity = empresaAEliminar?.codeEntity;
     if (codeEntity) {
-      console.log('Intentando eliminar empresa con codeEntity:', codeEntity);
       try {
         await deleteEmpresa(codeEntity);
-        console.log('Llamada a deleteEmpresa completada para:', codeEntity);
-
-        console.log('Recargando lista de empresas...');
-        const data = await getEmpresas();
-        console.log('Empresas recibidas después de eliminar:', data.companies);
-
-        setEmpresasOriginales(data.companies || []);
-        const filtroActual = filtroActivo;
-        if (!filtroActual) {
-          setEmpresas(data.companies || []);
-        } else {
-          const filtradas = (data.companies || []).filter(e =>
-            (e.businessName && e.businessName.toLowerCase().includes(filtroActual.toLowerCase())) ||
-            (e.ruc && e.ruc.toLowerCase().includes(filtroActual.toLowerCase()))
-          );
-          setEmpresas(filtradas);
-        }
-        
+        // Recargar la página actual con los filtros aplicados
+        await cargarEmpresas(paginaActual, filtro);
       } catch (error) {
-        console.error('Error durante el proceso de eliminación:', error);
-        alert(`Error al eliminar la empresa: ${error.message || 'Error desconocido. Revisa la consola para más detalles.'}`);
+        console.error('Error al eliminar la empresa:', error);
+        alert(`Error al eliminar la empresa: ${error.message || 'Error desconocido'}`);
       } finally {
-        console.log('Cerrando modal y reseteando empresaAEliminar.');
         setEmpresaAEliminar(null);
         setMostrarModal(false);
       }
     } else {
-      console.warn('handleConfirmDelete llamado sin codeEntity válido:', empresaAEliminar);
       alert('No se ha seleccionado una empresa para eliminar o falta el identificador.');
       setMostrarModal(false);
     }
@@ -146,10 +197,8 @@ export default function EmpresasDashboard() {
 
   const handleUpdateEmpresa = async (empresaActualizada) => {
     try {
-      const data = await getEmpresas({ page: paginaActual });
-      setEmpresasOriginales(data.companies || []);
-      setEmpresas(data.companies || []);
-      handleBuscar(filtroActivo);
+      // Recargar la página actual con los filtros aplicados
+      await cargarEmpresas(paginaActual, filtro);
       setEmpresaAEditar(null);
       setMostrarModalEdicion(false);
     } catch (error) {
@@ -160,10 +209,8 @@ export default function EmpresasDashboard() {
 
   const handleSaveEmpresa = async (nuevaEmpresa) => {
     try {
-      const data = await getEmpresas({ page: paginaActual });
-      setEmpresasOriginales(data.companies || []);
-      setEmpresas(data.companies || []);
-      handleBuscar(filtroActivo);
+      // Recargar la página actual con los filtros aplicados
+      await cargarEmpresas(paginaActual, filtro);
       setMostrarModalCreacion(false);
     } catch (error) {
       console.error('Error al crear la empresa:', error);
@@ -172,101 +219,129 @@ export default function EmpresasDashboard() {
   };
 
   return (
-    <ManagementDashboardLayout title="EMPRESAS / NEGOCIOS" user={user} negocio={negocio}>
-
-
-        
-      <div className="bg-white border-white border-l border-r  rounded-b p-2 w-full">
-        <div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
-          <div>
+    <ManagementDashboardLayout title="EMPRESAS:" user={user} negocio={negocio}>
+      <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+          <div className="w-full sm:w-auto">
             <ButtonGroup
               buttons={[{
                 label: 'Nuevo',
                 onClick: () => setMostrarModalCreacion(true),
                 variant: 'normal',
-                className: 'bg-white border-[#1e4e9c] border px-8 py-1 font-bold hover:text-white hover:bg-[#1e4e9c]'
+                className: 'bg-white border-[#1e4e9c] border px-8 py-1 font-bold hover:text-white hover:bg-[#1e4e9c] w-full sm:w-auto'
               }]}
             />
           </div>
+          
           <div className="flex justify-center">
             <Paginador
               paginaActual={paginaActual}
               totalPaginas={totalPaginas}
-              onPageChange={(p) => cargarEmpresas(p, filtroActivo)}
+              onPageChange={(pagina) => cargarEmpresas(pagina, filtroActivo)}
             />
           </div>
-          <div className='flex justify-end items-center gap-2'>
-            {filtroActivo && (
-              <span className="bg-gray-200 px-2 py-1 rounded flex items-center ml-4">
-                {filtroActivo}
+          
+          <div className="w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+              <div className="relative w-full max-w-md">
+                <SearchBar
+                  onSearch={handleBuscar}
+                  value={filtro}
+                  onChange={handleBuscar}
+                  placeholder="Buscar por RUC o nombre de empresa..."
+                  showClearButton={true}
+                  onClear={handleClearSearch}
+                  disabled={isLoading}
+                  className="w-full"
+                />
+                {(isSearching || isLoading) && (
+                  <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                  </div>
+                )}
+              </div>
+              
+              {filtroActivo && (
                 <button
-                  onClick={() => { setFiltro(''); setFiltroActivo(''); handleBuscar(''); }}
-                  className="ml-1 text-red-500 hover:text-red-700 font-bold"
+                  onClick={handleClearSearch}
+                  className="bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded text-sm font-medium whitespace-nowrap self-center"
                   aria-label="Limpiar búsqueda"
-                  style={{ fontSize: '1.1em', lineHeight: 1 }}
                 >
-                  ×
+                  Limpiar filtros
                 </button>
-              </span>
-            )}
-            <SearchBar
-              onSearch={handleBuscar}
-              value={filtro}
-              onChange={setFiltro}
-              placeholder="Buscar por RUC o nombre de empresa..."
-              className="w-[300px]"
-              debounceTime={300}
-            />
+              )}
+            </div>
           </div>
         </div>
-        <GenericTable
-        columns={[
-          { key: 'codeEntity', label: 'Codigo Entidad' },
-          { key: 'typeEntity', label: 'Tipo Entidad' },
-          { key: 'matrix', label: 'Matr', render: (row) => typeof row.matrix === 'boolean' ? (row.matrix ? 'SI' : 'NO') : '-' },
-          { key: 'typeEntity', label: 'Tipo Contribuyente' },
-          { key: 'ruc', label: 'Ruc' },
-          { key: 'businessName', label: 'Razon Social' },
-          { key: 'commercialName', label: 'Nombre Comercial' },
-          { key: 'city', label: 'Ciudad' },
-          { key: 'phone', label: 'Telefono' },
-          { key: 'email', label: 'Email' },
-          { key: 'economicActivity', label: 'Actividad Económica' },
-          { key: 'salesReceipt', label: 'Comprobante de Venta' },
-          { key: 'taxRegime', label: 'Régimen Tributario' },
-          { key: 'regimeLegend', label: 'Leyenda de Régimen' },
-          { key: 'keepsAccounting', label: 'Mantiene Contabilidad', render: (row) => typeof row.keepsAccounting === 'boolean' ? (row.keepsAccounting ? 'SI' : 'NO') : '-' },
-          { key: 'retentionAgent', label: 'Agente Retención', render: (row) => typeof row.retentionAgent === 'boolean' ? (row.retentionAgent ? 'SI' : 'NO') : '-' },
-          { key: 'nameGroup', label: 'Nombre Grupo' },
-        ]}
-        data={empresas}
-        onEdit={handleEditClick}
-        onDelete={handleDeleteClick}
-        rowKey="codeEntity"
-      />
-      <ConfirmEliminarModal
-        isOpen={mostrarModal}
-        onConfirm={handleConfirmDelete}
-        onCancel={handleCancelDelete}
-        mensaje={`¿Está seguro que desea eliminar la empresa${empresaAEliminar ? ` "${empresaAEliminar.businessName || empresaAEliminar.nombre || ''}${empresaAEliminar.ruc ? ' (RUC: ' + empresaAEliminar.ruc + ')' : ''}"` : ''}?`}
-      />
-      {mostrarModalEdicion && (
-        <EmpresaUpdateModal
-          empresa={empresaAEditar}
-          onClose={() => {
-            setEmpresaAEditar(null);
-            setMostrarModalEdicion(false);
-          }}
-          onUpdate={handleUpdateEmpresa}
+        <div className="mb-4 overflow-x-auto">
+          <GenericTable
+            columns={[
+              { 
+                key: 'codeEntity', 
+                label: 'Código',
+                render: (row) => row.codeEntity || 'N/A'
+              },
+              { 
+                key: 'businessName', 
+                label: 'Razón Social',
+                render: (row) => row.businessName || 'N/A'
+              },
+              { 
+                key: 'commercialName', 
+                label: 'Nombre Comercial',
+                render: (row) => row.commercialName || 'N/A'
+              },
+              { 
+                key: 'ruc', 
+                label: 'RUC',
+                render: (row) => row.ruc || 'N/A'
+              },
+              { 
+                key: 'typeEntity', 
+                label: 'Tipo',
+                render: (row) => row.typeEntity || 'N/A'
+              },
+              { 
+                key: 'taxRegime', 
+                label: 'Régimen',
+                render: (row) => row.taxRegime || 'N/A'
+              },
+              { 
+                key: 'city', 
+                label: 'Ciudad',
+                render: (row) => row.city || 'N/A'
+              }
+            ]}
+            data={empresas}
+            rowKey="codeEntity"
+            actions={true}
+            onEdit={handleEditClick}
+            onDelete={handleDeleteClick}
+          />
+        </div>
+        <ConfirmEliminarModal
+          isOpen={mostrarModal}
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+          mensaje={`¿Está seguro que desea eliminar la empresa${empresaAEliminar ? ` "${empresaAEliminar.businessName || empresaAEliminar.nombre || ''}${empresaAEliminar.ruc ? ' (RUC: ' + empresaAEliminar.ruc + ')' : ''}"` : ''}?`}
         />
-      )}
-      {mostrarModalCreacion && (
-        <EmpresaCreateModal
-          onClose={() => setMostrarModalCreacion(false)}
-          onSave={handleSaveEmpresa}
-        />
-      )}
-    </div>
+        {mostrarModalEdicion && empresaAEditar && (
+          <EmpresaUpdateModal
+            empresa={empresaAEditar}
+            onClose={() => {
+              setEmpresaAEditar(null);
+              setMostrarModalEdicion(false);
+            }}
+            onUpdate={handleUpdateEmpresa}
+          />
+        )}
+        {mostrarModalCreacion && (
+          <EmpresaCreateModal
+            onClose={() => setMostrarModalCreacion(false)}
+            onSave={handleSaveEmpresa}
+          />
+        )}
+      </div>
     </ManagementDashboardLayout>
   );
 }
