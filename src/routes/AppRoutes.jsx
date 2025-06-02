@@ -14,6 +14,7 @@ import PerfilAccesoDashboard from '../pages/perfilAcceso/PerfilAccesoDashboard';
 import UsuarioDashboard from '../pages/usuario/UsuarioDashboard';
 import PermisosDashboard from '../pages/permisos/PermisosDashboard';
 import BitacoraDashboard from '../pages/bitacora/BitacoraDashboard';
+import SocialMediaDashboard from '../pages/socialmedia/socialmediadashboard';
 
 export const AppRoutes = () => {
     const { user, loading, isInitialized } = useAuth();
@@ -76,6 +77,11 @@ export const AppRoutes = () => {
                 path="/dashboard/bitacora" 
                 element={isAuthenticated && isManagerSystem ? <BitacoraDashboard /> : <Navigate to="/login" replace />} 
             />
+            {/* Ruta para redes sociales */}
+            <Route 
+                path="/dashboard/redes-sociales" 
+                element={isAuthenticated && isManagerSystem ? <SocialMediaDashboard /> : <Navigate to="/login" replace />} 
+            />
             {/* Ruta para usuarios activos */}
             <Route 
                 path="/dashboard/usuarios-activos" 
@@ -94,7 +100,6 @@ export const AppRoutes = () => {
                 <Route path="permisos" element={isAuthenticated && isManagerSystem ? <PermisosDashboard /> : <Navigate to="/login" replace />} />
                 <Route path="bitacora" element={isAuthenticated && isManagerSystem ? <BitacoraDashboard /> : <Navigate to="/login" replace />} />
                 <Route path="tramites" element={<ManagerSystemPage />} />
-                <Route path="email-redes" element={<ManagerSystemPage />} />
             </Route>
 
             <Route 

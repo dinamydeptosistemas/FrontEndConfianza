@@ -60,7 +60,7 @@ const ManagerSystemPage = () => {
                             <h3 className="text-base  text-gray-600 mb-3 text-[20px]">Medios y Redes</h3>
                             <ul className="space-y-2">
                                 <li>
-                                    <Link to="/dashboard/email-redes" className="text-[#1e4e9c] hover:underline block">
+                                    <Link to="/dashboard/redes-sociales" className="text-[#1e4e9c] hover:underline block">
                                         7 Email y Redes Sociales
                                     </Link>
                                 </li>
