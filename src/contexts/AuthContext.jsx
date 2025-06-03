@@ -125,23 +125,29 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (credentials) => {
         try {
+            console.log('Iniciando proceso de login con credenciales:', { ...credentials, password: '***' });
             setLoading(true);
             setError(null);
             const response = await axiosInstance.post('/api/auth/login', credentials, {
                 withCredentials: true
             });
             
+            console.log('Respuesta del login:', response.data);
+            
             if (response.data.Success) {
                 let claims = {};
                 if (response.data.TokenSession) {
                     try {
                         claims = jwtDecode(response.data.TokenSession);
+                        console.log('Token decodificado:', claims);
                     } catch (e) {
+                        console.error('Error al decodificar el token:', e);
                         claims = {};
                     }
                 }
                 
                 const userData = { ...response.data, ...claims };
+                console.log('Datos del usuario después de combinar:', userData);
                 const normalizedUser = {
                     ...userData,
                     UserId: userData.UserId || userData.userId,

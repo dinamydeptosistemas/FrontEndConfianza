@@ -32,6 +32,7 @@ const INITIAL_FILTERS = {
 
 export default function SocialMediaDashboard() {
   const { user, negocio } = useAuth();
+  const [mediosSocialesOriginales, setMediosSocialesOriginales] = useState([]);
   const [mediosSociales, setMediosSociales] = useState([]);
   const [filtros, setFiltros] = useState({
     ...INITIAL_FILTERS,
@@ -39,6 +40,7 @@ export default function SocialMediaDashboard() {
     estado: '',
     tipoProceso: ''
   });
+  const [filtro, setFiltro] = useState('');
   const [filtroActivo, setFiltroActivo] = useState('');
   const [medioAEliminar, setMedioAEliminar] = useState(null);
   const [mostrarModal, setMostrarModal] = useState(false);
@@ -79,14 +81,14 @@ export default function SocialMediaDashboard() {
     };
   });
 
-  const cargarMediosSociales = useCallback(async (pagina = 1, busqueda = '') => {
+  const cargarMediosSociales = useCallback(async (pagina = 1, busqueda = '', filterRedSocial = '') => {
     setIsLoading(true);
     try {
       const params = { 
         page: pagina,
         pageSize: filtros.pageSize,
         ...(busqueda && { searchTerm: busqueda }),
-        ...(filtros.redSocial && { redSocial: filtros.redSocial })
+        ...(filterRedSocial && { filterRedSocial: filterRedSocial })
       };
 
       const response = await getSocialMedia(params);
@@ -108,22 +110,23 @@ export default function SocialMediaDashboard() {
         }
       }
 
+      // Guardar los datos originales y mostrar todos
+      setMediosSocialesOriginales(listaMedios);
       setMediosSociales(listaMedios);
       setPaginaActual(paginaActualRespuesta);
       setTotalPaginas(totalDePaginas);
     } catch (error) {
-      console.error('Error al cargar empresas:', error);
-   
+      console.error('Error al cargar medios sociales:', error);
     } finally {
       setIsLoading(false);
       setIsSearching(false);
     }
-  }, [filtros]);
+  }, [filtros.pageSize]);
 
-  // Cargar medios sociales al montar el componente y cuando cambien los filtros
+  // Cargar medios sociales al montar el componente
   useEffect(() => {
-    cargarMediosSociales(1, filtroActivo);
-  }, [filtros, cargarMediosSociales, filtroActivo]);
+    cargarMediosSociales(1, '');
+  }, [cargarMediosSociales]);
 
   useEffect(() => {
     return () => {
@@ -155,16 +158,33 @@ export default function SocialMediaDashboard() {
       ...prev,
       redSocial: redSocial || ''
     }));
+    
+    if (mediosSocialesOriginales.length > 0) {
+      const filtrados = mediosSocialesOriginales.filter(medio => 
+        !redSocial || medio.redSocial === redSocial
+      );
+      setMediosSociales(filtrados);
+    } else {
+      cargarMediosSociales(1);
+    }
   };
   
   const handleClearSearch = () => {
+    // Limpiar timeout si existe
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
       searchTimeoutRef.current = null;
     }
     
+    setFiltro('');
     setFiltroActivo('');
-    setFiltros(INITIAL_FILTERS);
+    
+    // Restaurar los datos originales
+    if (mediosSocialesOriginales.length > 0) {
+      setMediosSociales(mediosSocialesOriginales);
+    } else {
+      cargarMediosSociales(1);
+    }
   };
 
   const handleDeleteClick = (medio) => {
@@ -271,7 +291,7 @@ export default function SocialMediaDashboard() {
               <div className="relative w-full max-w-md">
                 <SearchBar
                   onSearch={handleBuscar}
-                  value={filtroActivo}
+                  value={filtro}
                   onChange={handleBuscar}
                   placeholder="Buscar por cuenta, responsable o empresa..."
                   showClearButton={true}
@@ -287,20 +307,27 @@ export default function SocialMediaDashboard() {
               </div>
               
               <div className="w-full sm:w-48">
-                <select
-                  id="redSocial"
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  value={filtros.redSocial}
-                  onChange={(e) => handleFiltroRedSocial(e.target.value)}
-                  disabled={isLoading}
-                >
-                  <option value="">Todas las redes</option>
-                  {REDES_SOCIALES.map((red) => (
-                    <option key={red.value} value={red.value}>
-                      {red.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    id="redSocial"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+                    value={filtros.redSocial}
+                    onChange={(e) => handleFiltroRedSocial(e.target.value)}
+                    disabled={isLoading}
+                  >
+                    <option value="">Todas las redes</option>
+                    {REDES_SOCIALES.map((red) => (
+                      <option key={red.value} value={red.value}>
+                        {red.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
               
               {(filtroActivo || filtros.redSocial) && (

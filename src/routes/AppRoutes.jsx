@@ -15,6 +15,7 @@ import UsuarioDashboard from '../pages/usuario/UsuarioDashboard';
 import PermisosDashboard from '../pages/permisos/PermisosDashboard';
 import BitacoraDashboard from '../pages/bitacora/BitacoraDashboard';
 import SocialMediaDashboard from '../pages/socialmedia/socialmediadashboard';
+import PaperworksDashboard from '../pages/paperworks/PaperworksDashboard';
 
 export const AppRoutes = () => {
     const { user, loading, isInitialized } = useAuth();
@@ -23,6 +24,8 @@ export const AppRoutes = () => {
     const isAuthenticated = user && user.StatusCode === 200;
     const isManagerSystem = isAuthenticated && (user.CodeFunction === 1 || user.UserFunction === 'MANAGER SYSTEM');
     const isAdministracion = isAuthenticated && (user.CodeFunction === 2 || user.UserFunction === 'ADMINISTRACION');
+
+
 
     // No renderizar nada hasta que la verificación inicial esté completa
     if (!isInitialized) {
@@ -82,6 +85,21 @@ export const AppRoutes = () => {
                 path="/dashboard/redes-sociales" 
                 element={isAuthenticated && isManagerSystem ? <SocialMediaDashboard /> : <Navigate to="/login" replace />} 
             />
+            {/* Ruta para trámites */}
+            <Route 
+                path="/dashboard/tramites" 
+                element={
+                    isAuthenticated ? (
+                        isManagerSystem ? (
+                            <PaperworksDashboard />
+                        ) : (
+                            <Navigate to="/dashboard" replace />
+                        )
+                    ) : (
+                        <Navigate to="/login" state={{ from: window.location.pathname }} replace />
+                    )
+                } 
+            />
             {/* Ruta para usuarios activos */}
             <Route 
                 path="/dashboard/usuarios-activos" 
@@ -99,7 +117,16 @@ export const AppRoutes = () => {
                 <Route path="usuarios" element={<UsuarioDashboard />} />
                 <Route path="permisos" element={isAuthenticated && isManagerSystem ? <PermisosDashboard /> : <Navigate to="/login" replace />} />
                 <Route path="bitacora" element={isAuthenticated && isManagerSystem ? <BitacoraDashboard /> : <Navigate to="/login" replace />} />
-                <Route path="tramites" element={<ManagerSystemPage />} />
+                <Route 
+                    path="tramites" 
+                    element={
+                        isManagerSystem ? (
+                            <PaperworksDashboard />
+                        ) : (
+                            <Navigate to="/dashboard" replace />
+                        )
+                    } 
+                />
             </Route>
 
             <Route 
