@@ -7,7 +7,7 @@ const API_TIMEOUT = parseInt(process.env.REACT_APP_API_TIMEOUT || '30000', 10);
 
 // Validar configuración
 if (!process.env.REACT_APP_API_BASE_URL) {
-  console.warn('REACT_APP_API_BASE_URL no está definido en las variables de entorno');
+  // REACT_APP_API_BASE_URL no está definido en las variables de entorno
 }
 
 // Configuración común para las peticiones
@@ -31,26 +31,17 @@ export const getPermisos = async (params = {}) => {
       process: 'getPermissions',
       ...params
     };
-    
-    console.log('Solicitando permisos con parámetros:', requestParams);
     const response = await axiosInstance.post(API_BASE, requestParams, commonConfig);
     
     if (!response?.data) {
       throw new Error('No se recibieron datos en la respuesta del servidor');
     }
     
-    console.log('Respuesta de permisos recibida:', response.data);
     return response.data;
     
   } catch (error) {
-    console.error('Error al obtener permisos:', error);
     if (axios.isAxiosError(error)) {
       const errorMessage = error.response?.data?.message || error.message;
-      console.error('Detalles del error:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data
-      });
       throw new Error(`Error al obtener permisos: ${errorMessage}`);
     }
     throw error;
@@ -96,12 +87,7 @@ export const putPermiso = async (permiso) => {
       ...rest
     };
     
-    console.log('Enviando petición de permiso a:', API_BASE);
-    console.log('Datos del permiso:', JSON.stringify(requestParams, null, 2));
-    
     const response = await axiosInstance.post(API_BASE, requestParams, commonConfig);
-    
-    console.log('Respuesta del servidor (cruda):', response);
     
     if (!response || !response.data) {
       throw new Error('No se recibió respuesta del servidor');
@@ -112,7 +98,6 @@ export const putPermiso = async (permiso) => {
       try {
         // Intentar parsear como JSON
         const parsedData = JSON.parse(response.data);
-        console.log('Permiso guardado correctamente (respuesta parseada):', parsedData);
         return { success: true, ...parsedData };
       } catch (e) {
         // Si no es JSON, devolver como mensaje
@@ -121,25 +106,14 @@ export const putPermiso = async (permiso) => {
     }
     
     // Si ya es un objeto, asegurarse de que tenga success: true
-    console.log('Permiso guardado correctamente:', response.data);
     return { success: true, ...response.data };
     
   } catch (error) {
-    console.error('Error al guardar el permiso:', error);
     if (axios.isAxiosError(error)) {
       const errorData = error.response?.data;
       const errorMessage = typeof errorData === 'object' 
         ? errorData.message || JSON.stringify(errorData)
         : errorData || error.message;
-      
-      console.error('Detalles del error:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        url: error.config?.url,
-        method: error.config?.method,
-        requestData: error.config?.data,
-        responseData: errorData
-      });
       
       // Si el servidor devuelve un mensaje de error detallado, mostrarlo
       if (errorData && typeof errorData === 'object') {
@@ -178,14 +152,8 @@ export const deletePermiso = async (regPermiso) => {
     return response.data;
     
   } catch (error) {
-    console.error('Error al eliminar el permiso:', error);
     if (axios.isAxiosError(error)) {
       const errorMessage = error.response?.data?.message || error.message;
-      console.error('Detalles del error:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data
-      });
       throw new Error(`Error al eliminar el permiso: ${errorMessage}`);
     }
     throw error;

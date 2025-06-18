@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import SuccessModal from '../common/SuccessModal';
+import ActionButtons, { LoadingOverlay } from '../common/Buttons';
+
+
 
 export default function PerfilAccesoCreateModal({ onClose, onSave }) {
   const [formData, setFormData] = useState({
@@ -23,6 +27,8 @@ export default function PerfilAccesoCreateModal({ onClose, onSave }) {
     externalModules: false
   });
   const [showSuccess, setShowSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+
 
   const handleChange = (e) => {
     const { name, type, checked, value } = e.target;
@@ -34,6 +40,7 @@ export default function PerfilAccesoCreateModal({ onClose, onSave }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
       await onSave(formData);
       setShowSuccess(true);
@@ -42,8 +49,20 @@ export default function PerfilAccesoCreateModal({ onClose, onSave }) {
     }
   };
 
+  const isFormValid = () => {
+    return formData.functionName.trim() !== '';
+  };
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
+    <>
+      {loading && <LoadingOverlay isLoading={true} message="Guardando perfil de acceso..." />}
+      {showSuccess && (
+        <SuccessModal
+          message="¡Perfil de acceso creado correctamente!"
+          onClose={() => { setShowSuccess(false); onClose(); }}
+        />
+      )}
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
       <div className="bg-white py-6 px-14 rounded-lg shadow-lg w-[800px] max-h-[90vh] overflow-y-auto relative">
         <button
           type="button"
@@ -54,6 +73,7 @@ export default function PerfilAccesoCreateModal({ onClose, onSave }) {
           ×
         </button>
         <h2 className="text-xl font-bold mb-4 text-gray-800 pt-4">Nuevo Perfil de Acceso</h2>
+        <hr className="col-span-2 border-blue-500 mr-6 m-0 pb-5 mt-3" />
         <form onSubmit={handleSubmit} className="grid grid-cols-3 gap-4">
           <div className="col-span-3">
             <label className="block text-sm font-medium text-gray-700">Nombre de Función</label>
@@ -150,20 +170,15 @@ export default function PerfilAccesoCreateModal({ onClose, onSave }) {
             <label className="block text-sm font-medium text-gray-700">Módulos Externos</label>
             <input type="checkbox" name="externalModules" checked={formData.externalModules} onChange={handleChange} className="mr-2" />
           </div>
-          <div className="col-span-2 flex justify-end mt-6 space-x-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2 border-2 border-gray-400 rounded text-base font-semibold hover:bg-gray-100"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-2 bg-[#285398] text-white rounded hover:bg-[#1e3d6b]"
-            >
-              Guardar
-            </button>
+          <div className="col-span-2 flex justify-end mt-2 space-x-4">
+         <ActionButtons
+          onClose={onClose}
+          handleSubmit={handleSubmit}
+          disabled={!isFormValid()}
+          loading={loading}
+          loadingText="Guardando..."
+          
+         />
           </div>
         </form>
         {showSuccess && (
@@ -171,5 +186,6 @@ export default function PerfilAccesoCreateModal({ onClose, onSave }) {
         )}
       </div>
     </div>
+    </>
   );
-} 
+};

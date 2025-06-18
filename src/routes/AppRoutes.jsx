@@ -16,6 +16,9 @@ import PermisosDashboard from '../pages/permisos/PermisosDashboard';
 import BitacoraDashboard from '../pages/bitacora/BitacoraDashboard';
 import SocialMediaDashboard from '../pages/socialmedia/socialmediadashboard';
 import PaperworksDashboard from '../pages/paperworks/PaperworksDashboard';
+import RegistrerUserExternal from '../pages/registrer/RegistrerUserExternal';
+
+
 
 export const AppRoutes = () => {
     const { user, loading, isInitialized } = useAuth();
@@ -42,7 +45,7 @@ export const AppRoutes = () => {
     }
 
     console.log('Ruta actual en AppRoutes:', window.location.pathname);
-    const publicRoutes = ['/login', '/registrar-usuario-interno'];
+    const publicRoutes = ['/login', '/registrar-usuario-interno', '/registrar-usuario-externo'];
     return (
         <Routes>
             {/* Rutas públicas */}
@@ -53,6 +56,10 @@ export const AppRoutes = () => {
             <Route
                 path="/registrar-usuario-interno"
                 element={<RegisterUserInternal />} 
+            />
+            <Route
+                path="/registrar-usuario-externo"
+                element={<RegistrerUserExternal />} 
             />
 
             {/* Ruta independiente para empresas */}

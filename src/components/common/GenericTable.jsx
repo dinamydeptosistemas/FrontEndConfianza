@@ -22,8 +22,8 @@ export default function GenericTable({
   }
 }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-300 bg-white">
-      <table className="min-w-full text-xs text-gray-700">
+    <div className="overflow-x-auto w-full rounded-lg border border-gray-300 bg-white">
+      <table className="w-full text-xs text-gray-700">
         <thead className="bg-gray-200 text-gray-700 uppercase text-xs">
           <tr>
             {actions && showActions.edit && <th className="p-2">Edit</th>}

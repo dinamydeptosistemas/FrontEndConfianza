@@ -4,6 +4,9 @@ import { getPerfilesAcceso } from '../../services/accessProfile/AccessProfileSer
 import {  getUsers } from '../../services/user/UserService';
 import { getEmpresas } from '../../services/company/CompanyService';
 import { useAuth } from '../../contexts/AuthContext';
+import ActionButtons, { LoadingOverlay } from '../common/Buttons';
+
+
 
 const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
   const { user } = useAuth();
@@ -26,6 +29,10 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
   
   const [userInfo, setUserInfo] = useState(null);
 
+  const _updateUserInfoState = useCallback((newUserInfo) => {
+    setUserInfo(newUserInfo);
+  }, []); // setUserInfo from useState is stable
+
   const [showCurrentValues, setShowCurrentValues] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -46,83 +53,105 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
   const [perfiles, setPerfiles] = useState([]);
   const [loadingPerfiles, setLoadingPerfiles] = useState(true);
   const [empresas, setEmpresas] = useState([]);
+  const [empresasLoadAttempted, setEmpresasLoadAttempted] = useState(false);
   const [loadingEmpresas, setLoadingEmpresas] = useState(false);
   const [empresaTemporal, setEmpresaTemporal] = useState('');
+  const [loadingData, setLoadingData] = useState(false);
+
+
 
   // Cargar lista de empresas
   const cargarEmpresas = useCallback(async () => {
     try {
       setLoadingEmpresas(true);
-      console.log('Cargando lista de empresas...');
+
       
-      // Obtener todas las empresas (todas las páginas)
-      const empresasData = await getEmpresas({
-        getAll: true, // Indica que queremos todas las páginas
-        pageSize: 100 // Cantidad de empresas por página (ajustar según necesidad)
+      const respuestaServicio = await getEmpresas({ // Renombrado para claridad
+        getAll: true, 
+        pageSize: 100 
       });
       
-      console.log('Total de empresas cargadas:', empresasData.length);
-      
-      // Mapear los datos de las empresas al formato esperado
-      const empresasMapeadas = empresasData.map(empresa => ({
-        codeCompany: empresa.codeEntity || empresa.codeCompany,
-        businessName: empresa.businessName || empresa.commercialName,
-        ruc: empresa.ruc,
-        ...empresa
-      }));
-      
-      console.log('Empresas mapeadas:', empresasMapeadas);
-      setEmpresas(empresasMapeadas);
-      
-      return empresasData;
+      // Verificar si la respuesta es válida y contiene el array de datos
+      if (respuestaServicio && respuestaServicio.companies && Array.isArray(respuestaServicio.companies)) {
+        const empresasArray = respuestaServicio.companies; // Extraer el array
+
+        
+        const empresasMapeadas = empresasArray.map(empresa => ({
+          codeCompany: empresa.codeEntity || empresa.codeCompany,
+          businessName: empresa.businessName || empresa.commercialName,
+          ruc: empresa.ruc,
+          ...empresa
+        }));
+        
+
+        setEmpresas(empresasMapeadas); // Actualizar estado con las empresas mapeadas
+        
+        return empresasMapeadas; // Devolver las empresas mapeadas
+      } else {
+        // Manejar caso donde la respuesta no es la esperada o no hay datos
+
+        setEmpresas([]); // Asegurar que empresas sea un array vacío
+        return []; // Devolver array vacío
+      }
     } catch (error) {
-      console.error('Error al cargar las empresas:', error);
+
       setError('Error al cargar la lista de empresas');
       return [];
     } finally {
       setLoadingEmpresas(false);
     }
-  }, []);
-  
-  // Efecto para cargar empresas al abrir el modal
+  }, [/* setEmpresas, setError */]); // Consider adding stable setters if linting requires
+
+  // Efecto para cargar empresas cuando el modal se abre y no se han intentado cargar antes
   useEffect(() => {
     let mounted = true;
-    
-    const cargarDatos = async () => {
-      if (isOpen && !loadingEmpresas) {
-        let empresasCargadas = empresas;
-        
-        // Si no hay empresas cargadas, cargarlas
-        if (empresas.length === 0) {
-          console.log('Cargando lista de empresas...');
-          empresasCargadas = await cargarEmpresas();
+    if (isOpen && !loadingEmpresas && !empresasLoadAttempted) {
+
+      setEmpresasLoadAttempted(true); // Set synchronously before the async call
+      cargarEmpresas().catch(error => {
+        // Error logging for the call from useEffect itself.
+        // Actual error state (e.g., for UI) should be handled within cargarEmpresas.
+        if (mounted) { // Guard against state updates if component unmounted during cargarEmpresas
+
         }
-        
-        // Solo actualizar el estado si el componente sigue montado
-        if (mounted && empresasCargadas && empresasCargadas.length > 0) {
-          // Inicializar empresa temporal con el valor actual o la primera empresa
-          const nuevaEmpresa = formData.codigoEntidad || empresasCargadas[0]?.codeCompany || '';
-          setEmpresaTemporal(nuevaEmpresa);
-        }
+      });
+    }
+    return () => { mounted = false; };
+  }, [isOpen, loadingEmpresas, empresasLoadAttempted, cargarEmpresas]);
+
+  // Efecto para resetear el intento de carga cuando el modal se cierra
+  useEffect(() => {
+    if (!isOpen) {
+      setEmpresasLoadAttempted(false);
+      setLoadingEmpresas(false); // Ensure loading state is also reset
+      // Opcional: limpiar el estado de empresas si se desea que se recarguen siempre
+      // setEmpresas([]); 
+    }
+  }, [isOpen]);
+
+  // Efecto para establecer la empresa temporal una vez que las empresas están cargadas o formData.codigoEntidad cambia
+  useEffect(() => {
+    if (isOpen && empresas.length > 0) {
+      const targetEmpresaCode = formData.codigoEntidad || empresas[0]?.codeCompany || '';
+      if (empresaTemporal !== targetEmpresaCode) {
+        setEmpresaTemporal(targetEmpresaCode);
       }
-    };
-    
-    cargarDatos();
-    
-    return () => {
-      mounted = false;
-    };
-  }, [isOpen, loadingEmpresas, empresas, formData.codigoEntidad, cargarEmpresas]);
+    } 
+    // Considerar limpiar empresaTemporal si el modal se cierra y no hay formData.codigoEntidad
+    // else if (!isOpen && !formData.codigoEntidad && empresaTemporal !== '') {
+    //   setEmpresaTemporal('');
+    // }
+  }, [isOpen, empresas, formData.codigoEntidad, empresaTemporal, setEmpresaTemporal]);
 
   // Cargar perfiles de acceso
   const cargarPerfiles = useCallback(async () => {
     try {
-      console.log('Cargando perfiles de acceso...');
+
       setLoadingPerfiles(true);
       
       // Hacer la petición a la API
       const response = await getPerfilesAcceso({ process: 'getAccessProfiles' });
-      console.log('Respuesta de getPerfilesAcceso:', response);
+
       
       // Extraer perfiles de la respuesta - la respuesta viene con accessProfiles
       let perfilesData = [];
@@ -142,7 +171,7 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
         perfilesData = response.data.data;
       }
       
-      console.log('Perfiles extraídos:', perfilesData);
+
       
       // Mapear los perfiles al formato esperado
       perfilesData = perfilesData.map(perfil => ({
@@ -155,7 +184,7 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
         idseccion: perfil.idseccion ?? 'N/A'
       }));
       
-      console.log('Perfiles formateados:', perfilesData);
+
       
       // Si hay un perfil seleccionado, actualizar el formData
       if (formData.idFunction) {
@@ -171,7 +200,7 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
       setPerfiles(perfilesData);
       return perfilesData;
     } catch (error) {
-      console.error('Error al cargar perfiles:', error);
+
       setError('No se pudieron cargar los perfiles de acceso');
       return [];
     } finally {
@@ -186,7 +215,6 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
   const cargarPermiso = useCallback(async () => {
     if (!isOpen || !userId) return;
     
-    console.log('Iniciando carga de permisos para userId:', userId);
     setLoading(true);
     setError(null);
     
@@ -195,9 +223,7 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
       const perfiles = await cargarPerfiles();
       
       // Luego cargar los permisos
-      console.log('Llamando a getPermisos con userId:', userId);
       const response = await getPermisos({ idUser: userId });
-      console.log('Respuesta de getPermisos:', response);
       
       // Extraer datos del permiso del array permissions
       let permisos = [];
@@ -219,8 +245,6 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
         permisos = [response];
       }
       
-      console.log('Permisos extraídos:', permisos);
-      
       if (permisos.length > 0) {
         // Encontrar el permiso que coincide con el userId
         const permisoUsuario = permisos.find(p => p.idUser === Number(userId)) || permisos[0];
@@ -231,8 +255,6 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
         
         // Obtener idFunction del permiso
         const idFunctionFromPermiso = formatNumber(permisoUsuario.idFunction);
-        
-        console.log('Buscando perfil con idFunction:', idFunctionFromPermiso);
         
         // Buscar el perfil que coincida con idFunction
         const perfilEncontrado = perfiles.find(p => {
@@ -245,23 +267,6 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
           ? formatNumber(perfilEncontrado.idFunction ?? perfilEncontrado.idregistro)
           : (perfiles[0] ? formatNumber(perfiles[0].idFunction ?? perfiles[0].idregistro) : 0);
         
-        console.log('Datos del permiso a mostrar:', permisoUsuario);
-        console.log('Campos disponibles en permisoUsuario:', Object.keys(permisoUsuario));
-        
-        // Función para formatear fechas al formato YYYY-MM-DD
-        const formatDate = (dateString) => {
-          if (!dateString) return '';
-          try {
-            const date = new Date(dateString);
-            // Verificar si la fecha es válida
-            if (isNaN(date.getTime())) return '';
-            return date.toISOString().split('T')[0];
-          } catch (e) {
-            console.error('Error al formatear fecha:', e);
-            return '';
-          }
-        };
-
         // Actualizar el estado del formulario con los datos del permiso
         // Obtener el nombre del usuario de la respuesta del permiso
         const nombreUsuario = permisoUsuario.userName || permisoUsuario.nombre || permisoUsuario.nombreUser || '';
@@ -284,15 +289,14 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
           cierreSesionJornada: formatNumber(permisoUsuario.cierreSesionJornada),
           bloqueoSesionMaxima: formatNumber(permisoUsuario.bloqueoSesionMaxima),
           userioResponsable: permisoUsuario.userioResponsable || '',
-          fechaInicioPermiso: formatDate(permisoUsuario.fechaInicioPermiso || permisoUsuario.fecha_inicio_permiso),
-          fechaFinalPermiso: formatDate(permisoUsuario.fechaFinalPermiso || permisoUsuario.fecha_final_permiso),
+          fechaInicioPermiso: permisoUsuario.fechaInicioPermiso || permisoUsuario.fecha_inicio_permiso,
+          fechaFinalPermiso: permisoUsuario.fechaFinalPermiso || permisoUsuario.fecha_final_permiso,
           userName: nombreUsuario
         }));
 
        
         
       } else {
-        console.warn('No se encontraron datos de permiso para el usuario');
         // Inicializar con valores por defecto si no hay permisos
         setFormData(prev => ({
           ...prev,
@@ -306,9 +310,7 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
       }
       
     } catch (error) {
-      console.error('Error al cargar el permiso:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
-      setError(`Error al cargar el permiso: ${errorMessage}`);
+      setError('Error al cargar el permiso');
     } finally {
       setLoading(false);
     }
@@ -318,7 +320,6 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
   const cargarUsuario = useCallback(async (userId) => {
     try {
       setLoading(true);
-      console.log('Buscando usuario con ID:', userId);
       
       // Llamar a getUsers con filtro por ID
       const response = await getUsers({ 
@@ -328,8 +329,6 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
         pageSize: 1
       });
       
-      console.log('Respuesta de getUsers:', response);
-
       // Verificar si la respuesta tiene el formato esperado
       let userInfo = null;
       
@@ -337,104 +336,30 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
       if (response?.users?.[0]) {
         // Formato { users: [{...}] }
         userInfo = response.users[0];
-        console.log('Usuario encontrado (formato users array):', userInfo);
       } else if (response?.data?.users?.[0]) {
         // Formato { data: { users: [{...}] } }
         userInfo = response.data.users[0];
-        console.log('Usuario encontrado (formato data.users array):', userInfo);
       } else if (response?.data?.[0]) {
         // Formato { data: [{...}] }
         userInfo = response.data[0];
-        console.log('Usuario encontrado (formato data array):', userInfo);
       } else if (response?.data) {
         // Formato { data: {...} }
         userInfo = response.data;
-        console.log('Usuario encontrado (formato data object):', userInfo);
       } else if (response) {
         // Formato directo
         userInfo = response;
-        console.log('Usuario encontrado (formato directo):', userInfo);
       }
       
-      // Debug: Mostrar todas las propiedades del usuario
       if (userInfo) {
-        console.log('Propiedades del usuario:', Object.keys(userInfo));
-        console.log('Datos completos del usuario:', {
-          ...userInfo,
-          // Ocultar datos sensibles en el log
-          password: '***',
-          contrasena: '***'
-        });
-        
-        // Usar el nombreCompleto directamente de la respuesta si está disponible
-        // o construirlo a partir de nombre y apellidos si es necesario
-        const nombreCompleto = userInfo.nombreCompleto || 
-                              (userInfo.nombreUser && userInfo.apellidosUser ? 
-                               `${userInfo.nombreUser} ${userInfo.apellidosUser}`.trim() :
-                               userInfo.nombre || userInfo.firstName || '');
-        
-        console.log('Datos de nombre extraídos:', {
-          nombreUser: userInfo.nombreUser,
-          apellidosUser: userInfo.apellidosUser,
-          nombre: userInfo.nombre,
-          apellidos: userInfo.apellidos,
-          firstName: userInfo.firstName,
-          lastName: userInfo.lastName,
-          nombreCompleto
-        });
-        
-        
-        
-        // Actualizar el userioResponsable en formData con el nombre completo
+        _updateUserInfoState(userInfo);
+
         setFormData(prev => ({
           ...prev,
-          userioResponsable: nombreCompleto || userInfo.username || prev.userioResponsable
-        }));
-      }
-
-      if (userInfo) {
-        console.log('Datos del usuario cargados:', {
-          idUser: userInfo.idUser,
-          userId: userId,
-          nombreUser: userInfo.nombreUser,
-          apellidosUser: userInfo.apellidosUser,
-          username: userInfo.username
-        });
-        
-        // Guardar la información del usuario en el estado
-        setUserInfo(userInfo);
-        
-        // Extraer nombre y apellido de las propiedades disponibles
-        const nombre = userInfo.nombreUser || userInfo.nombre || userInfo.firstName || '';
-        const apellidos = userInfo.apellidosUser || userInfo.apellidos || userInfo.lastName || '';
-        
-        // Formatear nombre completo para mostrar en la interfaz
-        const nombreCompleto = [nombre, apellidos]
-          .filter(Boolean)
-          .join(' ')
-          .trim();
-        
-        console.log('Datos de nombre extraídos:', {
-          nombreUser: userInfo.nombreUser,
-          apellidosUser: userInfo.apellidosUser,
-          nombre: userInfo.nombre,
-          apellidos: userInfo.apellidos,
-          firstName: userInfo.firstName,
-          lastName: userInfo.lastName,
-          nombreCompleto
-        });
-        
-
-        
-        // Actualizar el userioResponsable en formData con el nombre completo
-        setFormData(prev => ({
-          ...prev,
-          userioResponsable: nombreCompleto || userInfo.username || prev.userioResponsable
+          userioResponsable: userInfo.nombreUser || userInfo.username || prev.userioResponsable
         }));
         
         // Actualizar el formulario con los datos del usuario
         const newIdUser = userInfo.idUser || userId;
-        console.log('ID de usuario que se establecerá:', newIdUser);
         
         setFormData(prev => ({
           ...prev,
@@ -443,19 +368,17 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
           userioResponsable: user?.userName || prev.userioResponsable
         }));
       } else {
-        console.warn('No se encontraron datos del usuario');
+        setError('Error al cargar los datos del usuario');
       }
 
     } catch (error) {
-      console.error('Error al cargar los datos del usuario:', error);
       setError('Error al cargar los datos del usuario');
     }
-  }, [user]);
+  }, [user, _updateUserInfoState]);
 
   // Cargar datos cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
-      console.log('Abriendo modal, cargando datos...');
       if (userId) {
         cargarUsuario(userId);
       }
@@ -467,7 +390,7 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
         // Luego cargamos el permiso que actualizará el formData
         return cargarPermiso();
       }).catch(error => {
-        console.error('Error al cargar datos iniciales:', error);
+        setError('Error al cargar datos iniciales');
       });
     }
   }, [isOpen, userId, cargarPerfiles, cargarEmpresas, cargarPermiso, cargarUsuario]);
@@ -481,12 +404,11 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
       [name]: type === 'checkbox' ? checked : value
     }));
     
-    console.log('Cambio en', name, ':', type === 'checkbox' ? checked : value);
   };
 
   const handleEmpresaChange = (e) => {
     const value = e.target.value;
-    console.log('Cambiando empresa a:', value);
+    
     setEmpresaTemporal(value);
     
     // Actualizar formData.codigoEntidad inmediatamente
@@ -500,6 +422,7 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
     e.preventDefault();
     setSaving(true);
     setError(null);
+    setLoadingData(true);
     
     // Aplicar la empresa seleccionada al formData solo al guardar
     setFormData(prev => ({
@@ -523,17 +446,13 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
         try {
           // Asegurarse de que la fecha esté en el formato correcto
           const date = new Date(dateString);
-          if (isNaN(date.getTime())) {
-            console.warn('Fecha inválida:', dateString);
-            return null;
-          }
+          if (isNaN(date.getTime())) return null;
           // Formato: YYYY-MM-DD
           const year = date.getFullYear();
           const month = String(date.getMonth() + 1).padStart(2, '0');
           const day = String(date.getDate()).padStart(2, '0');
           return `${year}-${month}-${day}`;
         } catch (e) {
-          console.error('Error al formatear fecha para el servidor:', e);
           return null;
         }
       };
@@ -541,8 +460,6 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
       // Validar campos requeridos
       const codigoEntidad = formData.codigoEntidad || user?.codigoEmpresa || '999';
       const userioResponsable = formData.userioResponsable || user?.userName || 'SISTEMA';
-      
-      console.log('Valores a enviar:', { codigoEntidad, userioResponsable });
       
       if (!codigoEntidad) {
         throw new Error('No se pudo determinar el código de entidad');
@@ -593,21 +510,9 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
         ...requestData  // Incluir los datos como string JSON en el campo 'request'
       };
       
-      console.log('Datos a enviar al servidor:', JSON.stringify(submitData, null, 2));
-      
-      // Mostrar datos que se enviarán al servidor
-      console.group('Datos a enviar al servidor');
-      console.log('URL:', process.env.REACT_APP_PERMISSIONS_API_BASE || '/api/Permissions/Process');
-      console.log('Método:', 'POST');
-      console.log('Datos:', JSON.stringify(submitData, null, 2));
-      console.groupEnd();
-      
-      console.log('Enviando datos al servidor...');
-      
       // Llamar a la función de actualización con los datos formateados
       try {
         const result = await onUpdate(submitData);
-        console.log('Resultado de la actualización:', result);
         
         if (result === false) {
           // Si onUpdate devuelve false, ya se manejó el error en el componente padre
@@ -627,7 +532,6 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
         }, 3000);
         
       } catch (error) {
-        console.error('Error en handleSubmit:', error);
         // Mostrar mensaje de error del servidor si existe
         const errorMessage = error.response?.data?.message || 
                            error.message || 
@@ -650,9 +554,18 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
 
   if (!isOpen) return null;
 
+
+  const isFormValid = () => {
+    // Implementar lógica para validar el formulario
+    return true;
+  };
+  
   return (
     <div className="fixed inset-0  px-5 flex items-center justify-center bg-black bg-opacity-30 z-50">
       <div className="bg-white p-4 rounded-lg shadow-lg w-[500px] max-h-[90vh] overflow-y-auto relative">
+        {loadingData && (
+          <LoadingOverlay isLoading={loadingData} message="Guardando permiso..." />
+        )}
         {modalExito.open && (
           <div 
             className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg flex items-center justify-between ${
@@ -1021,29 +934,13 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
             
             {/* Botones de acción fijos en la parte inferior */}
             <div className="mt-8 pt-4 border-t border-gray-200 flex justify-end space-x-3 sticky bottom-0 bg-white">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={saving}
-                className={`px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium ${saving ? 'text-gray-400 bg-gray-50 cursor-not-allowed' : 'text-gray-700 bg-white hover:bg-gray-50'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${saving ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-              >
-                {saving ? (
-                  <div className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Guardando...
-                  </div>
-                ) : 'Guardar cambios'}
-              </button>
+            <ActionButtons
+              onClose={onClose}
+              handleSubmit={handleSubmit}
+              disabled={!isFormValid() || loadingData}
+              loading={loadingData}
+              loadingText="Guardando..."
+            />
             </div>
           </form>
         )}

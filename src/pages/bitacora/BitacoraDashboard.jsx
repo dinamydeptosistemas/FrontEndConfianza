@@ -15,13 +15,12 @@ import { putPermiso, getPermisos } from '../../services/permission/PermissionSer
 export default function BitacoraDashboard() {
   const { user, negocio  } = useAuth();
   const [bitacoras, setBitacoras] = useState([]);
-  const [modalExito, setModalExito] = useState({ open: false, mensaje: '' });
   const [filtro, setFiltro] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState('');
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [loading, setLoading] = useState(false);
-
+  const [modalExito, setModalExito] = useState({ open: false, mensaje: '' });
   const [registroSeleccionado, setRegistroSeleccionado ] = useState(null);
 
   const cargarBitacora = useCallback(async (pagina = 1, filtroBusqueda = '', estado = '') => {
@@ -286,10 +285,7 @@ export default function BitacoraDashboard() {
                          error.message || 
                          'Error desconocido al procesar la solicitud';
       
-      setModalExito({
-        open: true,
-        mensaje: `Error al ${row.bloqueoSesionMaxima ? 'desbloquear' : 'bloquear'} el usuario: ${errorMessage}`
-      });
+      alert(`Error al ${row.bloqueoSesionMaxima ? 'desbloquear' : 'bloquear'} el usuario: ${errorMessage}`);
       
       // Cerrar el modal de confirmación
       setModalBloqueo(prev => ({ ...prev, open: false }));
@@ -469,6 +465,7 @@ export default function BitacoraDashboard() {
  
         {/* Modales */}
   
+        {/* Modal de éxito para bloqueo/desbloqueo de usuarios */}
         {modalExito.open && (
           <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-20">
             <div className="bg-white p-6 rounded shadow">
@@ -487,12 +484,7 @@ export default function BitacoraDashboard() {
           onUpdate={handlePermisosUpdated}
         />
         
-        {/* Mensaje de éxito/error (oculto, se mantiene para compatibilidad) */}
-        {modalExito.open && (
-          <div style={{ display: 'none' }}>
-            {setTimeout(() => setModalExito({ ...modalExito, open: false }), 0)}
-          </div>
-        )}
+        {/* El componente de notificación ahora es manejado por el NotificationContext */}
       </div>
     </ManagementDashboardLayout>
   );

@@ -310,6 +310,11 @@ export default function EmpresasDashboard() {
                 key: 'city', 
                 label: 'Ciudad',
                 render: (row) => row.city || 'N/A'
+              },
+              { 
+                key: 'state', 
+                label: 'Estado',
+                render: (row) => row.state ? <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">Activo</span> : <span className="bg-red-100 text-red-800 px-2 py-1 rounded">Inactivo</span>
               }
             ]}
             data={empresas}

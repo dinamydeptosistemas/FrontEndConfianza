@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
+
+
+
 export default function PermisoUpdateModal({ onClose, onUpdate, permiso }) {
   const [formData, setFormData] = useState({
     regPermiso: '',

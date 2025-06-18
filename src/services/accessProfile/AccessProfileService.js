@@ -13,19 +13,9 @@ export const getPerfilesAcceso = async (params = {}) => {
       process: 'getAccessProfiles',
       ...params
     };
-    console.log('Enviando petición a /accessprofiles/process con:', requestParams);
     const response = await axiosInstance.post(`${API_BASE}/accessprofiles/process`, requestParams);
-    console.log('Respuesta recibida:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error en getPerfilesAcceso:', error);
-    if (error.response) {
-      console.error('Detalles del error:', {
-        status: error.response.status,
-        data: error.response.data,
-        headers: error.response.headers
-      });
-    }
     throw error;
   }
 };

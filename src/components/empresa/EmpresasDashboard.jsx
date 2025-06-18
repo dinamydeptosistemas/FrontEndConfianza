@@ -3,8 +3,57 @@ import { getEmpresas, deleteEmpresa } from '../../services/company/CompanyServic
 import EmpresasTable from './EmpresasTable';
 import EmpresasBotonera from './EmpresasBotonera';
 import EmpresasBuscar from './EmpresasBuscar';
+import EmpresaCreateModal from './EmpresaCreateModal';
+import EmpresaUpdateModal from './EmpresaUpdateModal';
+import { useNotification } from '../../context/NotificationContext';
 
 export default function EmpresasDashboard() {
+  // Usar el contexto de notificaciones global
+  const { showSuccessMessage } = useNotification();
+  
+  // Estado para modal de edición de empresa
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [empresaSeleccionada, setEmpresaSeleccionada] = useState(null);
+
+  // Estado para modal de creación de empresa
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Handler para abrir modal de edición
+  const handleEditEmpresa = (empresa) => {
+    console.log('[EmpresasDashboard] handleEditEmpresa llamada con:', empresa);
+    setEmpresaSeleccionada(empresa);
+    setShowUpdateModal(true);
+  };
+
+  // Handler para cerrar modal de edición
+  const handleCloseUpdate = () => {
+    setShowUpdateModal(false);
+    setEmpresaSeleccionada(null);
+  };
+
+  // Handler para refrescar lista tras editar
+  const handleUpdateEmpresas = () => {
+    cargarEmpresas(filtro);
+    showSuccessMessage('¡Empresa actualizada correctamente!');
+    handleCloseUpdate();
+  };
+
+  // Handler para mostrar mensajes de éxito - ahora usa el contexto global
+  const handleShowSuccess = (message) => {
+    showSuccessMessage(message);
+  };
+
+  // Handler para abrir modal de creación
+  const handleOpenCreate = () => setShowCreateModal(true);
+  // Handler para cerrar modal de creación
+  const handleCloseCreate = () => setShowCreateModal(false);
+  // Handler para refrescar lista tras crear
+  const handleCreateEmpresa = () => {
+    cargarEmpresas(filtro);
+    handleCloseCreate();
+  };
+
+
   const [empresas, setEmpresas] = useState([]);
   const [filtro, setFiltro] = useState('');
   const [loading, setLoading] = useState(false);
@@ -86,57 +135,79 @@ export default function EmpresasDashboard() {
   }, [cargarEmpresas, filtro]);
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-2">
-        <div>
-          <span className="font-bold text-gray-700">EMPRESA:</span> <span className="text-gray-800">PINTURAS ROSENVELL</span>
+    <>
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-2">
+          <div>
+            <span className="font-bold text-gray-700">EMPRESA:</span> <span className="text-gray-800">PINTURAS ROSENVELL</span>
+          </div>
+          <div>
+            <span className="font-bold text-gray-700">PERIODO:</span> <span className="text-gray-800">2025</span>
+          </div>
         </div>
-        <div>
-          <span className="font-bold text-gray-700">PERIODO:</span> <span className="text-gray-800">2025</span>
+        <div className="mb-2">
+          <span className="font-bold text-gray-700">USER:</span> <span className="text-gray-800">XAVIER</span>
+        </div>
+        <div className="flex gap-2 mb-4">
+          <button className="bg-white border px-3 py-1 rounded">Empresa</button>
+          <button className="bg-white border px-3 py-1 rounded">Perfil Acceso</button>
+          <button className="bg-white border px-3 py-1 rounded">Usuario</button>
+          <button className="bg-white border px-3 py-1 rounded">Permiso</button>
+          <button className="bg-white border px-3 py-1 rounded">Bitacora</button>
+          <button className="bg-white border px-3 py-1 rounded">User Activos</button>
+          <button className="ml-auto bg-orange-500 text-white px-4 py-1 rounded">SALIR</button>
+        </div>
+        <div className="bg-blue-900 text-white text-lg font-bold px-4 py-2 rounded-t">EMPRESAS / NEGOCIOS:</div>
+        <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
+          <EmpresasBotonera
+            onNueva={handleOpenCreate}
+            onEditar={() => alert('Funcionalidad Editar')}
+            onBorrar={() => alert('Selecciona una empresa para borrar')}
+          />
+          <EmpresasBuscar onBuscar={handleBuscar} />
+          {loading && (
+            <div className="text-center py-2">
+              <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+              <span className="ml-2">Cargando...</span>
+            </div>
+          )}
+          {error && (
+            <div className="text-red-500 py-2 px-4 bg-red-50 rounded border border-red-200">
+              {error}
+            </div>
+          )}
+          {!loading && !error && empresas.length === 0 && (
+            <div className="text-center py-4 text-gray-500 bg-gray-50 rounded border border-gray-200">
+              No se encontraron empresas
+            </div>
+          )}
+          {showCreateModal && (
+            <EmpresaCreateModal
+              onClose={handleCloseCreate}
+              onSave={handleCreateEmpresa}
+              onSuccess={handleShowSuccess}
+            />
+          )}
+          {showUpdateModal && (
+            <>
+              {console.log('[EmpresasDashboard] Renderizando EmpresaUpdateModal con:', empresaSeleccionada)}
+              <EmpresaUpdateModal
+                empresa={empresaSeleccionada}
+                onClose={handleCloseUpdate}
+                onUpdate={handleUpdateEmpresas}
+              />
+            </>
+          )}
+          <EmpresasTable 
+            empresas={empresas} 
+            onEdit={(empresa) => {
+              console.log('[EmpresasDashboard] Editando empresa:', empresa);
+              handleEditEmpresa(empresa);
+            }} 
+            onDelete={handleDelete}
+          />
         </div>
       </div>
-      <div className="mb-2">
-        <span className="font-bold text-gray-700">USER:</span> <span className="text-gray-800">XAVIER</span>
-      </div>
-      <div className="flex gap-2 mb-4">
-        <button className="bg-white border px-3 py-1 rounded">Empresa</button>
-        <button className="bg-white border px-3 py-1 rounded">Perfil Acceso</button>
-        <button className="bg-white border px-3 py-1 rounded">Usuario</button>
-        <button className="bg-white border px-3 py-1 rounded">Permiso</button>
-        <button className="bg-white border px-3 py-1 rounded">Bitacora</button>
-        <button className="bg-white border px-3 py-1 rounded">User Activos</button>
-        <button className="ml-auto bg-orange-500 text-white px-4 py-1 rounded">SALIR</button>
-      </div>
-      <div className="bg-blue-900 text-white text-lg font-bold px-4 py-2 rounded-t">EMPRESAS / NEGOCIOS:</div>
-      <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
-        <EmpresasBotonera
-          onNueva={() => alert('Funcionalidad Nueva')}
-          onEditar={() => alert('Funcionalidad Editar')}
-          onBorrar={() => alert('Selecciona una empresa para borrar')}
-        />
-        <EmpresasBuscar onBuscar={handleBuscar} />
-        {loading && (
-          <div className="text-center py-2">
-            <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
-            <span className="ml-2">Cargando...</span>
-          </div>
-        )}
-        {error && (
-          <div className="text-red-500 py-2 px-4 bg-red-50 rounded border border-red-200">
-            {error}
-          </div>
-        )}
-        {!loading && !error && empresas.length === 0 && (
-          <div className="text-center py-4 text-gray-500 bg-gray-50 rounded border border-gray-200">
-            No se encontraron empresas
-          </div>
-        )}
-        <EmpresasTable 
-          empresas={empresas} 
-          onEdit={() => {}} 
-          onDelete={handleDelete}
-        />
-      </div>
-    </div>
+    </>
   );
-} 
+}

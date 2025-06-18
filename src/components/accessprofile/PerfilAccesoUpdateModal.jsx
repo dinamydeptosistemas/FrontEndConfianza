@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import SuccessModal from '../common/SuccessModal';
+import ActionButtons, { LoadingOverlay } from '../common/Buttons';
+
+
 
 export default function PerfilAccesoUpdateModal({ onClose, onUpdate, perfil }) {
   const [formData, setFormData] = useState({
@@ -23,6 +27,10 @@ export default function PerfilAccesoUpdateModal({ onClose, onUpdate, perfil }) {
     externalModules: false
   });
   const [showSuccess, setShowSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  // Importa SuccessModal
+  // (importación agregada arriba)
+
 
   useEffect(() => {
     if (perfil) {
@@ -61,15 +69,28 @@ export default function PerfilAccesoUpdateModal({ onClose, onUpdate, perfil }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      setLoading(true);
       await onUpdate({ ...perfil, ...formData });
+      setLoading(false);
       setShowSuccess(true);
     } catch (error) {
       alert('Error al actualizar el perfil de acceso');
     }
   };
 
+  const isFormValid = () => {
+    return formData.functionName.trim() !== '';
+  };
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
+    <>
+      {showSuccess && (
+        <SuccessModal
+          message="¡Perfil de acceso actualizado correctamente!"
+          onClose={() => { setShowSuccess(false); onClose(); }}
+        />
+      )}
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
       <div className="bg-white py-6 px-14 rounded-lg shadow-lg w-[800px] max-h-[90vh] overflow-y-auto relative">
         <button
           type="button"
@@ -79,8 +100,10 @@ export default function PerfilAccesoUpdateModal({ onClose, onUpdate, perfil }) {
         >
           ×
         </button>
-        <h2 className="text-xl font-bold mb-4 text-gray-800 pt-4">Editar Perfil de Acceso</h2>
+        <h2 className="text-xl font-bold mb-0 text-gray-800 pt-4">Editar Perfil de Acceso</h2>
+        <hr className="col-span-2 border-blue-500 mr-6 m-0 pb-5 mt-3" />
         <form onSubmit={handleSubmit} className="grid grid-cols-3 gap-4">
+          {loading && <LoadingOverlay isLoading={true} message="Actualizando perfil de acceso..." />}
           <div className="col-span-3">
             <label className="block text-sm font-medium text-gray-700">Nombre de Función</label>
             <input
@@ -176,20 +199,14 @@ export default function PerfilAccesoUpdateModal({ onClose, onUpdate, perfil }) {
             <label className="block text-sm font-medium text-gray-700">Módulos Externos</label>
             <input type="checkbox" name="externalModules" checked={formData.externalModules} onChange={handleChange} className="mr-2" />
           </div>
-          <div className="col-span-2 flex justify-end mt-6 space-x-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2 border-2 border-gray-400 rounded text-base font-semibold hover:bg-gray-100"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-2 bg-[#285398] text-white rounded hover:bg-[#1e3d6b]"
-            >
-              Guardar Cambios
-            </button>
+          <div className="col-span-2 flex justify-end mt-2 space-x-4">
+          <ActionButtons 
+          onClose={onClose}
+          handleSubmit={handleSubmit}
+          disabled={!isFormValid()}
+          loading={loading}
+          loadingText="Guardando..."
+         />
           </div>
         </form>
         {showSuccess && (
@@ -197,5 +214,6 @@ export default function PerfilAccesoUpdateModal({ onClose, onUpdate, perfil }) {
         )}
       </div>
     </div>
+    </>
   );
 } 

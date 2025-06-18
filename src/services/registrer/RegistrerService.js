@@ -19,7 +19,6 @@ const registrerService = {
            
             return jsonResponse;
         } catch (error) {
-            console.error('Error in verifyEmail:', error);
             throw error;
         }
     },

@@ -34,17 +34,9 @@ const handleRequest = async (requestFn) => {
     }
     return response.data;
   } catch (error) {
-    console.error('API Error:', error);
-    
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       const errorMessage = error.response?.data?.message || error.message;
-      
-      console.error('Error Details:', {
-        status,
-        statusText: error.response?.statusText,
-        data: error.response?.data
-      });
       
       if (status === 401) {
         window.location.href = '/login';

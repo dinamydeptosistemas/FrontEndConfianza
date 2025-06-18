@@ -2,11 +2,9 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { getPaperworks, savePaperwork, deletePaperwork } from '../../services/Paperwork/PaperworkService';
 import ManagementDashboardLayout from '../../layouts/ManagementDashboardLayout';
 import GenericTable from '../../components/common/GenericTable';
-import ButtonGroup from '../../components/common/ButtonGroup';
 import ConfirmEliminarModal from '../../components/common/ConfirmEliminarModal';
 import SearchBar from '../../components/common/SearchBar';
 import PaperworkUpdateModal from '../../components/paperwork/PaperworkUpdateModal';
-import PaperworkCreateModal from '../../components/paperwork/PaperworkCreateModal';
 import { useAuth } from '../../contexts/AuthContext';
 import Paginador from '../../components/common/Paginador';
 
@@ -20,11 +18,15 @@ export default function PaperworksDashboard() {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [paperworkAEditar, setPaperworkAEditar] = useState(null);
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
-  const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [filtrosEstado, setFiltrosEstado] = useState({
+    RECHAZADO: false,
+    APROBADO: false,
+    'POR PROCESAR': false
+  });
   const handleCancelDelete = () => handleCloseConfirmDelete();
   
   const searchTimeoutRef = useRef(null);
@@ -34,10 +36,16 @@ export default function PaperworksDashboard() {
     setIsLoading(true);
     
     try {
+      // Obtener estados seleccionados
+      const estadosSeleccionados = Object.entries(filtrosEstado)
+        .filter(([_, checked]) => checked)
+        .map(([estado]) => estado);
+      
       // Parámetros para la petición
       const params = {
         page: pagina,
-        ...(filtroBusqueda && { searchTerm: filtroBusqueda })
+        ...(filtroBusqueda && { searchTerm: filtroBusqueda }),
+        ...(estadosSeleccionados.length > 0 && { estados: estadosSeleccionados.join(',') })
       };
 
       console.log('Solicitando trámites con parámetros:', params);
@@ -103,11 +111,11 @@ export default function PaperworksDashboard() {
       setIsLoading(false);
       setIsSearching(false);
     }
-  }, []);
+  }, [filtrosEstado]);
 
   useEffect(() => {
     cargarPaperworks(1, '');
-  }, [cargarPaperworks]);
+  }, [cargarPaperworks, filtrosEstado]);
 
   useEffect(() => {
     return () => {
@@ -126,30 +134,64 @@ export default function PaperworksDashboard() {
     );
   };
 
-  const handleBuscar = (valor) => {
-    setFiltro(valor);
-    
-    // Si el filtro está vacío, limpiar búsqueda inmediatamente
-    if (!valor.trim()) {
-      handleClearSearch();
+  const handleBuscar = (termino) => {
+    setFiltro(termino);
+    // Si el término de búsqueda está vacío, restablecer el filtro activo
+    if (!termino.trim()) {
+      setFiltroActivo('');
+      cargarPaperworks(1, '');
       return;
     }
     
-    // Usar debounce para búsquedas locales
+    // Cancelar la búsqueda anterior si existe
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Establecer un nuevo temporizador para la búsqueda
     searchTimeoutRef.current = setTimeout(() => {
-      setFiltroActivo(valor);
-      setIsSearching(true);
+      setFiltroActivo(termino);
+      cargarPaperworks(1, termino);
+      searchTimeoutRef.current = null;
+    }, 500);
+  };
+
+  const handleFiltroEstadoChange = (estado) => {
+    const nuevosFiltros = {
+      ...filtrosEstado,
+      [estado]: !filtrosEstado[estado]
+    };
+    setFiltrosEstado(nuevosFiltros);
+    
+    // Si hay un filtro de búsqueda activo, aplicar el filtro local
+    if (filtro) {
+      const paperworksFiltrados = buscarEnPaperworks(paperworksOriginales, filtro);
+      // Aplicar filtro de estado localmente
+      const paperworksFiltradosPorEstado = paperworksFiltrados.filter(paperwork => {
+        const estadosSeleccionados = Object.entries(nuevosFiltros)
+          .filter(([_, checked]) => checked)
+          .map(([estado]) => estado);
+        
+        return estadosSeleccionados.length === 0 || 
+               (paperwork.estadoTramite && estadosSeleccionados.includes(paperwork.estadoTramite));
+      });
       
-      try {
-        const filtradas = buscarEnPaperworks(paperworksOriginales, valor);
-        setPaperworks(filtradas);
-      } catch (error) {
-        console.error('Error en búsqueda local:', error);
-   
-      } finally {
-        setIsSearching(false);
+      setPaperworks(paperworksFiltradosPorEstado);
+    } else {
+      // Si no hay filtro de búsqueda, recargar del servidor
+      const estadosSeleccionados = Object.entries(nuevosFiltros)
+        .filter(([_, checked]) => checked)
+        .map(([estado]) => estado);
+      
+      if (estadosSeleccionados.length > 0) {
+        cargarPaperworks(1, filtro);
+      } else {
+        // Si no hay filtros activos, mostrar todos los trámites
+        cargarPaperworks(1, '');
       }
-    }, 300); // 300ms de debounce
+    }
+    
+    setIsSearching(false);
   };
 
   const handleClearSearch = () => {
@@ -213,20 +255,42 @@ export default function PaperworksDashboard() {
 
   return (
     <ManagementDashboardLayout title="TRAMITES:" user={user} negocio={negocio}>
-      <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-          <div className="w-full sm:w-auto">
-            <ButtonGroup
-              buttons={[{
-                label: 'Nuevo',
-                onClick: () => setMostrarModalCreacion(true),
-                variant: 'normal',
-                className: 'bg-white border-[#1e4e9c] border px-8 py-1 font-bold hover:text-white hover:bg-[#1e4e9c] w-full sm:w-auto'
-              }]}
-            />
+      <div className="w-full bg-white border-b border-l border-r border-gray-300 rounded-b py-4">
+        {/* Grid de 3 columnas */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4 px-4">
+          {/* Columna 1: Filtros horizontales */}
+          <div className="col-span-1">
+            <div className="bg-gray-50 px-4 py-2 rounded-lg border border-gray-200">
+              <h3 className="font-medium text-gray-700 mb-3 ">Filtrar por estado</h3>
+              <div className="flex flex-row flex-wrap gap-2 items-center">
+                {['POR PROCESAR', 'APROBADO', 'RECHAZADO'].map((estado) => {
+                  const isActive = filtrosEstado[estado] || false;
+                  return (
+                    <label
+                      key={estado}
+                      className={`flex flex-row items-center px-3 py-1.5 rounded-full border cursor-pointer transition-colors ${
+                        isActive
+                          ? 'bg-blue-50 border-blue-300 text-blue-700'
+                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="form-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500"
+                        checked={isActive}
+                        onChange={() => handleFiltroEstadoChange(estado)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <span className="ml-2 text-sm">{estado}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
           </div>
           
-          <div className="flex justify-center">
+          {/* Columna 2: Paginador */}
+          <div className="col-span-1 flex items-center justify-center">
             <Paginador
               paginaActual={paginaActual}
               totalPaginas={totalPaginas}
@@ -234,9 +298,10 @@ export default function PaperworksDashboard() {
             />
           </div>
           
-          <div className="w-full sm:w-auto">
-            <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
-              <div className="relative w-full max-w-md">
+          {/* Columna 3: Buscador */}
+          <div className="col-span-1">
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div className="relative w-full">
                 <SearchBar
                   onSearch={handleBuscar}
                   value={filtro}
@@ -257,7 +322,7 @@ export default function PaperworksDashboard() {
               {filtroActivo && (
                 <button
                   onClick={handleClearSearch}
-                  className="bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded text-sm font-medium whitespace-nowrap self-center"
+                  className="mt-2 bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded text-sm font-medium whitespace-nowrap w-full"
                   aria-label="Limpiar búsqueda"
                 >
                   Limpiar filtros
@@ -266,7 +331,8 @@ export default function PaperworksDashboard() {
             </div>
           </div>
         </div>
-        <div className="mb-4 overflow-x-auto">
+        {/* La tabla está fuera del grid, pero dentro del mismo div principal */}
+        <div className="w-full px-4">
           <GenericTable
             columns={[
               { 
@@ -282,7 +348,7 @@ export default function PaperworksDashboard() {
               { 
                 key: 'tipoTramite', 
                 label: 'Tipo de Trámite',
-                render: (row) => row.tipoTramite || 'N/A'
+                render: (row) => row.tipodeTramite || 'N/A'
               },
               { 
                 key: 'tipoUser', 
@@ -312,7 +378,7 @@ export default function PaperworksDashboard() {
               { 
                 key: 'telefonoCelular', 
                 label: 'Teléfono',
-                render: (row) => row.telefonoCelular || 'N/A'
+                render: (row) => row.telefonocelular || 'N/A'
               }
             ]}
             data={paperworks}
@@ -327,29 +393,23 @@ export default function PaperworksDashboard() {
             }}
           />
         </div>
-        <ConfirmEliminarModal
-          isOpen={mostrarModal}
-          onConfirm={handleConfirmDelete}
-          onCancel={handleCancelDelete}
-          mensaje={`¿Está seguro que desea eliminar el trámite${paperworkAEliminar ? ` "${paperworkAEliminar.businessName || paperworkAEliminar.nombre || ''}${paperworkAEliminar.ruc ? ' (RUC: ' + paperworkAEliminar.ruc + ')' : ''}"` : ''}?`}
-        />
-        <PaperworkUpdateModal
-          isOpen={mostrarModalEdicion}
-          paperwork={paperworkAEditar}
-          onClose={() => {
-            setPaperworkAEditar(null);
-            setMostrarModalEdicion(false);
-          }}
-          onSave={handleSavePaperwork}
-        />
-        {mostrarModalCreacion && (
-          <PaperworkCreateModal
-            isOpen={mostrarModalCreacion}
-            onClose={() => setMostrarModalCreacion(false)}
-            onSave={handleSavePaperwork}
-          />
-        )}
       </div>
+      {/* Modales fuera del div principal, pero dentro del layout */}
+      <ConfirmEliminarModal
+        isOpen={mostrarModal}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        mensaje={`¿Está seguro que desea eliminar el trámite${paperworkAEliminar ? ` "${paperworkAEliminar.businessName || paperworkAEliminar.nombre || ''}${paperworkAEliminar.ruc ? ' (RUC: ' + paperworkAEliminar.ruc + ')' : ''}"` : ''}?`}
+      />
+      <PaperworkUpdateModal
+        isOpen={mostrarModalEdicion}
+        paperwork={paperworkAEditar}
+        onClose={() => {
+          setPaperworkAEditar(null);
+          setMostrarModalEdicion(false);
+        }}
+        onSave={handleSavePaperwork}
+      />
     </ManagementDashboardLayout>
   );
 }

@@ -8,9 +8,11 @@ import SearchBar from '../../components/common/SearchBar';
 import GenericTable from '../../components/common/GenericTable';
 import UsuarioModal from '../../components/users/UsuarioModal';
 import Paginador from '../../components/common/Paginador';
+import { useNotification } from '../../context/NotificationContext';
 
 export default function UsuarioDashboard() {
     const { user, negocio } = useAuth();
+    const { showSuccessMessage } = useNotification();
     const [usuariosOriginales, setUsuariosOriginales] = useState([]);
     const [usuarios, setUsuarios] = useState([]);
     const [busqueda, setBusqueda] = useState('');
@@ -22,7 +24,6 @@ export default function UsuarioDashboard() {
     const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
     const [paginaActual, setPaginaActual] = useState(1);
     const [totalPaginas, setTotalPaginas] = useState(1);
-    const [modalExito, setModalExito] = useState({ open: false, mensaje: '' });
 
     const cargarUsuarios = useCallback(async (pagina = 1, filtroBusqueda = '') => {
         const params = { page: pagina };
@@ -37,7 +38,7 @@ export default function UsuarioDashboard() {
             setTotalPaginas(data.totalPages || 1);
         } catch (error) {
             console.error('Error al cargar usuarios:', error);
-            setModalExito({ open: true, mensaje: 'Error al cargar usuarios' });
+            alert('Error al cargar usuarios');
         }
     }, []);
 
@@ -93,10 +94,10 @@ export default function UsuarioDashboard() {
                 );
                 setUsuarios(filtradas);
             }
-            setModalExito({ open: true, mensaje: 'Usuario eliminado correctamente' });
+            showSuccessMessage('Usuario eliminado correctamente');
         } catch (error) {
             console.error('Error al eliminar usuario:', error);
-            setModalExito({ open: true, mensaje: 'Error al eliminar usuario' });
+            alert('Error al eliminar usuario');
         } finally {
             setUsuarioAEliminar(null);
             setMostrarModal(false);
@@ -134,11 +135,11 @@ export default function UsuarioDashboard() {
                     setUsuarios(filtradas);
                 }
                 setPaginaActual(1);
-                setModalExito({ open: true, mensaje: 'Usuario guardado exitosamente' });
+                showSuccessMessage('Usuario guardado exitosamente');
             }
         } catch (error) {
             console.error('Error al guardar usuario:', error);
-            setModalExito({ open: true, mensaje: 'Error al guardar usuario' });
+            alert('Error al guardar usuario');
         }
     };
 
@@ -195,6 +196,8 @@ export default function UsuarioDashboard() {
                             { key: 'nombreUser', label: 'Nombre' },
                             { key: 'apellidosUser', label: 'Apellidos' },
                             { key: 'identificacion', label: 'Identificación' },
+                            { key: 'relacionUsuario', label: 'Relación' },
+                            { key: 'tipoUser', label: 'Tipo' },
                             { key: 'username', label: 'Usuario' },
                             { 
                                 key: 'emailUsuario', 
@@ -249,21 +252,7 @@ export default function UsuarioDashboard() {
                     />
                 )}
 
-                {modalExito.open && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-                        <div className="bg-white p-6 rounded-lg shadow-lg">
-                            <p className="text-green-700 font-semibold mb-4">{modalExito.mensaje}</p>
-                            <div className="flex justify-end">
-                                <button
-                                    onClick={() => setModalExito({ ...modalExito, open: false })}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                                >
-                                    Aceptar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {/* El componente de notificación ahora es manejado por el NotificationContext */}
             </div>
         </ManagementDashboardLayout>
     );

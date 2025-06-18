@@ -9,9 +9,11 @@ import PermisoCreateModal from '../../components/permisos/PermisoCreateModal';
 import PermisosModal from '../../components/bitacora/PermisosModal';
 import Paginador from '../../components/common/Paginador';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
 
 export default function PermisosDashboard() {
   const { user, negocio } = useAuth();
+  const { showSuccessMessage } = useNotification();
   const [permisosOriginales, setPermisosOriginales] = useState([]);
   const [permisos, setPermisos] = useState([]);
   const [filtro, setFiltro] = useState('');
@@ -22,21 +24,12 @@ export default function PermisosDashboard() {
   const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
-  const [modalExito, setModalExito] = useState({ open: false, mensaje: '', esError: false });
   const [showConfirmEliminar, setShowConfirmEliminar] = useState(false);
   const [permisoAEliminar, setPermisoAEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
   const [errorEliminacion, setErrorEliminacion] = useState('');
 
-  // Efecto para cerrar automáticamente el modal de éxito después de 3 segundos
-  useEffect(() => {
-    if (modalExito.open) {
-      const timer = setTimeout(() => {
-        setModalExito(prev => ({ ...prev, open: false }));
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [modalExito.open]);
+  // Ya no necesitamos este efecto porque el NotificationContext maneja el cierre automático
 
   const cargarPermisos = useCallback(async (pagina = 1, filtroBusqueda = '') => {
     const params = { page: pagina };
@@ -88,11 +81,7 @@ export default function PermisosDashboard() {
       await deletePermiso(permisoAEliminar.regPermiso);
       // Recargar los permisos después de eliminar
       await cargarPermisos(paginaActual, filtro);
-      setModalExito({ 
-        open: true, 
-        mensaje: `Permiso de ${permisoAEliminar.userName || 'usuario'} eliminado correctamente`,
-        esError: false
-      });
+      showSuccessMessage(`Permiso de ${permisoAEliminar.userName || 'usuario'} eliminado correctamente`);
       setShowConfirmEliminar(false);
     } catch (error) {
       console.error('Error al eliminar el permiso:', error);
@@ -126,18 +115,11 @@ export default function PermisosDashboard() {
       setMostrarModalEdicion(false);
       setPermisoAEditar(null);
       await cargarPermisos(paginaActual, filtro);
-      setModalExito({ 
-        open: true, 
-        mensaje: 'Permiso actualizado correctamente',
-        esError: false
-      });
+      showSuccessMessage('Permiso actualizado correctamente');
     } catch (error) {
       console.error('Error al actualizar el permiso:', error);
-      setModalExito({ 
-        open: true, 
-        mensaje: error.message || 'Error al actualizar el permiso',
-        esError: true 
-      });
+      // Mostrar mensaje de error
+      alert(error.message || 'Error al actualizar el permiso');
     }
   };
 
@@ -153,17 +135,11 @@ export default function PermisosDashboard() {
       await putPermiso(permisoFormateado);
       setMostrarModalCreacion(false);
       await cargarPermisos(1, busqueda);
-      setModalExito({ 
-        open: true, 
-        mensaje: 'Permiso creado exitosamente.' 
-      });
+      showSuccessMessage('Permiso creado exitosamente.');
     } catch (error) {
       console.error('Error al crear el permiso:', error);
-      setModalExito({ 
-        open: true, 
-        mensaje: error.message || 'Error al crear el permiso',
-        esError: true 
-      });
+      // Mostrar mensaje de error
+      alert(error.message || 'Error al crear el permiso');
     }
   };
 
@@ -334,31 +310,7 @@ export default function PermisosDashboard() {
             error={errorEliminacion}
           />
         )}
-        {modalExito.open && (
-          <div 
-            className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg flex items-center justify-between ${
-              modalExito.esError 
-                ? 'bg-red-50 border-l-4 border-red-500 text-red-700' 
-                : 'bg-green-50 border-l-4 border-green-500 text-green-700'
-            }`}
-            style={{ minWidth: '300px', maxWidth: '400px', zIndex: 1000 }}
-          >
-            <div className="flex-1">
-              <p className="font-medium">
-                {modalExito.esError ? 'Error' : 'Éxito'}
-              </p>
-              <p className="text-sm">{modalExito.mensaje}</p>
-            </div>
-            <button 
-              className="ml-4 text-gray-500 hover:text-gray-700 focus:outline-none"
-              onClick={() => setModalExito(prev => ({ ...prev, open: false }))}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        )}
+        {/* El componente de notificación ahora es manejado por el NotificationContext */}
       </div>
     </ManagementDashboardLayout>
   );

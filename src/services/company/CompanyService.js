@@ -14,11 +14,15 @@ const API_BASE = '/api';
  */
 export const getEmpresas = async (params = {}) => {
   try {
+  
     const { getAll = false, pageSize = 100, ...restParams } = params;
     let currentPage = getAll ? 1 : (params.page || 1);
     let allCompanies = [];
     let hasMorePages = true;
     let totalPages = 1;
+
+    // Asegurarnos de que process esté incluido
+    const processName = params.process || 'getCompanies';
 
     // If getAll is true, fetch all pages
     if (getAll) {
@@ -26,12 +30,14 @@ export const getEmpresas = async (params = {}) => {
     } else {
       // If not fetching all, just fetch the requested page
       const requestParams = {
-        process: 'getCompanies',
+        process: processName,
         page: currentPage,
         pageSize,
         ...restParams
       };
+      console.log('getEmpresas - Enviando solicitud única:', requestParams);
       const response = await axiosInstance.post(`${API_BASE}/companies/process`, requestParams);
+      console.log('getEmpresas - Respuesta recibida:', response.data);
 
       // Handle response
       let companies = [];
@@ -57,20 +63,17 @@ export const getEmpresas = async (params = {}) => {
     do {
       // Asegurarnos de que params sea un objeto
       const requestParams = {
-        process: 'getCompanies',
+        process: processName,
         page: currentPage,
         pageSize,
         ...restParams
       };
 
-      // Log de la petición
-      console.log(`Enviando petición a /companies/process (página ${currentPage}) con:`, requestParams);
-
+      console.log(`getEmpresas - Enviando solicitud para página ${currentPage}:`, requestParams);
+      
       // Realizar la petición
       const response = await axiosInstance.post(`${API_BASE}/companies/process`, requestParams);
-      
-      // Log de la respuesta
-      console.log(`Respuesta recibida (página ${currentPage}):`, response.data);
+      console.log(`getEmpresas - Respuesta recibida para página ${currentPage}:`, response.data);
       
       // Manejar la respuesta según la estructura esperada
       let companies = [];
@@ -106,13 +109,7 @@ export const getEmpresas = async (params = {}) => {
     };
   } catch (error) {
     console.error('Error en getEmpresas:', error);
-    if (error.response) {
-      console.error('Detalles del error:', {
-        status: error.response.status,
-        data: error.response.data,
-        headers: error.response.headers
-      });
-    }
+    console.error('Detalles del error:', error.response?.data || error.message);
     throw error;
   }
 };
@@ -140,13 +137,16 @@ export const getEmpresas = async (params = {}) => {
  * @param {boolean} [empresa.keepsAccounting] - ¿Lleva contabilidad?
  * @param {boolean} [empresa.retentionAgent] - ¿Es agente de retención?
  * @param {string} [empresa.logoImagePath] - Ruta de la imagen del logo
+ * @param {boolean} [empresa.state] - ¿Está activa?
  */
 export const putEmpresa = async (empresa) => {
   const response = await axiosInstance.post(API_BASE + '/companies/process', {
     process: 'putCompanies',
     ...empresa
   });
+  console.log(response.data);
   return response.data;
+ 
 };
 
 /**

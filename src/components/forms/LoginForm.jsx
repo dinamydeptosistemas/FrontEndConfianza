@@ -8,6 +8,7 @@ export const LoginForm = () => {
     const { login } = useAuth();
     const navigate = useNavigate();
     const [userType, setUserType] = useState(0);
+
     const [formData, setFormData] = useState({
         username: '',
         password: '',
@@ -145,6 +146,7 @@ export const LoginForm = () => {
                     <div className="bg-[#0047BB] rounded-lg p-8 shadow-lg">
                         <h2 className="text-2xl font-semibold text-white text-center mb-6">Iniciar Sesión</h2>
 
+                        <MensajeHead mensaje={globalError} />
                         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                             {userType === 0 && (
                                 <>
@@ -229,14 +231,39 @@ export const LoginForm = () => {
                                 >
                                     ¿Perdiste tu contraseña?
                                 </button>
-                                <button
-                                    type="button"
-                                    onClick={() => navigate('/registrar-usuario-interno')}
-                                    className="block w-full text-white hover:underline text-sm"
-                                    disabled={isSubmitting}
-                                >
-                                    ¿No tienes Cuenta? Regístrate
-                                </button>
+                                {userType === 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate('/registrar-usuario-interno')}
+                                        className="block w-full text-white hover:underline text-sm"
+                                        disabled={isSubmitting}
+                                    >
+                                        ¿No tienes Cuenta? Regístrate
+                                    </button>
+                                )}
+                                {userType === 2 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate('/registrar-usuario-externo')}
+                                        className="block w-full text-white hover:underline text-sm"
+                                        disabled={isSubmitting}
+                                    >
+                                        ¿No tienes Cuenta? Regístrate
+                                    </button>
+                                )}
+                                {userType === 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            setGlobalError('Seleccione un tipo de usuario');
+                                            e.preventDefault();
+                                        }}
+                                        className="block w-full text-white hover:underline text-sm"
+                                        disabled={isSubmitting}
+                                    >
+                                        ¿No tienes Cuenta? Regístrate
+                                    </button>
+                                )}
                             </div>
                         </form>
                     </div>

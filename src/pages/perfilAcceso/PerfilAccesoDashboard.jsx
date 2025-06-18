@@ -9,9 +9,11 @@ import PerfilAccesoUpdateModal from '../../components/accessprofile/PerfilAcceso
 import PerfilAccesoCreateModal from '../../components/accessprofile/PerfilAccesoCreateModal';
 import { useAuth } from '../../contexts/AuthContext';
 import Paginador from '../../components/common/Paginador';
+import { useNotification } from '../../context/NotificationContext';
 
 export default function PerfilAccesoDashboard() {
   const { user, negocio } = useAuth();
+  const { showSuccessMessage } = useNotification();
   const [perfilesOriginales, setPerfilesOriginales] = useState([]);
   const [perfiles, setPerfiles] = useState([]);
   const [filtro, setFiltro] = useState('');
@@ -23,8 +25,7 @@ export default function PerfilAccesoDashboard() {
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
   const [paginaActual, setPaginaActual] = useState(1);
-  const [totalPaginas, setTotalPaginas] = useState(1)
-  const [modalExito, setModalExito] = useState({ open: false, mensaje: '' });
+  const [totalPaginas, setTotalPaginas] = useState(1);
 
 
   const cargarPerfiles = useCallback(async (pagina = 1, filtroBusqueda = '') => {
@@ -111,6 +112,7 @@ export default function PerfilAccesoDashboard() {
           setPerfiles(filtrados);
         }
         setPaginaActual(1);
+        showSuccessMessage('Perfil de acceso eliminado correctamente.');
       } catch (error) {
         alert('Error al eliminar el perfil de acceso.');
       } finally {
@@ -142,7 +144,7 @@ export default function PerfilAccesoDashboard() {
       handleBuscar(filtroActivo);
       setPerfilAEditar(null);
       setMostrarModalEdicion(false);
-      setModalExito({ open: true, mensaje: 'Registro actualizado exitosamente.' });
+      showSuccessMessage('Perfil de acceso actualizado exitosamente.');
     } catch (error) {
       alert('Error al actualizar el perfil de acceso.');
     }
@@ -157,7 +159,7 @@ export default function PerfilAccesoDashboard() {
       handleBuscar(filtroActivo);
       setPaginaActual(1);
       setMostrarModalCreacion(false);
-      setModalExito({ open: true, mensaje: 'Registro guardado exitosamente.' });
+      showSuccessMessage('Perfil de acceso creado exitosamente.');
     } catch (error) {
       alert('Error al crear el perfil de acceso.');
     }
@@ -309,13 +311,7 @@ export default function PerfilAccesoDashboard() {
         onSave={handleSavePerfil}
       />
     )}
-    {modalExito.open && (
-      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-        <div className="bg-white p-6 rounded shadow-lg">
-          {/* Modal éxito contenido aquí */}
-        </div>
-      </div>
-    )}
+    {/* El componente de notificación ahora es manejado por el NotificationContext */}
     
   </ManagementDashboardLayout>
 );

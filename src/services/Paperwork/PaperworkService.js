@@ -2,13 +2,6 @@ import axiosInstance from '../../config/axios';
 
 const API_BASE = '/api/paperworks/process';
 
-// Log de la configuración de axios
-console.log('Configuración de axios:', {
-    baseURL: axiosInstance.defaults.baseURL,
-    headers: axiosInstance.defaults.headers,
-    timeout: axiosInstance.defaults.timeout
-});
-
 /**
  * Obtiene la lista de trámites
  * @param {Object} params - Parámetros de búsqueda
@@ -25,33 +18,11 @@ export const getPaperworks = async (params = {}) => {
             ...params
         };
 
-        // Log de la petición
-        console.log('Enviando petición a /paperworks/process con:', requestParams);
-        console.log('URL completa:', `${axiosInstance.defaults.baseURL}${API_BASE}`);
-        console.log('Headers de la petición:', axiosInstance.defaults.headers);
-
         // Realizar la petición
         const response = await axiosInstance.post(API_BASE, requestParams);
         
-        // Log de la respuesta
-        console.log('Respuesta recibida:', response.data);
-        
         return response.data;
   } catch (error) {
-    console.error('Error in getPaperworks:', error);
-    if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      console.error('Response data:', error.response.data);
-      console.error('Response status:', error.response.status);
-      console.error('Response headers:', error.response.headers);
-    } else if (error.request) {
-      // The request was made but no response was received
-      console.error('No response received:', error.request);
-    } else {
-      // Something happened in setting up the request that triggered an Error
-      console.error('Error:', error.message);
-    }
     throw error;
   }
 };
