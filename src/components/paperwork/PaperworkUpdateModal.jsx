@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import ActionButtons from '../common/Buttons'; // Corrected import for default export
+import axiosInstance from '../../config/axios';
 
 import { 
   MdEmail, 
   MdPhone, 
   MdCheckCircle, 
-  MdCancel, 
   MdRefresh, 
   MdSecurity  // Para el ícono de seguridad
 } from 'react-icons/md';
-import { getUsers } from '../../services/user/UserService';
 
 // --- COMPONENTES AUXILIARES ---
 // Componente de Grupo de Actualización Reutilizable
@@ -21,9 +20,10 @@ const UpdateFieldGroup = ({
   newValueStatus = 'idle',  // Estado por defecto
   onNewValueChange,
   onVerify,
-  onReject,
   placeholder,
-  type = 'text'
+  type = 'text',
+  preventEmptyValue = false,
+  readOnly = false
 }) => {
   // Estados del campo
   const isPending = newValueStatus === 'pending';
@@ -50,13 +50,19 @@ const UpdateFieldGroup = ({
 
       <div>
         <label className="block text-sm font-medium text-gray-500">Nuevo Valor</label>
-        <div className="flex items-center gap-3 mt-1">
-          <div className="relative flex-grow">
+        <div className="grid grid-cols-2 gap-4 mt-1">
+          <div className="relative">
             <input
               type={type}
               placeholder={placeholder}
               value={newValue || ''}
-              onChange={(e) => onNewValueChange(e.target.value)}
+              onChange={(e) => {
+                // Si preventEmptyValue es true y el valor está vacío, no actualizar
+                if (preventEmptyValue && e.target.value === '') {
+                  return;
+                }
+                onNewValueChange(e.target.value);
+              }}
               className={`
                 w-full p-3 rounded-lg border
                 ${isVerified ? 'border-green-500 bg-green-50' : ''}
@@ -64,42 +70,48 @@ const UpdateFieldGroup = ({
                 ${!isVerified && !isFailed ? 'border-gray-300' : ''}
                 focus:outline-none focus:ring-2 focus:ring-blue-500
               `}
-              disabled={isVerified || isPending}
+              disabled={isVerified || isPending || readOnly}
             />
-            {isFailed && (
-              <p className="mt-2 text-sm text-red-600">Error al verificar. Por favor intente nuevamente.</p>
-            )}
           </div>
           
-          {!isVerified && (
-            <button
-              onClick={onVerify}
-              disabled={!newValue || isPending}
-              className={`
-                p-3 rounded-lg transition-colors duration-200
-                ${!newValue || isPending
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-100 hover:bg-blue-200 text-blue-600'
-                }
-              `}
-            >
-              {isPending ? (
-                <MdRefresh className="animate-spin" size={20} />
-              ) : (
-                <MdCheckCircle size={20} />
-              )}
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {!isVerified && (
+              <button
+                onClick={onVerify}
+                disabled={!newValue || isPending}
+                className={`
+                  p-3 rounded-lg transition-colors duration-200
+                  ${!newValue || isPending
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-100 hover:bg-blue-200 text-blue-600'
+                  }
+                `}
+              >
+                {isPending ? (
+                  <span className="flex items-center">
+                    <MdRefresh className="animate-spin mr-1" size={20} />
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    <MdCheckCircle className="mr-1" size={20} />
+                    Verificar
+                  </span>
+                )}
+              </button>
+            )}
 
-          {isVerified && (
-            <button
-              onClick={onReject}
-              className="p-3 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 transition-colors duration-200"
-            >
-              <MdCancel size={20} />
-            </button>
-          )}
+            {isVerified && (
+              <span className="text-sm text-green-600 font-medium bg-green-50 px-3 py-2 rounded-lg border border-green-200">Verificado</span>
+            )}
+            
+            {isFailed && (
+              <span className="text-sm text-red-600 font-medium bg-red-50 px-3 py-2 rounded-lg border border-red-200">Rechazado</span>
+            )}
+          </div>
         </div>
+        {isFailed && (
+          <p className="mt-2 text-sm text-red-600">Error al verificar. Por favor intente nuevamente.</p>
+        )}
       </div>
     </div>
   );
@@ -108,12 +120,14 @@ const UpdateFieldGroup = ({
 // --- COMPONENTE PRINCIPAL ---
 const PaperworkUpdateModal = ({ isOpen, onSave, paperwork, onClose }) => {
   // Estados para mapas de usuarios
-  const [userEmailMap, setUserEmailMap] = useState({});
-  const [userPhoneMap, setUserPhoneMap] = useState({});
-  const [userNameMap, setUserNameMap] = useState({});
-  const [userRucMap, setUserRucMap] = useState({});
+
+
+
   const [isLoadingEmails, setIsLoadingEmails] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Estado para almacenar el ID de usuario
+  const [idUsuario, setIdUsuario] = useState('');
 
   // Estados para email y teléfono
   const [emailData, setEmailData] = useState({
@@ -127,249 +141,253 @@ const PaperworkUpdateModal = ({ isOpen, onSave, paperwork, onClose }) => {
     newValue: '',  // Valor del paperwork
     status: 'idle'
   });
+  
+  // Estado para la novedad
+  const [novedad, setNovedad] = useState('');
 
-  // Cargar datos de usuarios (emails y teléfonos)
+  // Efecto para inicializar los datos cuando cambia el paperwork
   useEffect(() => {
-    const loadUserData = async () => {
-      console.log('Iniciando loadUserData con paperwork:', paperwork);
-      if (!paperwork?.username) {
-        console.log('No hay username en paperwork');
-        return;
-      }
-      setIsLoading(true);
-      setIsLoadingEmails(true);
-      try {
-        const emails = {};
-        const phones = {};
-        const names = {};
-        const rucs = {}; // Añadir para RUC/CC
-        let page = 1;
-        let hasMore = true;
-
-        while (hasMore) {
-          const response = await getUsers({ page });
-          console.log('Respuesta de usuarios:', response);
-          
-          if (!response?.users || response.users.length === 0) {
-            hasMore = false;
-            continue;
-          }
-
-          // Procesar cada usuario
-          response.users.forEach(user => {
-            if (user.username) {
-              const upperUsername = user.username.toUpperCase();
-              // Guardar email
-              if (user.emailUsuario) {
-                emails[upperUsername] = user.emailUsuario;
-              }
-              // Guardar teléfono
-              if (user.telefonoviejo) {
-                phones[upperUsername] = user.telefonoviejo;
-              }
-              // Guardar nombre completo
-              const nombre = user.nombreUser || '';
-              const apellido = user.apellidosUser || '';
-              if (nombre || apellido) {
-                names[upperUsername] = paperwork.nombresUser;
-              }
-
-              const ruc_o_cc = user.identificacion || '';
-              if (ruc_o_cc) {
-                rucs[upperUsername] = ruc_o_cc;
-              }
-            }
-          });
-
-          page++;
-          hasMore = response.totalPages > page;
-        }
-
-        // Actualizar mapas
-        setUserEmailMap(emails);
-        setUserPhoneMap(phones);
-        setUserNameMap(names);
-        setUserRucMap(rucs); // Actualizar estado para RUC/CC
-        console.log('Mapas de usuario actualizados:', { emails, phones, names, rucs });
-
-      } catch (error) {
-        console.error('Error en loadUserData:', error);
-        // Considerar mostrar un mensaje de error al usuario aquí
-      } finally {
-        setIsLoading(false);
-        setIsLoadingEmails(false);
-        console.log('loadUserData finalizado, isLoading y isLoadingEmails seteados a false');
-      }
-    };
-
-    loadUserData();
+    if (!paperwork?.username) {
+      console.log('No hay username en paperwork');
+      return;
+    }
+    
+    // Inicializar estados
+    setIsLoading(false);
+    setIsLoadingEmails(false);
+    
+    // Establecer el ID de usuario desde paperwork
+    if (paperwork.id_usuario) {
+      setIdUsuario(paperwork.id_usuario);
+      console.log('ID de usuario establecido:', paperwork.id_usuario);
+    } else {
+      console.warn('No se encontró id_usuario en paperwork');
+    }
+    
   }, [paperwork]); // Se ejecuta cuando cambia el paperwork
 
   // Actualizar estados cuando cambian los mapas o el paperwork
   useEffect(() => {
     if (!paperwork?.username) return;
 
-    const upperUsername = paperwork.username.toUpperCase();
-    const currentEmail = userEmailMap[upperUsername];
-    const currentPhone = userPhoneMap[upperUsername];
+    const emailOldValue = paperwork.correoViejo || 'No encontrado';
+    const emailNewValue = paperwork.emailNuevo || '';
+    const phoneOldValue = paperwork.telefonoViejo || 'No encontrado';
+    const phoneNewValue = paperwork.telefonoNuevo || '';
+    const novedadValue = paperwork.novedad || '';
+
+    // Verificar el estado del email según paperwork.verificadoEmail
+    const emailStatus = paperwork.verificadoEmail === true ? 'verified' : 'idle';
+    
+    // Verificar el estado del teléfono según paperwork.verificadoCelular
+    const phoneStatus = paperwork.verificadoCelular === true ? 'verified' : 'idle';
 
     // Actualizar email
-    setEmailData(prev => ({
-      ...prev,
-      oldValue: currentEmail || 'No encontrado',
-      newValue: paperwork.email || currentEmail || ''
-    }));
+    setEmailData({
+      oldValue: emailOldValue,
+      newValue: emailNewValue,
+      status: emailStatus
+    });
 
     // Actualizar teléfono
-    setPhoneData(prev => ({
-      ...prev,
-      oldValue: currentPhone || 'No encontrado',
-      newValue: paperwork.celular || currentPhone || ''
-    }));
-  }, [paperwork, userEmailMap, userPhoneMap]); // Se ejecuta cuando cambian los mapas o el paperwork
-
-  // Simulación de una llamada a API
-  const simulateApiCall = () => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (Math.random() > 0.1) { // 90% de éxito
-          resolve({ success: true });
-        } else {
-          reject({ success: false });
-        }
-      }, 1500);
+    setPhoneData({
+      oldValue: phoneOldValue,
+      newValue: phoneNewValue,
+      status: phoneStatus
     });
-  };
+    
+    // Actualizar novedad
+    setNovedad(novedadValue);
+
+    console.log('Estado de verificación de email:', emailStatus, 'basado en verificadoEmail:', paperwork.verificadoEmail);
+    console.log('Estado de verificación de teléfono:', phoneStatus, 'basado en verificadoCelular:', paperwork.verificadoCelular);
+
+  }, [paperwork]); // Se ejecuta cuando cambian los mapas o el paperwork
+
+
 
   // --- Manejadores para Correo Electrónico ---
   const handleVerifyEmail = async () => {
+    if (!emailData.newValue || !idUsuario) {
+      console.error('Falta email nuevo o ID de usuario para verificar');
+      return;
+    }
+    
     setEmailData(prev => ({ ...prev, status: 'pending' }));
     try {
-      await simulateApiCall();
+      // Llamar al endpoint para enviar correo de verificación
+      console.log('Enviando solicitud de verificación de email');
+      await axiosInstance.post('/api/EmailVerification/send-verification', {
+        userId: idUsuario, // Usando el estado idUsuario
+        email: emailData.newValue
+      });
+      
+      console.log('Correo de verificación enviado exitosamente');
+      // No cambiamos el estado a 'verified' directamente, ya que depende de paperwork.verificadoEmail
+      // El estado se actualizará cuando se recargue el paperwork con verificadoEmail = true
       setEmailData(prev => ({
         ...prev,
-        oldValue: prev.newValue,
-        status: 'verified'
+        status: 'idle' // Volvemos a idle después de enviar el correo
       }));
+      
+      // Mostrar mensaje informativo al usuario
+      alert('Se ha enviado un correo de verificación. Por favor, verifique su bandeja de entrada.');
+      
     } catch (error) {
+      console.error('Error al enviar correo de verificación:', error);
       setEmailData(prev => ({ ...prev, status: 'failed' }));
     }
   };
 
-  const handleRejectEmail = () => {
-    setEmailData(prev => ({
-      ...prev,
-      newValue: paperwork?.email || '',
-      status: 'idle'
-    }));
-  };
+
 
   // --- Manejadores para Teléfono ---
   const handleVerifyPhone = async () => {
+    if (!phoneData.newValue || !idUsuario) {
+      console.error('Falta teléfono nuevo o ID de usuario para verificar');
+      return;
+    }
+    
     setPhoneData(prev => ({ ...prev, status: 'pending' }));
     try {
-      await simulateApiCall();
+      // Llamar al endpoint para verificación manual de teléfono
+      console.log('Ejecutando verificación manual de teléfono');
+      
+      // Ejecutamos la verificación manual del teléfono
+      await axiosInstance.post('/api/EmailVerification/execute-verification', {
+        idUser: idUsuario, // Usar idUser como parámetro
+        responsableAprobacion: localStorage.getItem('username') || 'XAVIER',
+        novedad: "se valido el telefono",
+        verify: "phone"
+      });
+      
+      console.log('Verificación de teléfono ejecutada exitosamente');
+      
+      // Actualizar el estado del teléfono a verified después de la verificación exitosa
       setPhoneData(prev => ({
         ...prev,
-        oldValue: prev.newValue,
-        status: 'verified'
+        status: 'verified' // Cambiamos a verified ya que la verificación fue exitosa
       }));
+      
+      // Mostrar mensaje informativo al usuario
+      alert('Teléfono verificado exitosamente.');
+      
     } catch (error) {
+      console.error('Error al verificar teléfono:', error);
       setPhoneData(prev => ({ ...prev, status: 'failed' }));
+      alert('Error al verificar el teléfono. Por favor, intente nuevamente.');
     }
-  };
-
-  const handleRejectPhone = () => {
-    setPhoneData(prev => ({
-      ...prev,
-      newValue: paperwork?.telefonoCelular || '',
-      status: 'idle'
-    }));
   };
 
   // --- Manejadores Generales ---
   const handleApproveAll = async () => {
+    // Ejecutar la verificación incluso si no hay función onSave
     if (!onSave) {
-      console.warn('No se proporcionó función onSave');
-      return;
+      console.warn('No se proporcionó función onSave, pero se ejecutará la verificación');
+      // No retornamos, continuamos con la verificación
     }
 
-    const hasVerifiedChangesToSave = emailData.status === 'verified' || phoneData.status === 'verified';
-    if (!hasVerifiedChangesToSave) {
-      console.log('No hay cambios verificados para guardar.');
-      // onClose(); // Opcional: cerrar si no hay nada que guardar y se hizo clic.
-      return;
-    }
-
-    // Guardar el estado original para revertir en caso de error y para comparar cambios
-    const originalEmailData = { ...emailData };
-    const originalPhoneData = { ...phoneData };
-
-    // Actualizar UI a 'pending' para los campos que se van a guardar
-    if (emailData.status === 'verified') {
-      setEmailData(prev => ({ ...prev, status: 'pending' }));
-    }
-    if (phoneData.status === 'verified') {
-      setPhoneData(prev => ({ ...prev, status: 'pending' }));
-    }
+    setIsLoading(true);
     
     try {
-      const dataToSave = { username: paperwork.username };
-      let actualChangesMade = false;
-
-      if (emailData.status === 'pending' && emailData.newValue !== originalEmailData.oldValue) {
-        dataToSave.email = emailData.newValue;
-        actualChangesMade = true;
-      }
-      if (phoneData.status === 'pending' && phoneData.newValue !== originalPhoneData.oldValue) {
-        dataToSave.telefonocelular = phoneData.newValue;
-        actualChangesMade = true;
-      }
-
-      if (actualChangesMade) {
-        await onSave(dataToSave);
-        console.log('Cambios guardados:', dataToSave);
-
-        if (dataToSave.email) {
-          setEmailData(prev => ({ 
-            ...prev, 
-            oldValue: dataToSave.email, 
-            status: 'idle',
-          }));
-        } else if (emailData.status === 'pending') { // Si estaba 'pending' pero no se guardó (no cambió)
-           setEmailData(prev => ({ ...prev, status: 'idle' }));
-        }
-
-        if (dataToSave.telefonocelular) {
-          setPhoneData(prev => ({ 
-            ...prev, 
-            oldValue: dataToSave.telefonocelular, 
-            status: 'idle',
-          }));
-        } else if (phoneData.status === 'pending') { // Si estaba 'pending' pero no se guardó
-          setPhoneData(prev => ({ ...prev, status: 'idle' }));
-        }
-      } else {
-        console.log('No hubo cambios efectivos para enviar al backend (valores verificados son iguales a los originales).');
-        // Resetear status a idle si no se envió nada pero se intentó
-        if (emailData.status === 'pending') setEmailData(prev => ({ ...prev, status: 'idle' }));
-        if (phoneData.status === 'pending') setPhoneData(prev => ({ ...prev, status: 'idle' }));
+      // Verificar si hay cambios, pero continuar de todos modos
+      const hasEmailChange = emailData.oldValue !== emailData.newValue && emailData.newValue;
+      const hasPhoneChange = phoneData.oldValue !== phoneData.newValue && phoneData.newValue;
+      
+      // Si no hay cambios, informamos pero continuamos con la aprobación
+      if (!hasEmailChange && !hasPhoneChange) {
+        console.log('No hay cambios para guardar, pero se ejecutará la aprobación de todos modos');
       }
       
-      onClose();
+      const dataToSave = { 
+        username: paperwork.username,
+        id_usuario: idUsuario, // Incluir el ID de usuario
+        novedad: novedad
+      };
+      
+
+      // Guardar cambios de email si hay
+      if (hasEmailChange) {
+        dataToSave.email = emailData.newValue;
+      }
+
+      // Guardar cambios de teléfono si hay
+      if (hasPhoneChange) {
+        dataToSave.telefono = phoneData.newValue;
+      }
+
+      // Siempre ejecutar las verificaciones, haya o no cambios efectivos
+      try {
+        // Ejecutar verificación de email siempre
+        console.log('Ejecutando verificación de email');
+        await axiosInstance.post('/api/EmailVerification/execute-verification', {
+          idUser: idUsuario, // Usando el estado idUsuario
+          responsableAprobacion: localStorage.getItem('username') || 'XAVIER',
+          novedad: novedad, // Usar la novedad del formulario
+          verify: "email" // Indicar que estamos verificando el email
+        });
+        console.log('Verificación de email ejecutada con éxito');
+        
+        // Ejecutar también la verificación de teléfono siempre
+        console.log('Ejecutando verificación de teléfono');
+        await axiosInstance.post('/api/EmailVerification/execute-verification', {
+          idUser: idUsuario, // Usar idUser como parámetro
+          responsableAprobacion: localStorage.getItem('username') || 'XAVIER',
+          novedad: novedad, // Usar la novedad del formulario
+          verify: "phone" // Indicar que estamos verificando el teléfono
+        });
+        console.log('Verificación de teléfono ejecutada con éxito');
+      } catch (error) {
+        console.error('Error al ejecutar verificación:', error);
+        // Continuar con el guardado aunque la verificación falle
+      }
+
+      // Guardar cambios si existe la función onSave
+      if (onSave) {
+        await onSave(dataToSave);
+        console.log('Cambios guardados:', dataToSave);
+      } else {
+        console.log('No se guardaron los cambios (no hay función onSave), pero se ejecutó la verificación');
+      }
+
+      if (dataToSave.email) {
+        setEmailData(prev => ({ 
+          ...prev, 
+          oldValue: dataToSave.email, 
+          status: 'idle',
+        }));
+      } else if (emailData.status === 'pending') { // Si estaba 'pending' pero no se guardó (no cambió)
+        setEmailData(prev => ({ ...prev, status: 'idle' }));
+      }
+
+      if (dataToSave.telefono) {
+        setPhoneData(prev => ({ 
+          ...prev, 
+          oldValue: dataToSave.telefono, 
+          status: 'idle',
+        }));
+      } else if (phoneData.status === 'pending') { // Si estaba 'pending' pero no se guardó
+        setPhoneData(prev => ({ ...prev, status: 'idle' }));
+      }
+      
+      // Cerrar el modal si existe la función onClose
+      if (onClose) {
+        onClose();
+      } else {
+        console.log('No se cerró el modal (no hay función onClose)');
+      }
     } catch (error) {
-      console.error('Error al guardar:', error);
-      // Revertir a los estados antes de 'pending'
-      setEmailData(originalEmailData);
-      setPhoneData(originalPhoneData);
-    } // Closes catch block
+      console.error('Error al guardar cambios:', error);
+      alert('Error al guardar los cambios. Por favor, intente nuevamente.');
+    } finally {
+      setIsLoading(false);
+    }
   }; // Closes handleApproveAll function
 
   // Verificar estados para UI
   const isPending = emailData.status === 'pending' || phoneData.status === 'pending' || isLoadingEmails;
   const canSaveChanges = 
-    (emailData.status === 'verified' && emailData.newValue !== emailData.oldValue) || 
-    (phoneData.status === 'verified' && phoneData.newValue !== phoneData.oldValue);
+    (emailData.status === 'verified' && phoneData.status === 'verified') || novedad;
   const hasFailed = emailData.status === 'failed' || phoneData.status === 'failed';
 
   // Retorno temprano si el modal no está abierto
@@ -430,8 +448,8 @@ const PaperworkUpdateModal = ({ isOpen, onSave, paperwork, onClose }) => {
                   <label className="text-sm font-medium text-gray-500 whitespace-nowrap">RUC/CC:</label>
                   <span className="text-gray-700 font-mono w-full truncate">
                     {(() => {
-                      const key = paperwork?.username?.toUpperCase();
-                      const rucValue = userRucMap[key];
+                     
+                      const rucValue = paperwork?.cedula;
                       // console.log('Buscando RUC con clave:', key, 'Resultado:', rucValue); 
                       return rucValue || 'No encontrado';
                     })()}
@@ -448,7 +466,7 @@ const PaperworkUpdateModal = ({ isOpen, onSave, paperwork, onClose }) => {
                 newValueStatus={emailData.status}
                 onNewValueChange={(e) => setEmailData(prev => ({ ...prev, newValue: e.target.value, status: 'idle' }))}
                 onVerify={handleVerifyEmail}
-                onReject={handleRejectEmail}
+                
                 placeholder="Nuevo correo"
                 type="email"
               />
@@ -458,14 +476,32 @@ const PaperworkUpdateModal = ({ isOpen, onSave, paperwork, onClose }) => {
                 label="Número de Teléfono"
                 icon={<MdPhone className="text-green-600" size={24}/>}
                 oldValue={phoneData.oldValue}
-                newValue={phoneData.newValue}
+                newValue={phoneData.newValue} 
                 newValueStatus={phoneData.status}
+                preventEmptyValue={true}
                 onNewValueChange={(e) => setPhoneData(prev => ({ ...prev, newValue: e.target.value, status: 'idle' }))}
                 onVerify={handleVerifyPhone}
-                onReject={handleRejectPhone}
                 placeholder="Nuevo teléfono"
                 type="tel"
+                readOnly={true}
               />
+
+              {/* Campo de Novedad */}
+              <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-4">
+                <div className="flex items-center gap-3">
+                  <MdRefresh className="text-gray-600" size={20}/>
+                  <h3 className="font-bold text-lg text-gray-800">Novedad</h3>
+                </div>
+                <div>
+                  <textarea
+                    className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Ingrese la novedad..."
+                    rows="3"
+                    value={novedad}
+                    onChange={(e) => setNovedad(e.target.value)}
+                  />
+                </div>
+              </div>
 
               {/* --- Botones de Acción --- */}
               <ActionButtons 
@@ -483,6 +519,7 @@ const PaperworkUpdateModal = ({ isOpen, onSave, paperwork, onClose }) => {
       </div>
     </div>
   );
+  
 };
 
 export default PaperworkUpdateModal;

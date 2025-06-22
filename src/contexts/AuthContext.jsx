@@ -9,7 +9,7 @@ import SessionTimeoutHandler from '../components/SessionTimeoutHandler';
 const AuthContext = createContext();
 const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutos en milisegundos
 
-const publicRoutes = ['/login', '/registrar-usuario-interno', '/registrar-usuario-externo'];
+const publicRoutes = ['/login', '/registrar-usuario-interno', '/registrar-usuario-externo', '/validate-email'];
 
 export const useAuth = () => {
     return useContext(AuthContext);

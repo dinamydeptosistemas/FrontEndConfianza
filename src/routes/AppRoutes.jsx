@@ -17,6 +17,7 @@ import BitacoraDashboard from '../pages/bitacora/BitacoraDashboard';
 import SocialMediaDashboard from '../pages/socialmedia/socialmediadashboard';
 import PaperworksDashboard from '../pages/paperworks/PaperworksDashboard';
 import RegistrerUserExternal from '../pages/registrer/RegistrerUserExternal';
+import EmailVerificationPage from '../pages/EmailVerificationPage';
 
 
 
@@ -45,7 +46,7 @@ export const AppRoutes = () => {
     }
 
     console.log('Ruta actual en AppRoutes:', window.location.pathname);
-    const publicRoutes = ['/login', '/registrar-usuario-interno', '/registrar-usuario-externo'];
+    const publicRoutes = ['/login', '/registrar-usuario-interno', '/registrar-usuario-externo', '/validate-email'];
     return (
         <Routes>
             {/* Rutas públicas */}
@@ -60,6 +61,12 @@ export const AppRoutes = () => {
             <Route
                 path="/registrar-usuario-externo"
                 element={<RegistrerUserExternal />} 
+            />
+            
+            {/* Ruta para verificación de correo electrónico */}
+            <Route
+                path="/validate-email"
+                element={<EmailVerificationPage />}
             />
 
             {/* Ruta independiente para empresas */}

@@ -47,8 +47,11 @@ axiosInstance.interceptors.response.use(
             // Limpiar el estado de autenticación
             localStorage.removeItem('token');
             
-            // Solo redirigimos si no estamos ya en la página de login
-            if (!window.location.pathname.includes('/login')) {
+            // Solo redirigimos si no estamos en una ruta pública
+            if (!window.location.pathname.includes('/login') && 
+                !window.location.pathname.includes('/validate-email') && 
+                !window.location.pathname.includes('/registrar-usuario-interno') && 
+                !window.location.pathname.includes('/registrar-usuario-externo')) {
                 // Usamos replace en lugar de href para evitar que el usuario pueda volver atrás
                 window.location.replace('/login');
             }

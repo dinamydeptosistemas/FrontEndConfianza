@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { getPaperworks, savePaperwork, deletePaperwork } from '../../services/Paperwork/PaperworkService';
+import { getPaperworks } from '../../services/Paperwork/PaperworkService';
+import { getBitacora } from '../../services/bitacora/BitacoraService';
 import ManagementDashboardLayout from '../../layouts/ManagementDashboardLayout';
 import GenericTable from '../../components/common/GenericTable';
 import ConfirmEliminarModal from '../../components/common/ConfirmEliminarModal';
@@ -18,6 +19,7 @@ export default function PaperworksDashboard() {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [paperworkAEditar, setPaperworkAEditar] = useState(null);
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
+  // No necesitamos mantener el estado de las bitácoras aquí
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -30,6 +32,17 @@ export default function PaperworksDashboard() {
   const handleCancelDelete = () => handleCloseConfirmDelete();
   
   const searchTimeoutRef = useRef(null);
+
+  // Función para actualizar bitácoras sin guardar el estado
+  const actualizarBitacoras = useCallback(async () => {
+    try {
+      console.log('Actualizando bitácoras...');
+      await getBitacora(); // Solo llamamos al servicio para actualizar los datos
+      console.log('Bitácoras actualizadas');
+    } catch (error) {
+      console.error('Error al actualizar bitácoras:', error);
+    }
+  }, []);
 
   const cargarPaperworks = useCallback(async (pagina = 1, filtroBusqueda = '') => {
     console.log(`Iniciando carga de trámites - Página: ${pagina}, Filtro: ${filtroBusqueda}`);
@@ -53,26 +66,62 @@ export default function PaperworksDashboard() {
       // Obtener los datos del servidor
       const response = await getPaperworks(params);
       console.log('Respuesta de la API (cruda):', response);
+      console.log('Tipo de respuesta:', typeof response);
+      console.log('Propiedades de la respuesta:', Object.keys(response));
+      
+      // Verificar específicamente la propiedad paperworks
+      if (response.paperworks) {
+        console.log('Propiedad paperworks encontrada:', response.paperworks);
+        console.log('Tipo de paperworks:', typeof response.paperworks);
+        console.log('Es array?', Array.isArray(response.paperworks));
+      } else {
+        console.log('No se encontró la propiedad paperworks en la respuesta');
+      }
       
       // Manejar la respuesta del servidor
       let listaPaperworks = [];
       let totalDePaginas = 1;
       
-      // Si la respuesta es un array directo
-      if (Array.isArray(response)) {
-        listaPaperworks = response;
-      } 
-      // Si la respuesta es un objeto con una propiedad que es un array
-      else if (response && typeof response === 'object') {
-        const arrayKey = Object.keys(response).find(key => Array.isArray(response[key]));
-        if (arrayKey) {
-          listaPaperworks = response[arrayKey];
-          totalDePaginas = response.totalPages || 1;
-        } else if (response.data && Array.isArray(response.data)) {
-          // Si la respuesta tiene un formato { data: [...] }
-          listaPaperworks = response.data;
-          totalDePaginas = response.totalPages || 1;
+      console.log('Procesando respuesta para extraer datos...');
+      
+      // Verificar la estructura exacta de la respuesta basada en tu mensaje de error
+      if (response && typeof response === 'object') {
+        // Extraer información de paginación
+        if (response.totalPages !== undefined) {
+          totalDePaginas = response.totalPages;
+          console.log('Total de páginas encontrado:', totalDePaginas);
         }
+        
+        // Verificar si existe la propiedad 'paperworks' directamente
+        if ('paperworks' in response) {
+          console.log('Propiedad paperworks encontrada en la respuesta');
+          
+          if (Array.isArray(response.paperworks)) {
+            console.log('paperworks es un array con', response.paperworks.length, 'elementos');
+            listaPaperworks = response.paperworks;
+          } else {
+            console.log('paperworks no es un array, es de tipo:', typeof response.paperworks);
+          }
+        } 
+        // Si no hay paperworks, intentar buscar otros arrays en la respuesta
+        else {
+          console.log('Buscando arrays en la respuesta...');
+          const arrayKeys = Object.keys(response).filter(key => Array.isArray(response[key]));
+          console.log('Arrays encontrados:', arrayKeys);
+          
+          if (arrayKeys.length > 0) {
+            // Usar el primer array encontrado
+            const arrayKey = arrayKeys[0];
+            console.log('Usando array:', arrayKey);
+            listaPaperworks = response[arrayKey];
+          } else if (response.data && Array.isArray(response.data)) {
+            console.log('Usando response.data como fuente de datos');
+            listaPaperworks = response.data;
+          }
+        }
+      } else if (Array.isArray(response)) {
+        console.log('La respuesta es directamente un array');
+        listaPaperworks = response;
       }
       
       console.log('Trámites cargados:', listaPaperworks);
@@ -115,7 +164,7 @@ export default function PaperworksDashboard() {
 
   useEffect(() => {
     cargarPaperworks(1, '');
-  }, [cargarPaperworks, filtrosEstado]);
+  }, [cargarPaperworks]);
 
   useEffect(() => {
     return () => {
@@ -219,14 +268,11 @@ export default function PaperworksDashboard() {
   };
 
 
-  const handleDeleteClick = (paperwork) => {
-    setPaperworkAEliminar(paperwork);
-    setMostrarModal(true);
-  };
+
 
   const handleConfirmDelete = async () => {
     try {
-      await deletePaperwork(paperworkAEliminar.regTramite);
+
       await cargarPaperworks(paginaActual, filtro);
       setPaperworkAEliminar(null);
       setMostrarModal(false);
@@ -241,17 +287,7 @@ export default function PaperworksDashboard() {
     setMostrarModalEdicion(true);
   };
 
-  const handleSavePaperwork = async (paperwork) => {
-    try {
-      await savePaperwork(paperwork);
-      setMostrarModalEdicion(false);
-      setPaperworkAEditar(null);
-      await cargarPaperworks(1, filtro);
-    } catch (error) {
-      console.error('Error al crear el trámite:', error);
-      alert('Error al crear el trámite. Por favor, intente nuevamente.');
-    }
-  };
+ 
 
   return (
     <ManagementDashboardLayout title="TRAMITES:" user={user} negocio={negocio}>
@@ -346,9 +382,9 @@ export default function PaperworksDashboard() {
                 render: (row) => row.fechaSolicitud ? new Date(row.fechaSolicitud).toLocaleDateString() : 'N/A'
               },
               { 
-                key: 'tipoTramite', 
+                key: 'tipodetTramite', 
                 label: 'Tipo de Trámite',
-                render: (row) => row.tipodeTramite || 'N/A'
+                render: (row) => row.tipodetTramite || 'N/A'
               },
               { 
                 key: 'tipoUser', 
@@ -363,7 +399,13 @@ export default function PaperworksDashboard() {
               { 
                 key: 'estadoTramite', 
                 label: 'Estado',
-                render: (row) => row.estadoTramite || 'N/A'
+                render: (row) => (
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                        row.estadoTramite === 'APROBADO' ? 'bg-blue-100 text-blue-800' : row.estadoTramite === 'RECHAZADO' ? 'bg-red-100 text-red-800' : row.estadoTramite === 'POR PROCESAR' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                        {row.estadoTramite}
+                    </span>
+                )
               },
               { 
                 key: 'registradoComo', 
@@ -371,21 +413,20 @@ export default function PaperworksDashboard() {
                 render: (row) => row.registradoComo || 'N/A'
               },
               { 
-                key: 'email', 
+                key: 'emailNuevo', 
                 label: 'Email',
-                render: (row) => row.email || 'N/A'
+                render: (row) => row.emailNuevo || 'N/A'
               },
               { 
-                key: 'telefonoCelular', 
+                key: 'telefonoNuevo', 
                 label: 'Teléfono',
-                render: (row) => row.telefonocelular || 'N/A'
+                render: (row) => row.telefonoNuevo || 'N/A'
               }
             ]}
             data={paperworks}
             rowKey="RegTramite"
             actions={true}
             onEdit={handleEdit}
-            onDelete={handleDeleteClick}
             showActions={{
               edit: true,
               delete: true,
@@ -408,7 +449,24 @@ export default function PaperworksDashboard() {
           setPaperworkAEditar(null);
           setMostrarModalEdicion(false);
         }}
-        onSave={handleSavePaperwork}
+        onSave={async (updatedData) => {
+          try {
+            // Actualizar el paperwork con los nuevos datos
+            console.log('Guardando datos actualizados:', updatedData);
+            // Aquí puedes llamar a tu servicio para actualizar los datos
+            // Por ejemplo: await paperworkService.update(paperworkAEditar.id, updatedData);
+            
+            // Recargar la lista de paperworks después de actualizar
+            cargarPaperworks();
+            // Actualizar las bitácoras
+            actualizarBitacoras();
+            
+            return true;
+          } catch (error) {
+            console.error('Error al guardar los cambios:', error);
+            return false;
+          }
+        }}
       />
     </ManagementDashboardLayout>
   );
