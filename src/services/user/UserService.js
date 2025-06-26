@@ -10,18 +10,35 @@ console.log('Configuración de axios:', {
 });
 
 /**
- * Obtiene usuarios con soporte para paginación
+ * Obtiene usuarios con soporte para paginación y filtros
  * @param {Object} params - Parámetros de búsqueda
  * @param {number} [params.page] - Número de página
  * @param {string} [params.searchTerm] - Término de búsqueda
+ * @param {number} [params.idUser] - ID de usuario específico
+ * @param {string} [params.fechaRegistro] - Fecha de registro específica
+ * @param {string} [params.fechaRegistroDesde] - Fecha de registro desde
+ * @param {string} [params.fechaRegistroHasta] - Fecha de registro hasta
+ * @param {number} [params.usuarioActivo] - Estado del usuario (1=activo, 0=inactivo)
+ * @param {string} [params.tipoUser] - Tipo de usuario (INTERNO/EXTERNO)
+ * @param {string} [params.relacionUsuario] - Relación del usuario (EMPLEADO/CLIENTE/PROVEEDOR)
  * @returns {Promise<Object>} Objeto con usuarios y metadatos de paginación
  */
 export const getUsers = async (params = {}) => {
     try {
-        // Asegurarnos de que params sea un objeto
+        // Validar y limpiar parámetros para evitar errores 400
+        const cleanParams = {};
+        
+        // Copiar solo los parámetros válidos y no undefined/null
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                cleanParams[key] = value;
+            }
+        });
+        
+        // Asegurarnos de que params sea un objeto y contenga el proceso
         const requestParams = {
             process: 'getUsers',
-            ...params
+            ...cleanParams
         };
 
         // Log de la petición

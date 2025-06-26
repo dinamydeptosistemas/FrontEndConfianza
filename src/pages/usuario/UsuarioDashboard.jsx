@@ -9,6 +9,7 @@ import GenericTable from '../../components/common/GenericTable';
 import UsuarioModal from '../../components/users/UsuarioModal';
 import Paginador from '../../components/common/Paginador';
 import { useNotification } from '../../context/NotificationContext';
+import FilterModal from '../../components/common/FilterModal';
 
 export default function UsuarioDashboard() {
     const { user, negocio } = useAuth();
@@ -24,14 +25,77 @@ export default function UsuarioDashboard() {
     const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
     const [paginaActual, setPaginaActual] = useState(1);
     const [totalPaginas, setTotalPaginas] = useState(1);
+    const [mostrarModalFiltros, setMostrarModalFiltros] = useState(false);
+    const [filtros, setFiltros] = useState({});
 
-    const cargarUsuarios = useCallback(async (pagina = 1, filtroBusqueda = '') => {
-        const params = { page: pagina };
+    const cargarUsuarios = useCallback(async (pagina = 1, filtroBusqueda = '', filtrosAdicionales = {}) => {
+        // Preparar los parámetros para la llamada a la API
+        const params = {
+            process: 'getUsers',
+            page: pagina,
+            idUser: null,
+            fechaRegistro: null,
+            fechaRegistroDesde: null,
+            fechaRegistroHasta: null,
+            usuarioActivo: null,
+            tipoUser: null,
+            relacionUsuario: null
+        };
+        
+        // Agregar término de búsqueda si existe
         if (filtroBusqueda) {
             params.searchTerm = filtroBusqueda;
         }
+        
+        // Agregar filtros adicionales a los parámetros
+        if (filtrosAdicionales) {
+            // Manejar específicamente los filtros de fecha
+            if (filtrosAdicionales.fechaRegistroDesde) {
+                params.fechaRegistroDesde = filtrosAdicionales.fechaRegistroDesde;
+            }
+            
+            if (filtrosAdicionales.fechaRegistroHasta) {
+                params.fechaRegistroHasta = filtrosAdicionales.fechaRegistroHasta;
+            }
+            
+            // Manejar específicamente el filtro de estado (activo/inactivo)
+            if (filtrosAdicionales.usuarioActivo === true) {
+                // Para usuarios activos - enviamos true como booleano
+                params.usuarioActivo = true;
+                console.log('Filtro usuarioActivo aplicado:', params.usuarioActivo);
+            } 
+            
+            if (filtrosAdicionales.usuarioInactivo === true) {
+                // Para usuarios inactivos - enviamos false como booleano
+                params.usuarioActivo = false;
+                console.log('Filtro usuarioInactivo aplicado (convertido a usuarioActivo=false):', params.usuarioActivo);
+            }
+            
+            // Agregar el resto de filtros
+            ['tipoUser', 'relacionUsuario', 'idUser'].forEach(key => {
+                if (filtrosAdicionales[key] && filtrosAdicionales[key] !== '') {
+                    params[key] = filtrosAdicionales[key];
+                }
+            });
+        }
+        
+        console.log('Parámetros para la API:', params);
+        
         try {
             const data = await getUsers(params);
+            console.log('Datos recibidos de la API:', data);
+            console.log('Usuarios recibidos:', data.users);
+            console.log('Total de usuarios:', data.users?.length || 0);
+            
+            // Verificar si los datos están siendo filtrados correctamente
+            if (params.usuarioActivo === false) {
+                console.log('Filtrando por usuarios inactivos, total recibidos:', data.users?.length || 0);
+                console.log('Primer usuario recibido:', data.users?.[0]);
+            } else if (params.usuarioActivo === true) {
+                console.log('Filtrando por usuarios activos, total recibidos:', data.users?.length || 0);
+                console.log('Primer usuario recibido:', data.users?.[0]);
+            }
+            
             setUsuariosOriginales(data.users || []);
             setUsuarios(data.users || []);
             setPaginaActual(pagina);
@@ -148,7 +212,7 @@ export default function UsuarioDashboard() {
         <ManagementDashboardLayout title="USUARIOS:" user={user} negocio={negocio}>
             <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
                 <div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
-          <div>
+          <div className="flex gap-2">
             <ButtonGroup
               buttons={[{
                 label: 'Nuevo',
@@ -157,6 +221,20 @@ export default function UsuarioDashboard() {
                 className: 'bg-white border-[#1e4e9c] border px-8 py-1 font-bold hover:text-white hover:bg-[#1e4e9c]'
               }]}
             />
+            <button
+              onClick={() => setMostrarModalFiltros(true)}
+              className="flex items-center gap-1 bg-white border-[#1e4e9c] border px-4 py-1 font-bold hover:text-white hover:bg-[#1e4e9c] rounded"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              Filtros
+              {Object.keys(filtros).length > 0 && (
+                <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                  {Object.keys(filtros).length}
+                </span>
+              )}
+            </button>
           </div>
           <div className="flex justify-center">
             <Paginador
@@ -196,7 +274,17 @@ export default function UsuarioDashboard() {
                             { key: 'nombreUser', label: 'Nombre' },
                             { key: 'apellidosUser', label: 'Apellidos' },
                             { key: 'identificacion', label: 'Identificación' },
-                            { key: 'relacionUsuario', label: 'Relación' },
+                            { 
+                                key: 'relacionUsuario', 
+                                label: 'Relación',
+                                render: (row) => (
+                                    <span className={`px-2 py-1 rounded-full text-xs ${
+                                        row.relacionUsuario === 'EMPLEADO' ? ' text-blue-800' : 'bg-white'
+                                    }`}>
+                                        {row.relacionUsuario || 'N/A'}
+                                    </span>
+                                )
+                            },
                             { key: 'tipoUser', label: 'Tipo' },
                             { key: 'username', label: 'Usuario' },
                             { 
@@ -253,6 +341,111 @@ export default function UsuarioDashboard() {
                 )}
 
                 {/* El componente de notificación ahora es manejado por el NotificationContext */}
+                
+                {/* Modal de Filtros */}
+                <FilterModal
+                    isOpen={mostrarModalFiltros}
+                    onClose={() => setMostrarModalFiltros(false)}
+                    onApplyFilters={(filtrosAplicados) => {
+                        console.log('Filtros recibidos del modal:', filtrosAplicados);
+                        
+                        // Crear una copia de los filtros aplicados y limpiar valores vacíos
+                        const filtrosModificados = {};
+                        
+                        // Mapear los nombres de los campos de fecha al formato esperado por la API
+                        if (filtrosAplicados.fechaDesde) {
+                            filtrosModificados.fechaRegistroDesde = filtrosAplicados.fechaDesde;
+                            console.log('Fecha desde seleccionada:', filtrosAplicados.fechaDesde);
+                        }
+                        
+                        if (filtrosAplicados.fechaHasta) {
+                            filtrosModificados.fechaRegistroHasta = filtrosAplicados.fechaHasta;
+                            console.log('Fecha hasta seleccionada:', filtrosAplicados.fechaHasta);
+                        }
+                        
+                        // Procesar los filtros de usuario activo/inactivo
+                        if (filtrosAplicados.usuarioActivo) {
+                            // Si es un valor numérico (1) o true, mantenerlo
+                            filtrosModificados.usuarioActivo = 1;
+                            console.log('Filtro usuarioActivo:', filtrosModificados.usuarioActivo);
+                        }
+                        
+                        if (filtrosAplicados.usuarioInactivo) {
+                            // Si es un valor true, establecer usuarioActivo=0
+                            filtrosModificados.usuarioInactivo = true;
+                            console.log('Filtro usuarioInactivo:', filtrosModificados.usuarioInactivo);
+                        }
+                        
+                        // Procesar el resto de filtros
+                        ['tipoUser', 'relacionUsuario', 'busqueda'].forEach(key => {
+                            if (filtrosAplicados[key] !== undefined && filtrosAplicados[key] !== null && filtrosAplicados[key] !== '') {
+                                filtrosModificados[key] = filtrosAplicados[key];
+                                console.log(`Filtro ${key}:`, filtrosAplicados[key]);
+                            }
+                        });
+                        
+                        // Guardar los filtros en el estado
+                        setFiltros(filtrosModificados);
+                        console.log('Filtros aplicados:', filtrosModificados);
+                        setMostrarModalFiltros(false);
+                        
+                        // Cargar usuarios con los filtros aplicados
+                        cargarUsuarios(1, busqueda, filtrosModificados);
+                    }}
+                    initialFilters={filtros}
+                    filterConfig={[
+
+                        {
+                            type: 'checkbox',
+                            name: 'usuarioActivo',
+                            label: 'Solo Activos',
+                            value: 1,
+                            secondCheckbox: {
+                                name: 'usuarioInactivo',
+                                label: 'Solo Inactivos',
+                                value: 0  // Valor numérico 0 para inactivos
+                            }
+                        },
+                        {
+                            type: 'search',
+                            name: 'busqueda',
+                            label: 'Buscar usuario',
+                            placeholder: 'Buscar por usuario'
+                        },
+                        {
+                            type: 'select',
+                            name: 'tipoUser',
+                            label: 'Tipo de Usuario',
+                            options: [
+                                { value: '', label: 'Todos' },
+                                { value: 'INTERNO', label: 'Interno' },
+                                { value: 'EXTERNO', label: 'Externo' }
+                            ]
+                        },
+                        {
+                            type: 'select',
+                            name: 'relacionUsuario',
+                            label: 'Relación',
+                            options: [
+                                { value: '', label: 'Todos' },
+                                { value: 'EMPLEADO', label: 'Empleado' },
+                                { value: 'CLIENTE', label: 'Cliente' },
+                                { value: 'PROVEEDOR', label: 'Proveedor' }
+                            ]
+                        },
+                        {
+                            type: 'date',
+                            name: 'fechaDesde',
+                            label: 'Fecha Desde'
+                        },
+                        {
+                            type: 'date',
+                            name: 'fechaHasta',
+                            label: 'Fecha Hasta'
+                        }
+                    ]}
+                    title="Filtros de Usuarios"
+                />
             </div>
         </ManagementDashboardLayout>
     );

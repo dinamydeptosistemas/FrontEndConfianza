@@ -127,9 +127,17 @@ export default function PaperworksDashboard() {
       console.log('Trámites cargados:', listaPaperworks);
       console.log('Total de páginas:', totalDePaginas);
       
-      // Actualizar el estado
-      setPaperworksOriginales([...listaPaperworks]);
-      setPaperworks([...listaPaperworks]);
+      // Eliminar posibles duplicados usando el RegTramite como identificador único
+      const uniquePaperworks = Array.isArray(listaPaperworks) ? 
+        listaPaperworks.filter((paperwork, index, self) => 
+          index === self.findIndex(p => p.RegTramite === paperwork.RegTramite)
+        ) : [];
+      
+      console.log('Trámites después de eliminar duplicados:', uniquePaperworks.length);
+      
+      // Actualizar el estado con la lista sin duplicados
+      setPaperworksOriginales(uniquePaperworks);
+      setPaperworks(uniquePaperworks);
       setPaginaActual(pagina);
       setTotalPaginas(totalDePaginas);
       

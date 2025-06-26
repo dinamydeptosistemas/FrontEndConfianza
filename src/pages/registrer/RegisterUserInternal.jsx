@@ -417,7 +417,6 @@ const RegisterUserInternal = () => {
               <input
                 type="text"
                 name="nombreuser"
-                value={form.nombreuser}
                 onChange={(e) => {
                   setError('');
                   setIsTyping(true);

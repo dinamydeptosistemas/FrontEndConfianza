@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import axiosInstance from '../config/axios';
+import { useSearchParams } from 'react-router-dom';
 
 const EmailVerificationPage = () => {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState('verifying');
   const [errorMessage, setErrorMessage] = useState('');
   const token = searchParams.get('token');
-  const navigate = useNavigate();
   
   console.log('Email verification page loaded');
   console.log('Token from URL:', token);
