@@ -18,9 +18,12 @@ console.log('Configuración de axios:', {
  * @param {string} [params.fechaRegistro] - Fecha de registro específica
  * @param {string} [params.fechaRegistroDesde] - Fecha de registro desde
  * @param {string} [params.fechaRegistroHasta] - Fecha de registro hasta
- * @param {number} [params.usuarioActivo] - Estado del usuario (1=activo, 0=inactivo)
+ * @param {boolean} [params.usuarioActivo] - Estado del usuario (true=activo, false=inactivo)
+ * @param {boolean} [params.usuarioActivoFiltro] - Filtro de estado del usuario (true=activo, false=inactivo)
  * @param {string} [params.tipoUser] - Tipo de usuario (INTERNO/EXTERNO)
+ * @param {string} [params.tipoUserFiltro] - Filtro de tipo de usuario (INTERNO/EXTERNO)
  * @param {string} [params.relacionUsuario] - Relación del usuario (EMPLEADO/CLIENTE/PROVEEDOR)
+ * @param {string} [params.relacionUsuarioFiltro] - Filtro de relación del usuario (EMPLEADO/CLIENTE/PROVEEDOR)
  * @returns {Promise<Object>} Objeto con usuarios y metadatos de paginación
  */
 export const getUsers = async (params = {}) => {
@@ -28,10 +31,55 @@ export const getUsers = async (params = {}) => {
         // Validar y limpiar parámetros para evitar errores 400
         const cleanParams = {};
         
-        // Copiar solo los parámetros válidos y no undefined/null
+        // Procesar y mapear los filtros especiales usando los nombres originales
+        if (params.usuarioActivoFiltro !== undefined) {
+            // Mantener el parámetro original y también enviar como 'activo' para compatibilidad
+            cleanParams.usuarioActivoFiltro = params.usuarioActivoFiltro;
+            cleanParams.activo = params.usuarioActivoFiltro ? 1 : 0;
+            console.log('UserService: Aplicando filtro usuarioActivoFiltro =', params.usuarioActivoFiltro);
+            console.log('UserService: Aplicando filtro activo =', cleanParams.activo);
+        }
+        
+        if (params.tipoUserFiltro) {
+            // Mantener el parámetro original y también enviar como 'tipoUsuario' para compatibilidad
+            cleanParams.tipoUserFiltro = params.tipoUserFiltro;
+            cleanParams.tipoUsuario = params.tipoUserFiltro;
+            console.log('UserService: Aplicando filtro tipoUserFiltro/tipoUsuario =', params.tipoUserFiltro);
+        }
+        
+        if (params.relacionUsuarioFiltro) {
+            // Mantener el parámetro original y también enviar como 'relacion' para compatibilidad
+            cleanParams.relacionUsuarioFiltro = params.relacionUsuarioFiltro;
+            cleanParams.relacion = params.relacionUsuarioFiltro;
+            console.log('UserService: Aplicando filtro relacionUsuarioFiltro/relacion =', params.relacionUsuarioFiltro);
+        }
+        
+        // Manejar fechas de registro
+        if (params.fechaRegistroDesde) {
+            // Mantener el parámetro original y también enviar como 'fechaDesde' para compatibilidad
+            cleanParams.fechaRegistroDesde = params.fechaRegistroDesde;
+            cleanParams.fechaDesde = params.fechaRegistroDesde;
+            console.log('UserService: Aplicando filtro fechaRegistroDesde/fechaDesde =', params.fechaRegistroDesde);
+        }
+        
+        if (params.fechaRegistroHasta) {
+            // Mantener el parámetro original y también enviar como 'fechaHasta' para compatibilidad
+            cleanParams.fechaRegistroHasta = params.fechaRegistroHasta;
+            cleanParams.fechaHasta = params.fechaRegistroHasta;
+            console.log('UserService: Aplicando filtro fechaRegistroHasta/fechaHasta =', params.fechaRegistroHasta);
+        }
+        
+        // Copiar el resto de parámetros válidos y no undefined/null
         Object.entries(params).forEach(([key, value]) => {
+            // Saltamos los filtros que ya procesamos
+            if (['usuarioActivoFiltro', 'tipoUserFiltro', 'relacionUsuarioFiltro', 
+                 'fechaRegistroDesde', 'fechaRegistroHasta'].includes(key)) {
+                return;
+            }
+            
             if (value !== undefined && value !== null && value !== '') {
                 cleanParams[key] = value;
+                console.log(`UserService: Aplicando parámetro ${key} =`, value);
             }
         });
         

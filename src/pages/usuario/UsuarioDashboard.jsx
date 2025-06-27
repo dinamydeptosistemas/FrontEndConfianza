@@ -31,15 +31,7 @@ export default function UsuarioDashboard() {
     const cargarUsuarios = useCallback(async (pagina = 1, filtroBusqueda = '', filtrosAdicionales = {}) => {
         // Preparar los parámetros para la llamada a la API
         const params = {
-            process: 'getUsers',
-            page: pagina,
-            idUser: null,
-            fechaRegistro: null,
-            fechaRegistroDesde: null,
-            fechaRegistroHasta: null,
-            usuarioActivo: null,
-            tipoUser: null,
-            relacionUsuario: null
+            page: pagina
         };
         
         // Agregar término de búsqueda si existe
@@ -49,32 +41,41 @@ export default function UsuarioDashboard() {
         
         // Agregar filtros adicionales a los parámetros
         if (filtrosAdicionales) {
-            // Manejar específicamente los filtros de fecha
+            console.log('Aplicando filtros adicionales:', filtrosAdicionales);
+            
+            // Verificar y aplicar cada filtro específico usando los nombres originales
             if (filtrosAdicionales.fechaRegistroDesde) {
                 params.fechaRegistroDesde = filtrosAdicionales.fechaRegistroDesde;
+                console.log('Aplicando filtro fechaRegistroDesde:', filtrosAdicionales.fechaRegistroDesde);
             }
             
             if (filtrosAdicionales.fechaRegistroHasta) {
                 params.fechaRegistroHasta = filtrosAdicionales.fechaRegistroHasta;
+                console.log('Aplicando filtro fechaRegistroHasta:', filtrosAdicionales.fechaRegistroHasta);
             }
             
-            // Manejar específicamente el filtro de estado (activo/inactivo)
-            if (filtrosAdicionales.usuarioActivo === true) {
-                // Para usuarios activos - enviamos true como booleano
-                params.usuarioActivo = true;
-                console.log('Filtro usuarioActivo aplicado:', params.usuarioActivo);
-            } 
-            
-            if (filtrosAdicionales.usuarioInactivo === true) {
-                // Para usuarios inactivos - enviamos false como booleano
-                params.usuarioActivo = false;
-                console.log('Filtro usuarioInactivo aplicado (convertido a usuarioActivo=false):', params.usuarioActivo);
+            if (filtrosAdicionales.usuarioActivoFiltro !== undefined) {
+                params.usuarioActivoFiltro = filtrosAdicionales.usuarioActivoFiltro;
+                console.log('Aplicando filtro usuarioActivoFiltro:', filtrosAdicionales.usuarioActivoFiltro);
             }
             
-            // Agregar el resto de filtros
-            ['tipoUser', 'relacionUsuario', 'idUser'].forEach(key => {
-                if (filtrosAdicionales[key] && filtrosAdicionales[key] !== '') {
-                    params[key] = filtrosAdicionales[key];
+            if (filtrosAdicionales.tipoUserFiltro) {
+                params.tipoUserFiltro = filtrosAdicionales.tipoUserFiltro;
+                console.log('Aplicando filtro tipoUserFiltro:', filtrosAdicionales.tipoUserFiltro);
+            }
+            
+            if (filtrosAdicionales.relacionUsuarioFiltro) {
+                params.relacionUsuarioFiltro = filtrosAdicionales.relacionUsuarioFiltro;
+                console.log('Aplicando filtro relacionUsuarioFiltro:', filtrosAdicionales.relacionUsuarioFiltro);
+            }
+            
+            // Agregar otros filtros que puedan existir
+            Object.entries(filtrosAdicionales).forEach(([key, value]) => {
+                if (!['fechaRegistroDesde', 'fechaRegistroHasta', 'usuarioActivoFiltro', 
+                     'tipoUserFiltro', 'relacionUsuarioFiltro'].includes(key) && 
+                    value !== undefined && value !== null && value !== '') {
+                    params[key] = value;
+                    console.log(`Aplicando filtro adicional ${key}:`, value);
                 }
             });
         }
@@ -106,10 +107,16 @@ export default function UsuarioDashboard() {
         }
     }, []);
 
+    // Estado para controlar si ya se cargaron los usuarios inicialmente
+    const [cargaInicialRealizada, setCargaInicialRealizada] = useState(false);
+    
     useEffect(() => {
-        console.log('Iniciando carga inicial de usuarios');
-        cargarUsuarios(1, '');
-    }, [cargarUsuarios]);
+        if (!cargaInicialRealizada) {
+            console.log('Iniciando carga inicial de usuarios');
+            cargarUsuarios(1, '', filtros);
+            setCargaInicialRealizada(true);
+        }
+    }, [cargarUsuarios, cargaInicialRealizada, filtros]);
 
     const buscarEnUsuarios = (usuariosArr, filtro) => {
         if (!filtro) return usuariosArr;
@@ -240,7 +247,7 @@ export default function UsuarioDashboard() {
             <Paginador
               paginaActual={paginaActual}
               totalPaginas={totalPaginas}
-              onPageChange={(pagina) => cargarUsuarios(pagina, filtroActivo)}
+              onPageChange={(pagina) => cargarUsuarios(pagina, filtroActivo, filtros)}
             />
           </div>
           <div className='flex justify-end items-center gap-2'>
@@ -354,35 +361,46 @@ export default function UsuarioDashboard() {
                         
                         // Mapear los nombres de los campos de fecha al formato esperado por la API
                         if (filtrosAplicados.fechaDesde) {
+                            // Usar el parámetro 'fechaRegistroDesde' como espera el backend
                             filtrosModificados.fechaRegistroDesde = filtrosAplicados.fechaDesde;
                             console.log('Fecha desde seleccionada:', filtrosAplicados.fechaDesde);
                         }
                         
                         if (filtrosAplicados.fechaHasta) {
+                            // Usar el parámetro 'fechaRegistroHasta' como espera el backend
                             filtrosModificados.fechaRegistroHasta = filtrosAplicados.fechaHasta;
                             console.log('Fecha hasta seleccionada:', filtrosAplicados.fechaHasta);
                         }
                         
                         // Procesar los filtros de usuario activo/inactivo
                         if (filtrosAplicados.usuarioActivo) {
-                            // Si es un valor numérico (1) o true, mantenerlo
-                            filtrosModificados.usuarioActivo = 1;
-                            console.log('Filtro usuarioActivo:', filtrosModificados.usuarioActivo);
+                            // Usar el parámetro 'usuarioActivoFiltro' como espera el backend
+                            filtrosModificados.usuarioActivoFiltro = true;
+                            console.log('Filtro usuarioActivoFiltro:', true);
+                        } else if (filtrosAplicados.usuarioInactivo) {
+                            // Usar el parámetro 'usuarioActivoFiltro' como espera el backend
+                            filtrosModificados.usuarioActivoFiltro = false;
+                            console.log('Filtro usuarioActivoFiltro:', false);
                         }
                         
-                        if (filtrosAplicados.usuarioInactivo) {
-                            // Si es un valor true, establecer usuarioActivo=0
-                            filtrosModificados.usuarioInactivo = true;
-                            console.log('Filtro usuarioInactivo:', filtrosModificados.usuarioInactivo);
+                        // Pasar directamente los filtros de tipo de usuario y relación
+                        if (filtrosAplicados.tipoUser !== undefined && filtrosAplicados.tipoUser !== null && filtrosAplicados.tipoUser !== '') {
+                            // Usar el parámetro 'tipoUserFiltro' como espera el backend
+                            filtrosModificados.tipoUserFiltro = filtrosAplicados.tipoUser;
+                            console.log('Filtro tipoUserFiltro:', filtrosAplicados.tipoUser);
                         }
                         
-                        // Procesar el resto de filtros
-                        ['tipoUser', 'relacionUsuario', 'busqueda'].forEach(key => {
-                            if (filtrosAplicados[key] !== undefined && filtrosAplicados[key] !== null && filtrosAplicados[key] !== '') {
-                                filtrosModificados[key] = filtrosAplicados[key];
-                                console.log(`Filtro ${key}:`, filtrosAplicados[key]);
-                            }
-                        });
+                        if (filtrosAplicados.relacionUsuario !== undefined && filtrosAplicados.relacionUsuario !== null && filtrosAplicados.relacionUsuario !== '') {
+                            // Usar el parámetro 'relacionUsuarioFiltro' como espera el backend
+                            filtrosModificados.relacionUsuarioFiltro = filtrosAplicados.relacionUsuario;
+                            console.log('Filtro relacionUsuarioFiltro:', filtrosAplicados.relacionUsuario);
+                        }
+                        
+                        // Procesar el filtro de búsqueda
+                        if (filtrosAplicados.busqueda !== undefined && filtrosAplicados.busqueda !== null && filtrosAplicados.busqueda !== '') {
+                            filtrosModificados.busqueda = filtrosAplicados.busqueda;
+                            console.log('Filtro busqueda:', filtrosAplicados.busqueda);
+                        }
                         
                         // Guardar los filtros en el estado
                         setFiltros(filtrosModificados);
@@ -394,16 +412,15 @@ export default function UsuarioDashboard() {
                     }}
                     initialFilters={filtros}
                     filterConfig={[
-
                         {
                             type: 'checkbox',
                             name: 'usuarioActivo',
                             label: 'Solo Activos',
-                            value: 1,
+                            value: true,
                             secondCheckbox: {
                                 name: 'usuarioInactivo',
                                 label: 'Solo Inactivos',
-                                value: 0  // Valor numérico 0 para inactivos
+                                value: false
                             }
                         },
                         {
