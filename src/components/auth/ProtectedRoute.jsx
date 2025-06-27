@@ -1,19 +1,24 @@
 import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+// import {  useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 export const ProtectedRoute = ({ children }) => {
     const { user, loading } = useAuth();
     const location = useLocation();
 
+    // Lógica de validación
+    const isValidUser =
+        user &&
+        (user.userType === 1 || user.userType === 2) &&
+        (user.statusCode === 200 || user.statusCode === 201);
+
     useEffect(() => {
-        // Si no hay usuario y no está cargando, limpiar todo
-        if (!user && !loading) {
+        if (!isValidUser && !loading) {
             localStorage.clear();
-            // Guardar la ruta actual para redirigir después del login
             sessionStorage.setItem('returnUrl', location.pathname);
         }
-    }, [user, loading, location]);
+    }, [isValidUser, loading, location]);
 
     if (loading) {
         return (
@@ -26,8 +31,9 @@ export const ProtectedRoute = ({ children }) => {
         );
     }
 
-    if (!user) {
-        // Redirigir al login si no hay usuario autenticado
+    if (!isValidUser) {
+        // Puedes guardar logs aquí si quieres
+        // localStorage.setItem('protectedRouteLog', JSON.stringify({ user, ... }));
         return <Navigate to="/login" replace />;
     }
 

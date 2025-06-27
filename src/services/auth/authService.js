@@ -2,6 +2,61 @@
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5201';
 const API_BASE = `${API_URL}/api`;
 
+// Variable para controlar si ya estamos en proceso de logout
+let isLoggingOut = false;
+
+/**
+ * Función para limpiar el estado de la sesión
+ */
+const clearSession = () => {
+    // Limpiar localStorage
+    localStorage.clear();
+    
+    // Limpiar cookies
+    document.cookie.split(";").forEach(cookie => {
+        const [name] = cookie.split("=");
+        document.cookie = `${name.trim()}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+    });
+};
+
+/**
+ * Función para manejar el logout de manera segura
+ */
+const handleLogout = async (isAutomatic = false) => {
+    // Evitar múltiples llamadas a logout
+    if (isLoggingOut) return;
+    isLoggingOut = true;
+
+    try {
+        // Solo llamar al endpoint de logout si no es un logout automático
+        if (!isAutomatic) {
+            await fetchWithConfig('/auth/logout-cookie', {
+                method: 'POST'
+            });
+        }
+
+        // Limpiar el estado de la sesión
+        clearSession();
+
+        // Redirigir al login solo si no estamos ya en la página de login
+        if (!window.location.pathname.includes('/login')) {
+            window.location.replace('/login');
+        }
+    } catch (error) {
+        console.error('Error durante el logout:', error);
+        // Aún así, limpiar la sesión y redirigir
+        clearSession();
+        if (!window.location.pathname.includes('/login')) {
+            window.location.replace('/login');
+        }
+    } finally {
+        // Resetear el flag después de un breve delay
+        setTimeout(() => {
+            isLoggingOut = false;
+        }, 1000);
+    }
+};
+
 /**
  * Configuración base para las peticiones fetch
  * @param {string} url - URL del endpoint
@@ -12,13 +67,6 @@ const fetchWithConfig = async (url, options = {}) => {
     const fullUrl = `${API_BASE}${url}`;
     const token = localStorage.getItem('token');
     
-    // Log de la petición
-    console.log('[authService] Enviando petición:', {
-        url: fullUrl,
-        method: options.method || 'GET',
-        data: options.body
-    });
-
     try {
         const response = await fetch(fullUrl, {
             ...options,
@@ -32,27 +80,19 @@ const fetchWithConfig = async (url, options = {}) => {
         });
 
         const data = await response.json();
-        
-        // Log de la respuesta
-        console.log('[authService] Respuesta recibida:', {
-            status: response.status,
-            data
-        });
 
         // Manejo de errores HTTP
         if (!response.ok) {
             if (response.status === 401) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                throw new Error('Sesión expirada o credenciales inválidas');
+                // Manejar expiración de sesión
+                await handleLogout(true);
+                throw new Error('Sesión expirada');
             }
             throw new Error(data.message || 'Error en el servidor');
         }
 
         return data;
     } catch (error) {
-        console.error('[authService] Error detallado:', error);
-        
         if (!navigator.onLine) {
             throw new Error(`No se pudo conectar al servidor (${API_URL}). Por favor, verifica tu conexión a internet.`);
         }
@@ -75,11 +115,6 @@ const authService = {
      */
     async login(credentials) {
         try {
-            console.log('[authService] Intentando login con:', {
-                ...credentials,
-                password: '[PROTECTED]'
-            });
-
             const loginData = {
                 username: credentials.username || '',
                 password: credentials.password || '',
@@ -191,7 +226,6 @@ const authService = {
             };
 
         } catch (error) {
-            console.error('[authService] Error en login:', error);
             // Limpiar cualquier dato de sesión en caso de error
             localStorage.removeItem('token');
             localStorage.removeItem('user');
@@ -216,70 +250,8 @@ const authService = {
         return '/login';
     },
 
- 
     async logout(options = {}) {
-        try {
-            // Obtener loginResponse del localStorage
-            let loginResponse = null;
-            try {
-                const storedResponse = localStorage.getItem('loginResponse');
-                if (storedResponse) {
-                    loginResponse = JSON.parse(storedResponse);
-                }
-            } catch (error) {
-                console.error('[authService] Error al obtener loginResponse:', error);
-            }
-            
-            // Obtener userId de todas las fuentes posibles
-            const user = JSON.parse(localStorage.getItem('user') || '{}');
-            const userId = user.userId || 
-                           user.UserId || 
-                           user.userid || 
-                           loginResponse?.userId ||
-                           localStorage.getItem('userId') || 
-                           0;
-            
-            console.log('[authService] UserId para logout:', userId);
-            
-            // Obtener userType de todas las fuentes posibles
-            const userType = user.userType || 
-                             loginResponse?.userType || 
-                             loginResponse?.TipoUsuario;
-            
-            // Crear el objeto de logout con los parámetros requeridos
-            const logoutData = {
-                userId: userId,
-                VentanaInicio: options.ventanaInicio || '/login'
-            };
-            
-            // Agregar userType solo si está disponible
-            if (userType) {
-                logoutData.userType = userType;
-            }
-            
-            const response = await fetchWithConfig('/auth/logout-cookie', {
-                method: 'POST'
-            });
-            
-            // Limpiar todo el localStorage
-            localStorage.clear();
-            
-            // Limpiar cookies
-            document.cookie.split(";").forEach(cookie => {
-                const [name] = cookie.split("=");
-                document.cookie = `${name.trim()}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-            });
-
-            // Redirigir al login
-            window.location.href = '/login';
-
-            return response;
-        } catch (error) {
-            // Aún si hay error, limpiar todo y redirigir
-            localStorage.clear();
-            window.location.href = '/login';
-            throw new Error(error.message || 'Error al cerrar sesión');
-        }
+        await handleLogout(false);
     },
 
     /**
@@ -373,7 +345,6 @@ const authService = {
             
             throw new Error(response.message || 'Error al cerrar la sesión');
         } catch (error) {
-            console.error('[authService] Error en handleLogout:', error);
             // Intentar limpiar incluso si hay error
             localStorage.clear();
             throw error;

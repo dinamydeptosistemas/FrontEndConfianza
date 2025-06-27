@@ -1,69 +1,151 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
-import { PublicOnlyRoute } from '../components/auth/PublicOnlyRoute';
-
-// Importar los componentes con los nombres correctos
 import LoginGeneral from '../pages/LoginGeneral';
-import DashboardInterno from '../pages/DashboardInterno';
-import DashboardExterno from '../pages/DashboardExterno';
-import DashboardGerencia from '../pages/DashboardGerencia';
 import DashboardLayout from '../layouts/DashboardLayout';
 import DashboardLayoutLight from '../layouts/DashboardLayoutLight';
 import DashboardLayoutLighter from '../layouts/DashboardLayoutLighter';
+import ManagerSystemPage from '../pages/ManagerSystemPage';
+import DashboardExterno from '../pages/DashboardExterno';
+import DashboardGerencia from '../pages/DashboardGerencia';
+import EmpresasDashboard from '../pages/empresa/EmpresasDashboard';
 import RegisterUserInternal from '../pages/registrer/RegisterUserInternal';
+import PerfilAccesoDashboard from '../pages/perfilAcceso/PerfilAccesoDashboard';
+import UsuarioDashboard from '../pages/usuario/UsuarioDashboard';
+import PermisosDashboard from '../pages/permisos/PermisosDashboard';
+import BitacoraDashboard from '../pages/bitacora/BitacoraDashboard';
+import SocialMediaDashboard from '../pages/socialmedia/socialmediadashboard';
+import PaperworksDashboard from '../pages/paperworks/PaperworksDashboard';
+import RegistrerUserExternal from '../pages/registrer/RegistrerUserExternal';
+import EmailVerificationPage from '../pages/EmailVerificationPage';
+
+
 
 export const AppRoutes = () => {
-    const { user } = useAuth();
+    const { user, loading, isInitialized } = useAuth();
 
+    // Verificación más estricta del estado de autenticación
+    const isAuthenticated = user && user.StatusCode === 200;
+    const isManagerSystem = isAuthenticated && (user.CodeFunction === 1 || user.UserFunction === 'MANAGER SYSTEM');
+    const isAdministracion = isAuthenticated && (user.CodeFunction === 2 || user.UserFunction === 'ADMINISTRACION');
+
+
+
+    // No renderizar nada hasta que la verificación inicial esté completa
+    if (!isInitialized) {
+        return null;
+    }
+
+    // Mostrar loading solo si estamos inicializados pero aún cargando
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
+
+    console.log('Ruta actual en AppRoutes:', window.location.pathname);
+    const publicRoutes = ['/login', '/registrar-usuario-interno', '/registrar-usuario-externo', '/validate-email'];
     return (
         <Routes>
-            {/* Ruta pública - Login */}
+            {/* Rutas públicas */}
             <Route 
                 path="/login" 
+                element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginGeneral />} 
+            />
+            <Route
+                path="/registrar-usuario-interno"
+                element={<RegisterUserInternal />} 
+            />
+            <Route
+                path="/registrar-usuario-externo"
+                element={<RegistrerUserExternal />} 
+            />
+            
+            {/* Ruta para verificación de correo electrónico */}
+            <Route
+                path="/validate-email"
+                element={<EmailVerificationPage />}
+            />
+
+            {/* Ruta independiente para empresas */}
+            <Route 
+                path="/dashboard/empresas" 
+                element={isAuthenticated && isManagerSystem ? <EmpresasDashboard /> : <Navigate to="/login" replace />} 
+            />
+            {/* Ruta independiente para perfiles de acceso */}
+            <Route 
+                path="/dashboard/perfil-acceso" 
+                element={isAuthenticated && isManagerSystem ? <PerfilAccesoDashboard /> : <Navigate to="/login" replace />} 
+            />
+            {/* Ruta independiente para usuarios */}
+            <Route 
+                path="/dashboard/usuarios" 
+                element={isAuthenticated && isManagerSystem ? <UsuarioDashboard /> : <Navigate to="/login" replace />} 
+            />
+            {/* Ruta para permisos */}
+            <Route 
+                path="/dashboard/permisos" 
+                element={isAuthenticated && isManagerSystem ? <PermisosDashboard /> : <Navigate to="/login" replace />} 
+            />
+            {/* Ruta para bitácora */}
+            <Route 
+                path="/dashboard/bitacora" 
+                element={isAuthenticated && isManagerSystem ? <BitacoraDashboard /> : <Navigate to="/login" replace />} 
+            />
+            {/* Ruta para redes sociales */}
+            <Route 
+                path="/dashboard/redes-sociales" 
+                element={isAuthenticated && isManagerSystem ? <SocialMediaDashboard /> : <Navigate to="/login" replace />} 
+            />
+            {/* Ruta para trámites */}
+            <Route 
+                path="/dashboard/tramites" 
                 element={
-                    user ? (
-                        <Navigate to={sessionStorage.getItem('returnUrl') || '/dashboard'} replace />
+                    isAuthenticated ? (
+                        isManagerSystem ? (
+                            <PaperworksDashboard />
+                        ) : (
+                            <Navigate to="/dashboard" replace />
+                        )
                     ) : (
-                        <LoginGeneral />
+                        <Navigate to="/login" state={{ from: window.location.pathname }} replace />
                     )
                 } 
             />
-
-            {/* Ruta pública para registro de usuario interno */}
+            {/* Ruta para usuarios activos */}
             <Route 
-                path="/registrar-usuario-interno" 
-                element={
-                    <PublicOnlyRoute>
-                        <RegisterUserInternal />
-                    </PublicOnlyRoute>
-                } 
+                path="/dashboard/usuarios-activos" 
+                element={isAuthenticated && isManagerSystem ? <Navigate to="/dashboard/usuarios" replace /> : <Navigate to="/login" replace />} 
             />
 
-            {/* Rutas protegidas con DashboardLayout (Admin) */}
-            <Route
-                path="/dashboard"
-                element={
-                    <ProtectedRoute>
-                        <DashboardLayout />
-                    </ProtectedRoute>
-                }
+            {/* Rutas protegidas */}
+            <Route 
+                path="/dashboard/*" 
+                element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" replace />}
             >
-                <Route index element={<DashboardInterno />} />
-                <Route path="internal" element={<DashboardInterno />} />
-                <Route path="External" element={<DashboardExterno />} />
-                <Route path="Gerencia" element={<DashboardGerencia />} />
+                <Route index element={<ManagerSystemPage />} />
+                <Route path="internal" element={isManagerSystem ? <ManagerSystemPage /> : <Navigate to="/dashboard" replace />} />
+                <Route path="gerencia" element={isAdministracion ? <DashboardGerencia /> : <Navigate to="/dashboard" replace />} />
+                <Route path="usuarios" element={<UsuarioDashboard />} />
+                <Route path="permisos" element={isAuthenticated && isManagerSystem ? <PermisosDashboard /> : <Navigate to="/login" replace />} />
+                <Route path="bitacora" element={isAuthenticated && isManagerSystem ? <BitacoraDashboard /> : <Navigate to="/login" replace />} />
+                <Route 
+                    path="tramites" 
+                    element={
+                        isManagerSystem ? (
+                            <PaperworksDashboard />
+                        ) : (
+                            <Navigate to="/dashboard" replace />
+                        )
+                    } 
+                />
             </Route>
 
-            {/* Rutas protegidas con DashboardLayoutLight (Gerencia) */}
-            <Route
-                path="/dashboard-light"
-                element={
-                    <ProtectedRoute>
-                        <DashboardLayoutLight />
-                    </ProtectedRoute>
-                }
+            <Route 
+                path="/dashboard-light/*" 
+                element={isAuthenticated ? <DashboardLayoutLight /> : <Navigate to="/login" replace />}
             >
                 <Route path="gerencia/usuarios" element={<DashboardGerencia />} />
                 <Route path="gerencia/configuracion-inicial" element={<DashboardGerencia />} />
@@ -72,38 +154,26 @@ export const AppRoutes = () => {
                 <Route path="gerencia/reportes" element={<DashboardGerencia />} />
             </Route>
 
-            {/* Rutas protegidas con DashboardLayoutLighter (Otros roles) */}
-            <Route
-                path="/dashboard-lighter"
-                element={
-                    <ProtectedRoute>
-                        <DashboardLayoutLighter />
-                    </ProtectedRoute>
-                }
+            <Route 
+                path="/dashboard-lighter/*" 
+                element={isAuthenticated ? <DashboardLayoutLighter /> : <Navigate to="/login" replace />}
             >
-                <Route path="contador" element={<DashboardGerencia />} />
-                <Route path="supervisor" element={<DashboardGerencia />} />
-                <Route path="auxiliar" element={<DashboardGerencia />} />
-                <Route path="cajero" element={<DashboardGerencia />} />
-                <Route path="vendedor" element={<DashboardGerencia />} />
-                <Route path="externo" element={<DashboardGerencia />} />
+                <Route path="external" element={<DashboardExterno />} />
             </Route>
 
-            {/* Redirigir la ruta raíz según el estado de autenticación */}
-            <Route
-                path="/"
-                element={
-                    <Navigate to={user ? '/dashboard' : '/login'} replace />
-                }
-            />
+            {/* Rutas de roles específicos */}
+            <Route path="contador" element={isAuthenticated ? <DashboardGerencia /> : <Navigate to="/login" replace />} />
+            <Route path="supervisor" element={isAuthenticated ? <DashboardGerencia /> : <Navigate to="/login" replace />} />
+            <Route path="auxiliar" element={isAuthenticated ? <DashboardGerencia /> : <Navigate to="/login" replace />} />
+            <Route path="cajero" element={isAuthenticated ? <DashboardGerencia /> : <Navigate to="/login" replace />} />
+            <Route path="vendedor" element={isAuthenticated ? <DashboardGerencia /> : <Navigate to="/login" replace />} />
 
-            {/* Ruta para cualquier otra URL no definida */}
-            <Route
-                path="*"
-                element={
-                    <Navigate to={user ? '/dashboard' : '/login'} replace />
-                }
-            />
+            {/* Ruta por defecto */}
+            <Route path="*" element={
+                publicRoutes.includes(window.location.pathname)
+                    ? null
+                    : <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
+            } />
         </Routes>
     );
 }; 

@@ -48,7 +48,7 @@ const DashboardLayoutLight = () => {
                         <div className="w-full py-2 px-4 flex justify-between text-xs">
                             <div className="flex">
                                 <span className="font-semibold">USER:</span>
-                                <span className="text-[#1e4e9c] ml-1">{user?.username?.toUpperCase()}</span>
+                                <span className="text-[#1e4e9c] ml-1">{user?.Username?.toUpperCase()}</span>
                             </div>
                             <button 
                                 onClick={handleLogout}
@@ -63,7 +63,7 @@ const DashboardLayoutLight = () => {
                     <div className="flex justify-between bg-[#f5a623] mx-[40px] w-[87%]">
                         <div className="w-full py-2 px-4 h-[55px]">
                             <h2 className="text-lg font-bold text-white">
-                                <span className="text-base ml-2">{user?.userFunction || 'Usuario'} :</span>
+                                <span className="text-base ml-2">{user?.UserFunction || 'Usuario'} :</span>
                             </h2>
                         </div>
                     </div>

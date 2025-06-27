@@ -1,18 +1,20 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
-const DashboardInterno = () => {
+const ManagerSystemPage = () => {
+    const { user } = useAuth();
     return (
         <div className="w-full">
             {/* Manager System Title */}
  
 
             {/* Main content */}
-            <div className="p-10">
+            <div className="p-10 text-[18px]">
                 <div className="flex mb-6">
                     {/* Columna izquierda - Accesos */}
                     <div className="w-1/2 pr-8">
-                        <h3 className="text-base font-semibold mb-3">Accesos</h3>
+                        <h3 className="text-base text-gray-600 mb-3 text-[20px]">Accesos</h3>
                         <ul className="space-y-2">
                             <li>
                                 <Link to="/dashboard/empresas" className="text-[#1e4e9c] hover:underline block">
@@ -45,7 +47,7 @@ const DashboardInterno = () => {
                     {/* Columna derecha - Tramites y Medios */}
                     <div className="w-1/2">
                         <div className="mb-6">
-                            <h3 className="text-base font-semibold mb-3">Tramites</h3>
+                            <h3 className="text-base  mb-3 text-[20px] text-gray-600">Tramites</h3>
                             <ul className="space-y-2">
                                 <li>
                                     <Link to="/dashboard/tramites" className="text-[#1e4e9c] hover:underline block">
@@ -55,10 +57,10 @@ const DashboardInterno = () => {
                             </ul>
                         </div>
                         <div>
-                            <h3 className="text-base font-semibold mb-3">Medios y Redes</h3>
+                            <h3 className="text-base  text-gray-600 mb-3 text-[20px]">Medios y Redes</h3>
                             <ul className="space-y-2">
                                 <li>
-                                    <Link to="/dashboard/email-redes" className="text-[#1e4e9c] hover:underline block">
+                                    <Link to="/dashboard/redes-sociales" className="text-[#1e4e9c] hover:underline block">
                                         7 Email y Redes Sociales
                                     </Link>
                                 </li>
@@ -68,16 +70,18 @@ const DashboardInterno = () => {
                 </div>
 
                 {/* Diagrama */}
-                <div className="mt-6 mb-8">
-                    <img 
-                        src="/diagrama_de_flujo_usuarios.png" 
-                        alt="Diagrama de flujo"
-                        style={{ maxWidth: '377px', width: '100%', height: '270px' }}
-                    />
-                </div>
+                {(user?.codeFunction === 1 || user?.codeFunction === "1") && (
+                  <div className="mt-6 mb-8">
+                      <img 
+                          src="/diagrama_de_flujo_usuarios.png" 
+                          alt="Diagrama de flujo"
+                          style={{ maxWidth: '377px', width: '100%', height: '270px' }}
+                      />
+                  </div>
+                )}
             </div>
         </div>
     );
 };
 
-export default DashboardInterno;
+export default ManagerSystemPage;

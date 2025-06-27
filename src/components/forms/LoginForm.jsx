@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { FormInput } from './FormInput';
-import { MensajeHead } from './MensajeHead';
+import MensajeHead from './MensajeHead';
 
 export const LoginForm = () => {
     const { login } = useAuth();
     const navigate = useNavigate();
     const [userType, setUserType] = useState(0);
+
     const [formData, setFormData] = useState({
         username: '',
         password: '',
@@ -93,49 +94,14 @@ export const LoginForm = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
         if (!validateForm()) {
             return;
         }
-
         setIsSubmitting(true);
+        setGlobalError('');
+        
         try {
-            const response = await login(formData);
-            
-            if (response && response.userId) {
-                if (userType === 1) {
-                    switch (response.codeFunction) {
-                        case 1:
-                            navigate('/dashboard/internal');
-                            break;
-                        case 2:
-                            navigate('/dashboard/gerencia');
-                            break;
-                        case 3:
-                            navigate('/dashboard-lighter/contador');
-                            break;
-                        case 4:
-                            navigate('/dashboard-lighter/supervisor');
-                            break;
-                        case 5:
-                            navigate('/dashboard-lighter/auxiliar');
-                            break;
-                        case 6:
-                            navigate('/dashboard-lighter/cajero');
-                            break;
-                        case 7:
-                            navigate('/dashboard-lighter/vendedor');
-                            break;
-                        default:
-                            setGlobalError('Función no autorizada');
-                            return;
-                    }
-                } else if (userType === 2) {
-                    navigate('/dashboard-lighter/externo');
-                }
-            } else {
-                throw new Error('Error en la autenticación');
-            }
+            await login(formData);
         } catch (error) {
             setGlobalError(error.message || 'Error en la autenticación');
         } finally {
@@ -159,6 +125,7 @@ export const LoginForm = () => {
                                     : 'bg-white text-[#898989] border-[#c2c2c2] hover:border-[#c2c2c2] hover:bg-[#c2c2c2] hover:text-black'
                             }`}
                             onClick={() => handleUserTypeChange(1)}
+                            disabled={isSubmitting}
                         >
                             Usuario Interno
                         </button>
@@ -170,6 +137,7 @@ export const LoginForm = () => {
                                     : 'bg-white text-[#898989] border-[#c2c2c2]  hover:border-[#c2c2c2]  hover:bg-[#c2c2c2] hover:text-black'
                             }`}
                             onClick={() => handleUserTypeChange(2)}
+                            disabled={isSubmitting}
                         >
                             Usuario Externo
                         </button>
@@ -178,8 +146,9 @@ export const LoginForm = () => {
                     <div className="bg-[#0047BB] rounded-lg p-8 shadow-lg">
                         <h2 className="text-2xl font-semibold text-white text-center mb-6">Iniciar Sesión</h2>
 
+                        <MensajeHead mensaje={globalError} />
                         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-                        {userType === 0 && (
+                            {userType === 0 && (
                                 <>
                                     <FormInput
                                         name="username o correo"
@@ -207,6 +176,7 @@ export const LoginForm = () => {
                                         placeholder="Usuario"
                                         value={formData.username}
                                         onChange={handleInputChange}
+                                        disabled={isSubmitting}
                                         className="w-full px-3 py-2 rounded focus:outline-none focus:border-blue-500"
                                     />
                                     <FormInput
@@ -215,6 +185,7 @@ export const LoginForm = () => {
                                         placeholder="Contraseña"
                                         value={formData.password}
                                         onChange={handleInputChange}
+                                        disabled={isSubmitting}
                                         className="w-full px-3 py-2 rounded focus:outline-none focus:border-blue-500"
                                     />
                                 </>
@@ -227,6 +198,7 @@ export const LoginForm = () => {
                                         placeholder="Correo electrónico"
                                         value={formData.email}
                                         onChange={handleInputChange}
+                                        disabled={isSubmitting}
                                         className="w-full px-3 py-2 rounded focus:outline-none focus:border-blue-500"
                                     />
                                     <FormInput
@@ -234,6 +206,7 @@ export const LoginForm = () => {
                                         placeholder="DNI/RUC"
                                         value={formData.dni}
                                         onChange={handleInputChange}
+                                        disabled={isSubmitting}
                                         className="w-full px-3 py-2 rounded focus:outline-none focus:border-blue-500"
                                     />
                                 </>
@@ -254,16 +227,43 @@ export const LoginForm = () => {
                                     type="button"
                                     onClick={() => console.log('Recuperar contraseña')}
                                     className="block w-full text-white hover:underline text-sm"
+                                    disabled={isSubmitting}
                                 >
                                     ¿Perdiste tu contraseña?
                                 </button>
-                                <button
-                                    type="button"
-                                    onClick={() => navigate('/registrar-usuario-interno')}
-                                    className="block w-full text-white hover:underline text-sm"
-                                >
-                                    ¿No tienes Cuenta? Regístrate
-                                </button>
+                                {userType === 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate('/registrar-usuario-interno')}
+                                        className="block w-full text-white hover:underline text-sm"
+                                        disabled={isSubmitting}
+                                    >
+                                        ¿No tienes Cuenta? Regístrate
+                                    </button>
+                                )}
+                                {userType === 2 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate('/registrar-usuario-externo')}
+                                        className="block w-full text-white hover:underline text-sm"
+                                        disabled={isSubmitting}
+                                    >
+                                        ¿No tienes Cuenta? Regístrate
+                                    </button>
+                                )}
+                                {userType === 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            setGlobalError('Seleccione un tipo de usuario');
+                                            e.preventDefault();
+                                        }}
+                                        className="block w-full text-white hover:underline text-sm"
+                                        disabled={isSubmitting}
+                                    >
+                                        ¿No tienes Cuenta? Regístrate
+                                    </button>
+                                )}
                             </div>
                         </form>
                     </div>
