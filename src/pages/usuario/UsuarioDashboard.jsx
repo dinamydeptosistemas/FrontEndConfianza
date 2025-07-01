@@ -1,5 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { getUsers, putUser, deleteUser } from '../../services/user/UserService';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { 
+  getUsers, 
+  putUser, 
+  deleteUser,
+  uploadTemplate,
+  downloadTemplate
+} from '../../services/user/UserService';
 import ManagementDashboardLayout from '../../layouts/ManagementDashboardLayout';
 import { useAuth } from '../../contexts/AuthContext';
 import ButtonGroup from '../../components/common/ButtonGroup';
@@ -11,9 +17,10 @@ import Paginador from '../../components/common/Paginador';
 import { useNotification } from '../../context/NotificationContext';
 import FilterModal from '../../components/common/FilterModal';
 
+
 export default function UsuarioDashboard() {
     const { user, negocio } = useAuth();
-    const { showSuccessMessage } = useNotification();
+    const { showSuccessMessage, showErrorMessage } = useNotification();
     const [usuariosOriginales, setUsuariosOriginales] = useState([]);
     const [usuarios, setUsuarios] = useState([]);
     const [busqueda, setBusqueda] = useState('');
@@ -26,7 +33,129 @@ export default function UsuarioDashboard() {
     const [paginaActual, setPaginaActual] = useState(1);
     const [totalPaginas, setTotalPaginas] = useState(1);
     const [mostrarModalFiltros, setMostrarModalFiltros] = useState(false);
+    const [mostrarModalSubirPlantilla, setMostrarModalSubirPlantilla] = useState(false);
+    const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
+    const [mostrarConfirmacionActualizacion, setMostrarConfirmacionActualizacion] = useState(false);
     const [filtros, setFiltros] = useState({});
+    const [showPlantillaMenu, setShowPlantillaMenu] = useState(false);
+    const plantillaMenuRef = useRef(null);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (plantillaMenuRef.current && !plantillaMenuRef.current.contains(event.target)) {
+                setShowPlantillaMenu(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Función para descargar un archivo desde un Blob
+    const descargarArchivo = (blob, nombreArchivo) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = nombreArchivo || 'usuarios.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+    };
+
+
+    const downloadExcel = async () => {
+        try {
+            console.log('Iniciando descarga de Excel con filtros:', filtros);
+            const blob = await downloadTemplate({
+                process: 'getUsers',
+                page: 0, // Para obtener todos los registros
+                ...filtros
+            });
+            
+            // Verificar si el blob es válido
+            if (!blob || !(blob instanceof Blob)) {
+                throw new Error('El archivo recibido no es válido');
+            }
+            
+            // Verificar el tamaño del blob
+            if (blob.size === 0) {
+                throw new Error('El archivo recibido está vacío');
+            }
+            
+            descargarArchivo(blob, `usuarios_exportacion_${new Date().toISOString().split('T')[0]}.xlsx`);
+            showSuccessMessage('Archivo Excel generado exitosamente');
+        } catch (error) {
+            console.error('Error al generar Excel:', {
+                message: error.message,
+                name: error.name,
+                stack: error.stack,
+                originalError: error.originalError || null
+            });
+            
+            // Mostrar mensaje de error más descriptivo
+            const errorMessage = error.message.includes('No autorizado')
+                ? 'Su sesión ha expirado. Por favor, inicie sesión nuevamente.'
+                : error.message.includes('conectar con el servidor')
+                    ? 'No se pudo conectar con el servidor. Verifique su conexión a internet.'
+                    : `Error al generar el archivo Excel: ${error.message}`;
+            
+            showErrorMessage(errorMessage);
+        }
+    };
+
+    const confirmarSubirPlantilla = async (esActualizacion) => {
+    setMostrarConfirmacionActualizacion(false);
+    
+    try {
+      // Si es una descarga de plantilla
+      if (esActualizacion === undefined) {
+        const blob = await downloadTemplate({
+          process: 'template',
+          page: 0
+        });
+        if (blob) {
+          descargarArchivo(blob, 'plantilla_usuarios.xlsx');
+          showSuccessMessage('Plantilla descargada exitosamente');
+        }
+        return;
+      }
+      const formData = new FormData();
+      formData.append('Archivo', archivoSeleccionado);
+      formData.append('EsActualizacion', esActualizacion);
+      
+      // Mostrar mensaje de carga
+      showSuccessMessage(esActualizacion 
+        ? 'Actualizando registros existentes...' 
+        : 'Creando nuevos registros...');
+      
+      // Subir el archivo y esperar la respuesta
+      const response = await uploadTemplate(formData);
+      
+      // Mostrar mensaje de éxito basado en la respuesta del servidor
+      if (response && response.message) {
+        showSuccessMessage(response.message);
+      } else if (response && response.error) {
+        throw new Error(response.error);
+      } else {
+        showSuccessMessage(esActualizacion 
+          ? 'Registros actualizados correctamente' 
+          : 'Registros creados correctamente');
+      }
+      
+      // Cerrar el modal y limpiar el estado
+      setMostrarModalSubirPlantilla(false);
+      setArchivoSeleccionado(null);
+      
+      // Recargar usuarios después de subir la plantilla
+      cargarUsuarios(paginaActual, busqueda, filtros);
+    } catch (error) {
+      console.error('Error al subir plantilla:', error);
+      showErrorMessage(error.message || 'Error al procesar el archivo');
+    }
+    };
 
     const cargarUsuarios = useCallback(async (pagina = 1, filtroBusqueda = '', filtrosAdicionales = {}) => {
         // Preparar los parámetros para la llamada a la API
@@ -218,6 +347,7 @@ export default function UsuarioDashboard() {
     return (
         <ManagementDashboardLayout title="USUARIOS:" user={user} negocio={negocio}>
             <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
+
                 <div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
           <div className="flex gap-2">
             <ButtonGroup
@@ -230,17 +360,116 @@ export default function UsuarioDashboard() {
             />
             <button
               onClick={() => setMostrarModalFiltros(true)}
-              className="flex items-center gap-1 bg-white border-[#1e4e9c] border px-4 py-1 font-bold hover:text-white hover:bg-[#1e4e9c] rounded"
+              className="flex items-center text-[#1e4e9c]  gap-1 bg-white border-[#1e4e9c] border px-4 py-1 font-bold hover:text-white hover:bg-[#1e4e9c] rounded"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
-              Filtros
+              
               {Object.keys(filtros).length > 0 && (
                 <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
                   {Object.keys(filtros).length}
                 </span>
               )}
+            </button>
+            <button
+              onClick={() => {
+                // Usar los datos ya filtrados del estado
+                const columnMappings = {
+                  'idUser': 'ID',
+                  'nombreUser': 'Nombre',
+                  'apellidosUser': 'Apellidos',
+                  'username': 'Username',
+                  'emailUsuario': 'Email',
+                  'identificacion': 'Identificación',
+                  'tipoUser': 'Tipo de Usuario',
+                  'relacionUsuario': 'Relación',
+                  'fechaRegistro': 'Fecha de Registro',
+                  'usuarioActivo': 'Estado'
+                };
+                // Usar directamente los usuarios filtrados del estado
+                console.log("Usuarios enviados a Excel:", usuarios);
+                if (usuarios.length > 0) {
+                  console.log("Primer usuario:", usuarios[0]);
+                }
+                downloadExcel(usuarios, columnMappings, 'Usuarios', 'usuarios');
+              }}
+              className="flex items-center gap-1 bg-white font-bold hover:text-white hover:bg-[#1e4e9c] rounded"
+            >
+              <div className="relative" ref={plantillaMenuRef}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowPlantillaMenu(!showPlantillaMenu);
+                  }}
+                  className="flex items-center gap-1 bg-white  text-[#1e4e9c] px-2 py-1 font-bold hover:text-white hover:bg-[#1e4e9c] rounded"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 11-2 0V4H5v11h4a1 1 0 110 2H4a1 1 0 01-1-1V3zm7 4a1 1 0 011-1h5a1 1 0 011 1v5a1 1 0 01-1 1h-5a1 1 0 01-1-1V7z" clipRule="evenodd" />
+                  </svg>
+                  Plantilla
+                </button>
+
+                {showPlantillaMenu && (
+                  <div className="absolute right-0 mt-1 w-64 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                    <div className="py-1">
+                      {/* Botón para descargar plantilla vacía */}
+                      <button
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowPlantillaMenu(false);
+                          setMostrarConfirmacionActualizacion(true);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      >
+                        Descargar plantilla vacía
+                      </button>
+                      
+                      {/* Botón para subir plantilla */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setMostrarModalSubirPlantilla(true);
+                          setShowPlantillaMenu(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      >
+                        Subir plantilla
+                      </button>
+                      
+                      <div className="border-t border-gray-200 my-1"></div>
+                      
+                      {/* Botón para exportar datos */}
+                      <button
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          try {
+                            const blob = await downloadTemplate({
+                              process: 'export',
+                              ...filtros
+                            });
+                            if (blob) {
+                              descargarArchivo(blob, `usuarios_exportacion_${new Date().toISOString().split('T')[0]}.xlsx`);
+                              showSuccessMessage('Exportación completada exitosamente');
+                            }
+                          } catch (error) {
+                            console.error('Error al exportar datos:', error);
+                            showErrorMessage('Error al exportar los datos');
+                          }
+                          setShowPlantillaMenu(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      >
+                        Exportar a Excel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </button>
           </div>
           <div className="flex justify-center">
@@ -464,6 +693,118 @@ export default function UsuarioDashboard() {
                     title="Filtros de Usuarios"
                 />
             </div>
+
+            {/* Upload Template Modal */}
+            {mostrarModalSubirPlantilla && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+                        <h3 className="text-lg font-bold mb-4">Subir Plantilla</h3>
+                        
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Seleccionar archivo
+                            </label>
+                            <input
+                                type="file"
+                                accept=".xlsx, .xls"
+                                onChange={(e) => setArchivoSeleccionado(e.target.files[0])}
+                                className="block w-full text-sm text-gray-500
+                                    file:mr-4 file:py-2 file:px-4
+                                    file:rounded-md file:border-0
+                                    file:text-sm file:font-semibold
+                                    file:bg-blue-50 file:text-blue-700
+                                    hover:file:bg-blue-100"
+                                required
+                            />
+                        </div>
+                        
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setMostrarModalSubirPlantilla(false);
+                                    setArchivoSeleccionado(null);
+                                }}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    console.log('Subir button clicked');
+                                    console.log('archivoSeleccionado:', archivoSeleccionado);
+                                    if (archivoSeleccionado) {
+                                        console.log('Showing confirmation dialog');
+                                        setMostrarConfirmacionActualizacion(true);
+                                    } else {
+                                        console.log('No file selected');
+                                    }
+                                }}
+                                disabled={!archivoSeleccionado}
+                                className={`px-4 py-2 text-sm font-medium text-white rounded-md ${
+                                    archivoSeleccionado 
+                                        ? 'bg-blue-600 hover:bg-blue-700' 
+                                        : 'bg-gray-400 cursor-not-allowed'
+                                }`}
+                            >
+                                Subir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirmación de actualización */}
+            {console.log('Render - mostrarConfirmacionActualizacion:', mostrarConfirmacionActualizacion)}
+            {mostrarConfirmacionActualizacion && (
+                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[1000] p-4">
+                    <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md">
+                        <h3 className="text-xl font-bold mb-4 text-gray-800">Tipo de Importación</h3>
+                        <p className="mb-6 text-gray-700">
+                            ¿Desea actualizar registros existentes o crear nuevos registros?
+                        </p>
+                        
+                        <div className="flex flex-col sm:flex-row justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setMostrarConfirmacionActualizacion(false)}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex-1 sm:flex-none"
+                            >
+                                Cancelar
+                            </button>
+                            {mostrarModalSubirPlantilla && (
+                              <>
+                                <button
+                                    type="button"
+                                    onClick={() => confirmarSubirPlantilla(false)}
+                                    className="px-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 flex-1 sm:flex-none"
+                                >
+                                    Crear
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => confirmarSubirPlantilla(true)}
+                                    className="px-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex-1 sm:flex-none"
+                                >
+                                    Actualizar
+                                </button>
+                              </>
+                            )}
+                            {!mostrarModalSubirPlantilla && (
+                              <button
+                                  type="button"
+                                  onClick={() => confirmarSubirPlantilla()}
+                                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex-1 sm:flex-none"
+                              >
+                                  Descargar plantilla
+                              </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </ManagementDashboardLayout>
-    );
-}
+  );
+};

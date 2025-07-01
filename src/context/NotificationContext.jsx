@@ -19,8 +19,15 @@ export const NotificationProvider = ({ children }) => {
     setTimeout(() => setShowSuccess(false), duration);
   };
 
+  // Función para mostrar mensaje de error
+  const showErrorMessage = (message, duration = 3000) => {
+    // Por ahora usamos el mismo modal de éxito para los errores
+    // Podrías crear un ErrorModal separado si necesitas un estilo diferente
+    showSuccessMessage(message, duration);
+  };
+
   return (
-    <NotificationContext.Provider value={{ showSuccessMessage }}>
+    <NotificationContext.Provider value={{ showSuccessMessage, showErrorMessage }}>
       {children}
       
       {/* Componente global de notificación de éxito */}
