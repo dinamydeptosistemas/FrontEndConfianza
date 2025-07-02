@@ -225,15 +225,7 @@ const UsuarioModal = ({
         {/* Overlay de carga */}
         {loading && <LoadingOverlay isLoading={true} message={isEditing ? "Actualizando usuario..." : "Creando usuario..."} />}
         
-        {/* Botón cerrar */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl font-bold focus:outline-none"
-          aria-label="Cerrar"
-        >
-          ×
-        </button>
+      
 
         {/* Header con título y botones */}
         <div className="grid grid-cols-2 items-center mb-2">
@@ -278,6 +270,35 @@ const UsuarioModal = ({
             </div>
           </div>
 
+          
+          {/* Row 3: Identificación + Username */}
+          <div>
+          <label className="block text-sm font-medium text-gray-700">Username</label>
+            <input
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-blue-200 text-gray-600 transition-colors outline-none"
+              readOnly
+            />
+          </div>
+          <div>
+
+          <label className="block text-sm font-medium text-gray-700">Identificación</label>
+            <input
+              type="text"
+              name="identificacion"
+              value={formData.identificacion}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
+              required={!isEditing}
+            />
+         
+           
+          </div>
+
+
           {/* Row 2: Nombre + Apellidos */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Nombre</label>
@@ -299,30 +320,6 @@ const UsuarioModal = ({
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
               required={!isEditing}
-            />
-          </div>
-
-          {/* Row 3: Identificación + Username */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Identificación</label>
-            <input
-              type="text"
-              name="identificacion"
-              value={formData.identificacion}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
-              required={!isEditing}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Username</label>
-            <input
-              type="text"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-gray-50 text-gray-600 transition-colors outline-none"
-              readOnly
             />
           </div>
 

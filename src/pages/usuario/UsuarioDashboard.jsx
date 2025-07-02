@@ -420,11 +420,34 @@ export default function UsuarioDashboard() {
                           e.preventDefault();
                           e.stopPropagation();
                           setShowPlantillaMenu(false);
-                          setMostrarConfirmacionActualizacion(true);
+                          try {
+                            const blob = await downloadTemplate({
+                              process: 'getUsers',
+                              page: 0 // Página 0 para plantilla vacía
+                            });
+                            
+                            if (!blob || !(blob instanceof Blob)) {
+                              throw new Error('El archivo recibido no es válido');
+                            }
+                            
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'plantilla_usuarios.xlsx';
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            a.remove();
+                            
+                            showSuccessMessage('Plantilla descargada exitosamente');
+                          } catch (error) {
+                            console.error('Error al descargar la plantilla:', error);
+                            showErrorMessage(error.message || 'Error al descargar la plantilla');
+                          }
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                       >
-                        Descargar plantilla vacía
+                        Descargar Plantilla (vacía)
                       </button>
                       
                       {/* Botón para subir plantilla */}
@@ -437,7 +460,7 @@ export default function UsuarioDashboard() {
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                       >
-                        Subir plantilla
+                        Subir Plantilla
                       </button>
                       
                       <div className="border-t border-gray-200 my-1"></div>
@@ -462,9 +485,9 @@ export default function UsuarioDashboard() {
                           }
                           setShowPlantillaMenu(false);
                         }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                        className="block w-full  text-sm text-left px-4 py-2  text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                       >
-                        Exportar a Excel
+                        Actualizar Plantilla (descargar)
                       </button>
                     </div>
                   </div>
@@ -701,21 +724,28 @@ export default function UsuarioDashboard() {
                         <h3 className="text-lg font-bold mb-4">Subir Plantilla</h3>
                         
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Seleccionar archivo
-                            </label>
-                            <input
-                                type="file"
-                                accept=".xlsx, .xls"
-                                onChange={(e) => setArchivoSeleccionado(e.target.files[0])}
-                                className="block w-full text-sm text-gray-500
-                                    file:mr-4 file:py-2 file:px-4
-                                    file:rounded-md file:border-0
-                                    file:text-sm file:font-semibold
-                                    file:bg-blue-50 file:text-blue-700
-                                    hover:file:bg-blue-100"
-                                required
-                            />
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="text-sm font-medium text-gray-700">
+                                    Seleccionar el archivo
+                                </label>
+                                <div className="relative">
+                                    <div className="relative">
+                                        <div className="text-sm text-white bg-blue-500 hover:bg-blue-600 py-2 px-4 rounded-md font-medium cursor-pointer w-[100px] text-center">
+                                            Seleccionar
+                                            <input
+                                                type="file"
+                                                accept=".xlsx, .xls"
+                                                onChange={(e) => setArchivoSeleccionado(e.target.files[0])}
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                                {archivoSeleccionado ? archivoSeleccionado.name : 'No se ha seleccionado ningún archivo'}
+                            </div>
                         </div>
                         
                         <div className="flex justify-end space-x-3">
@@ -725,7 +755,7 @@ export default function UsuarioDashboard() {
                                     setMostrarModalSubirPlantilla(false);
                                     setArchivoSeleccionado(null);
                                 }}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 w-[100px] text-center"
                             >
                                 Cancelar
                             </button>
@@ -743,7 +773,7 @@ export default function UsuarioDashboard() {
                                     }
                                 }}
                                 disabled={!archivoSeleccionado}
-                                className={`px-4 py-2 text-sm font-medium text-white rounded-md ${
+                                className={`px-4 py-2 text-sm font-medium text-white rounded-md w-[100px] text-center ${
                                     archivoSeleccionado 
                                         ? 'bg-blue-600 hover:bg-blue-700' 
                                         : 'bg-gray-400 cursor-not-allowed'
@@ -763,14 +793,14 @@ export default function UsuarioDashboard() {
                     <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md">
                         <h3 className="text-xl font-bold mb-4 text-gray-800">Tipo de Importación</h3>
                         <p className="mb-6 text-gray-700">
-                            ¿Desea actualizar registros existentes o crear nuevos registros?
+                            ¿Necesita crear nuevos registros o actualizar registros existentes?
                         </p>
                         
                         <div className="flex flex-col sm:flex-row justify-end gap-3">
                             <button
                                 type="button"
                                 onClick={() => setMostrarConfirmacionActualizacion(false)}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex-1 sm:flex-none"
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex-1 sm:flex-none w-[100px]"
                             >
                                 Cancelar
                             </button>
@@ -779,14 +809,14 @@ export default function UsuarioDashboard() {
                                 <button
                                     type="button"
                                     onClick={() => confirmarSubirPlantilla(false)}
-                                    className="px-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 flex-1 sm:flex-none"
+                                    className="px-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 flex-1 sm:flex-none w-[100px]"
                                 >
                                     Crear
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => confirmarSubirPlantilla(true)}
-                                    className="px-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex-1 sm:flex-none"
+                                    className="px-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex-1 sm:flex-none w-[100px]"
                                 >
                                     Actualizar
                                 </button>
@@ -798,7 +828,7 @@ export default function UsuarioDashboard() {
                                   onClick={() => confirmarSubirPlantilla()}
                                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex-1 sm:flex-none"
                               >
-                                  Descargar plantilla
+                                  Descargar Plantilla
                               </button>
                             )}
                         </div>
