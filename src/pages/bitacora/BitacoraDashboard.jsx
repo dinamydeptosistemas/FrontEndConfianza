@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback } from 'react';
 import ManagementDashboardLayout from '../../layouts/ManagementDashboardLayout';
 import GenericTable from '../../components/common/GenericTable';
 import SearchBar from '../../components/common/SearchBar';
-import ButtonGroup from '../../components/common/ButtonGroup';
 import ConfirmEliminarModal from '../../components/common/ConfirmEliminarModal';
 import Paginador from '../../components/common/Paginador';
 import PermisosModal from '../../components/bitacora/PermisosModal';
@@ -22,6 +21,7 @@ export default function BitacoraDashboard() {
   const [loading, setLoading] = useState(false);
   const [modalExito, setModalExito] = useState({ open: false, mensaje: '' });
   const [registroSeleccionado, setRegistroSeleccionado ] = useState(null);
+  const [modalFiltros, setModalFiltros] = useState(false);
 
   const cargarBitacora = useCallback(async (pagina = 1, filtroBusqueda = '', estado = '') => {
     setLoading(true);
@@ -360,27 +360,123 @@ export default function BitacoraDashboard() {
     }
   ];
 
-  // Botonera principal (vacía ya que no necesitamos botones de acción)
-  const botonesPrincipales = [];
+  // No se necesitan botones principales
 
   return (
     <ManagementDashboardLayout title="BITACORA DE ACCESO" user={user} negocio={negocio}>
-      <div className="bg-white rounded-b p-4 mx-[18px] w-full">
-        {/* Filtros visuales */}
-        <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
-          <div className="flex gap-2 items-center">
-            <label className="font-semibold">Estado:</label>
-            <label><input type="radio" name="estado" value="" checked={estadoFiltro === ''} onChange={() => handleFiltroEstado('')} /> Todos</label>
-            <label><input type="radio" name="estado" value="ACTIVO" checked={estadoFiltro === 'ACTIVO'} onChange={() => handleFiltroEstado('ACTIVO')} /> Activo</label>
-            <label><input type="radio" name="estado" value="CERRADO" checked={estadoFiltro === 'CERRADO'} onChange={() => handleFiltroEstado('CERRADO')} /> Cerrado</label>
-            <label><input type="radio" name="estado" value="BLOQUEADO" checked={estadoFiltro === 'BLOQUEADO'} onChange={() => handleFiltroEstado('BLOQUEADO')} /> Bloqueado</label>
+      <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
+        {/* Botón para abrir modal de filtros */}
+    
+        {/* Modal de filtros */}
+        {modalFiltros && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+              <div className="p-4  flex justify-between items-center">
+                <h3 className="text-[24px] font-semibold">Filtros de Bitácora</h3>
+             
+              </div>
+              
+              {/* Contenido del modal - Formulario de filtros */}
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                cargarBitacora(1, filtro, estadoFiltro);
+                setModalFiltros(false);
+              }} className="p-6">
+                <div className="mb-6">
+                  <fieldset className="rounded p-4">
+                    <legend className="text-sm font-semibold px-2">Estado de sesión:</legend>
+                    <div className="grid grid-cols-2 gap-4">
+                      <label className="inline-flex items-center">
+                        <input 
+                          type="radio" 
+                          name="estado" 
+                          value="" 
+                          checked={estadoFiltro === ''} 
+                          onChange={() => handleFiltroEstado('')} 
+                          className="form-radio h-4 w-4 text-blue-600"
+                        />
+                        <span className="ml-2">Todos</span>
+                      </label>
+                      <label className="inline-flex items-center">
+                        <input 
+                          type="radio" 
+                          name="estado" 
+                          value="ACTIVO" 
+                          checked={estadoFiltro === 'ACTIVO'} 
+                          onChange={() => handleFiltroEstado('ACTIVO')} 
+                          className="form-radio h-4 w-4 text-green-600"
+                        />
+                        <span className="ml-2">Activo</span>
+                      </label>
+                      <label className="inline-flex items-center">
+                        <input 
+                          type="radio" 
+                          name="estado" 
+                          value="CERRADO" 
+                          checked={estadoFiltro === 'CERRADO'} 
+                          onChange={() => handleFiltroEstado('CERRADO')} 
+                          className="form-radio h-4 w-4 text-gray-600"
+                        />
+                        <span className="ml-2">Cerrado</span>
+                      </label>
+                      <label className="inline-flex items-center">
+                        <input 
+                          type="radio" 
+                          name="estado" 
+                          value="BLOQUEADO" 
+                          checked={estadoFiltro === 'BLOQUEADO'} 
+                          onChange={() => handleFiltroEstado('BLOQUEADO')} 
+                          className="form-radio h-4 w-4 text-red-600"
+                        />
+                        <span className="ml-2">Bloqueado</span>
+                      </label>
+                    </div>
+                  </fieldset>
+                </div>
+                
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Búsqueda por texto:</label>
+                  <input
+                    type="text"
+                    value={filtro}
+                    onChange={(e) => setFiltro(e.target.value)}
+                    placeholder="Buscar usuario, acción o descripción..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                
+                {/* Botones de acción del formulario */}
+                <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setFiltro('');
+                      handleFiltroEstado('');
+                    }}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                  >
+                    Limpiar filtros
+                  </button>
+           
+                  <button 
+                    type="submit" 
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                  >
+                    Aplicar filtros
+                  </button>
+
+                  <button 
+                    type="button"
+                    onClick={() => setModalFiltros(false)}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-          <div className="flex-1 flex justify-end">
-            <SearchBar value={filtro} onChange={e => handleBuscar(e.target.value)} placeholder="Buscar usuario, acción o descripción..." />
-          </div>
-        </div>
-        {/* Botonera principal */}
-        <ButtonGroup buttons={botonesPrincipales} className="mb-4" />
+        )}
         {/* Panel de detalle */}
         {registroSeleccionado && (
           <div className="bg-gray-50 border border-blue-200 rounded p-4 mb-4">
@@ -418,32 +514,40 @@ export default function BitacoraDashboard() {
           textoBotonConfirmar={modalBloqueo.registro?.bloqueoSesionMaxima ? 'Desbloquear' : 'Bloquear'}
           colorBotonConfirmar="red"
         />
-        <div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
-          <div>
-            <ButtonGroup
-              buttons={botonesPrincipales}
-              className="mb-0"
-            />
+        <div className="flex items-center justify-between mb-4 h-[48px]">
+          <div className="flex items-center">
+          <button 
+              onClick={() => setModalFiltros(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <i className="fa fa-filter"></i> Filtros
+            </button>
+            {/* Mostrar indicadores de filtros activos */}
+            {(filtro || estadoFiltro) && (
+              <div className="text-sm text-gray-600">
+                Filtros activos: 
+                {estadoFiltro && <span className="ml-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">Estado: {estadoFiltro}</span>}
+                {filtro && <span className="ml-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">Búsqueda: {filtro}</span>}
+              </div>
+            )}
           </div>
-          <div className="flex justify-center">
+          
+          <div className="flex items-center">
             <Paginador
               paginaActual={paginaActual}
               totalPaginas={totalPaginas}
               onPageChange={(p) => cargarBitacora(p, filtro, estadoFiltro)}
             />
           </div>
-          <div className="flex justify-end items-center gap-2">
-            {filtro && (
-              <span className="bg-gray-200 px-2 py-1 rounded flex items-center">
-                {filtro}
-                <button
-                  onClick={() => handleBuscar('')}
-                  className="ml-1 text-red-500 hover:text-red-700 font-bold"
-                >
-                  ×
-                </button>
-              </span>
-            )}
+          
+          <div className="flex items-center gap-2">
+            <SearchBar 
+              value={filtro} 
+              className="w-[300px]" 
+              onChange={e => handleBuscar(e.target.value)} 
+              placeholder="Buscar por usuario..." 
+            />
+         
           </div>
         </div>
         {/* Tabla de bitácora */}

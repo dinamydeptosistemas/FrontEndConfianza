@@ -167,10 +167,10 @@ export default function PerfilAccesoDashboard() {
 
   return (
     <ManagementDashboardLayout title="PERFILES DE ACCESO:" user={user} negocio={negocio}>
-   
-      <div className="bg-white border-white border-l border-r rounded-b p-2 w-full">
-        <div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
-          <div>
+      <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
+
+<div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
+<div className="flex gap-2">
             <ButtonGroup
               buttons={[{
                 label: 'Nuevo',
@@ -207,7 +207,7 @@ export default function PerfilAccesoDashboard() {
               onSearch={handleBuscar}
               value={filtro}
               onChange={setFiltro}
-              placeholder="Buscar perfil de acceso..."
+              placeholder="Buscar por Perfil..."
               className="w-[300px]"
               debounceTime={300}
             />

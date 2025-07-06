@@ -26,7 +26,8 @@ export default function GenericTable({
       <table className="w-full text-xs text-gray-700">
         <thead className="bg-gray-200 text-gray-700 uppercase text-xs">
           <tr>
-            {actions && showActions.edit && <th className="p-2">Edit</th>}
+            {actions && showActions.edit && <th className="p-2">Accion</th>}
+           
           
             {actions && showActions.updatePermissions && onUpdatePermissions && <th className="p-2">Permisos</th>}
             {columns.map(col => (
@@ -70,7 +71,7 @@ export default function GenericTable({
                     )}
                     {showActions.delete && onDelete && (
                       <button 
-                        className="text-red-600 hover:text-red-900"
+                        className="text-red-600 hover:text-red-900 pl-3"
                         onClick={(e) => {
                           e.stopPropagation();
                           onDelete(row);

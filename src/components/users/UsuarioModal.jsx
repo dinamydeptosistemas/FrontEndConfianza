@@ -228,11 +228,11 @@ const UsuarioModal = ({
       
 
         {/* Header con título y botones */}
-        <div className="grid grid-cols-2 items-center mb-2">
+        <div className="grid grid-cols-2 items-center">
           <h2 className="text-2xl font-bold text-gray-800 pt-4">
-            {isEditing ? 'Actualizar Usuario' : 'Crear Usuario'}
+            {isEditing ? 'Editar Usuario' : 'Crear Usuario'}
           </h2>
-          <div className="flex justify-end gap-3 mr-[25px]">
+          <div className="flex justify-end gap-3 mr-[25px] mb-2">
             <ActionButtons 
               onClose={onClose} 
               handleSubmit={handleSubmit} 
@@ -255,7 +255,13 @@ const UsuarioModal = ({
           
           {/* Row 1: Estado activo + Indicador visual */}
           <div className="flex items-center h-10">
-            <label className="text-sm text-gray-700 font-medium">Usuario Activo</label>
+          <div className={`inline-flex px-4 py-2 text-[1rem] rounded-full text-xs font-medium ${formData.usuarioActivo ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}> 
+              {formData.usuarioActivo ? 'ACTIVO' : 'INACTIVO'}
+            </div>
+
+          </div>
+          <div className="flex items-center h-10">
+        <label className="text-sm text-gray-700 font-medium">Usuario Activo</label>
             <input
               type="checkbox"
               name="usuarioActivo"
@@ -263,11 +269,6 @@ const UsuarioModal = ({
               onChange={handleChange}
               className="h-4 w-4 ml-2 rounded border-gray-200 text-blue-600 focus:ring-blue-500 outline-none"
             />
-          </div>
-          <div className="flex items-center h-10">
-            <div className={`inline-flex px-4 py-2 text-[1rem] rounded-full text-xs font-medium ${formData.usuarioActivo ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}> 
-              {formData.usuarioActivo ? 'ACTIVO' : 'INACTIVO'}
-            </div>
           </div>
 
           

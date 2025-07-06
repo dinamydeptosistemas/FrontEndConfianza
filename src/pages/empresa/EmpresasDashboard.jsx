@@ -221,8 +221,8 @@ export default function EmpresasDashboard() {
   return (
     <ManagementDashboardLayout title="EMPRESAS:" user={user} negocio={negocio}>
       <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-          <div className="w-full sm:w-auto">
+<div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
+<div className="flex gap-2">
             <ButtonGroup
               buttons={[{
                 label: 'Nuevo',
@@ -241,37 +241,42 @@ export default function EmpresasDashboard() {
             />
           </div>
           
-          <div className="w-full sm:w-auto">
-            <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
-              <div className="relative w-full max-w-md">
+          <div className='flex justify-end items-center gap-2'>
+          {filtroActivo && (
+              <span className="bg-gray-200 px-2 py-1 rounded flex items-center ml-4">
+                {filtroActivo}
+                <button
+                  onClick={handleClearSearch}
+                  className="ml-1 text-red-500 hover:text-red-700 font-bold"
+                  aria-label="Limpiar búsqueda"
+                  style={{ fontSize: '1.1em', lineHeight: 1 }}
+                >
+                  ×
+                </button>
+              </span>
+            )}
+              
                 <SearchBar
                   onSearch={handleBuscar}
                   value={filtro}
                   onChange={handleBuscar}
-                  placeholder="Buscar por RUC o nombre de empresa..."
+                  placeholder="Buscar por RUC o Razon Social..."
                   showClearButton={true}
                   onClear={handleClearSearch}
                   disabled={isLoading}
-                  className="w-full"
+                   className="w-[300px]"
                 />
+                </div>
                 {(isSearching || isLoading) && (
                   <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
                   </div>
                 )}
-              </div>
+             
               
-              {filtroActivo && (
-                <button
-                  onClick={handleClearSearch}
-                  className="bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded text-sm font-medium whitespace-nowrap self-center"
-                  aria-label="Limpiar búsqueda"
-                >
-                  Limpiar filtros
-                </button>
-              )}
-            </div>
-          </div>
+              
+         
+         
         </div>
         <div className="mb-4 overflow-x-auto">
           <GenericTable

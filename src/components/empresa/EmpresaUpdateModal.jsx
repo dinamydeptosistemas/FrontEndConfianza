@@ -174,20 +174,12 @@ export default function EmpresaUpdateModal({ empresa, onClose, onUpdate }) {
         {/* Overlay de carga */}
         {loading && <LoadingOverlay isLoading={true} message="Actualizando empresa..." />}
         
-        {/* Botón cerrar */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl font-bold focus:outline-none"
-          aria-label="Cerrar"
-        >
-          ×
-        </button>
+   
 
         {/* Header con título y botones */}
-        <div className="grid grid-cols-2 items-center mb-2">
-          <h2 className="text-2xl font-bold text-gray-800 pt-4">Actualizar Empresa</h2>
-          <div className="flex justify-end gap-3 mr-[25px]">
+        <div className="grid grid-cols-2 items-center ">
+          <h2 className="text-2xl font-bold text-gray-800 mt-6">Editar Empresa</h2>
+          <div className="flex justify-end gap-3 mr-[25px] mb-2">
             <ActionButtons 
               onClose={onClose} 
               handleSubmit={handleSubmit} 
@@ -203,6 +195,13 @@ export default function EmpresaUpdateModal({ empresa, onClose, onUpdate }) {
             
             {/* Row 2: Checkbox + Estado */}
             <div className="flex items-center h-10">
+            <div className={`inline-flex px-4 py-2 text-[1rem] rounded-full text-xs font-medium ${formData.state === 1 ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}> 
+                {formData.state === 1 ? 'ACTIVO' : 'INACTIVO'}
+              </div>
+            </div>
+            <div className="flex items-center h-10">
+             
+
               <label className="text-sm text-gray-700 font-medium">Es Activo</label>
               <input
                 type="checkbox"
@@ -212,11 +211,9 @@ export default function EmpresaUpdateModal({ empresa, onClose, onUpdate }) {
                 className="h-4 w-4 ml-2 rounded border-gray-200 text-blue-600 focus:ring-blue-500 outline-none"
               />
             </div>
-            <div className="flex items-center h-10">
-              <div className={`inline-flex px-4 py-2 text-[1rem] rounded-full text-xs font-medium ${formData.state === 1 ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}> 
-                {formData.state === 1 ? 'ACTIVO' : 'INACTIVO'}
-              </div>
-            </div>
+
+
+
             {/* Row 1: Código Entidad (solo lectura) + Estado */}
             <div>
               <label className="block text-sm font-medium text-gray-700">Código Entidad</label>

@@ -46,16 +46,6 @@ const ActionButtons = ({ onClose, handleSubmit, disabled = false, loading = fals
     <div className="flex gap-3 mt-6 justify-end">
       <button
         type="button"
-        onClick={onClose}
-        disabled={loading}
-        className={`px-8 py-2 text-sm font-medium rounded outline-none ${
-          loading ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-        }`}
-      >
-        {cancelText}
-      </button>
-      <button
-        type="button"
         onClick={handleSubmit}
         disabled={disabled || loading}
         className={`px-8 py-2 text-sm font-medium rounded outline-none flex items-center justify-center min-w-[120px] ${
@@ -72,6 +62,16 @@ const ActionButtons = ({ onClose, handleSubmit, disabled = false, loading = fals
         ) : (
           submitText
         )}
+      </button>
+      <button
+        type="button"
+        onClick={onClose}
+        disabled={loading}
+        className={`px-8 py-2 text-sm font-medium rounded outline-none ${
+          loading ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+        }`}
+      >
+        {cancelText}
       </button>
     </div>
   );

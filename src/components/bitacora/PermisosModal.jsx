@@ -591,16 +591,9 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
             </button>
           </div>
         )}
-        <button 
-          type="button" 
-          onClick={onClose} 
-          className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl font-bold focus:outline-none"
-          aria-label="Cerrar modal"
-        >
-          &times;
-        </button>
+  
         
-        <div className="mb-4 border-b pb-3">
+        <div className="mb-4 pb-3">
           <h3 className="text-xl font-semibold text-gray-800 mb-1">
             Configuración de Permisos para {formData.userName}
           </h3>
@@ -634,7 +627,7 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
                     type="text"
                     value={formData.regPermiso || 'N/A'}
                     readOnly
-                    className="w-full border p-1 rounded bg-gray-300 cursor-not-allowed h-8 text-sm"
+                    className="w-full border p-1 rounded bg-[#CCCCCC] cursor-not-allowed h-8 text-sm"
                   />
                 </div>
                 
@@ -645,15 +638,15 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
                     type="text"
                     value={formData.idUser || 'N/A'}
                     readOnly
-                    className="w-full border p-1 rounded bg-gray-300 cursor-not-allowed h-8 text-sm"
+                    className="w-full border p-1 rounded bg-[#CCCCCC] cursor-not-allowed h-8 text-sm"
                   />
                 </div>
                 
                 {/* Usuario Actual (Usuario logueado) */}
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700">Usuario Actual</label>
-                  <div className="w-full p-2 border rounded bg-gray-300 h-8 flex items-center">
-                    <span className="text-gray-700 truncate">
+                  <div className="w-full p-2 border rounded bg-[#CCCCCC] h-8 flex items-center">
+                    <span className=" truncate">
                       {user?.nombreUser || user?.username || localStorage.getItem('username')}
                     </span>
                   </div>
@@ -698,7 +691,7 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
                   Función {loadingPerfiles && '(Cargando...)'}
                 </label>
                 {loadingPerfiles ? (
-                  <div className="p-2 bg-gray-300 rounded text-sm text-black h-8">
+                  <div className="p-2 bg-[#CCCCCC] rounded text-sm text-black h-8">
                     Cargando perfiles...
                   </div>
                 ) : (
@@ -707,7 +700,7 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
                       name="idFunction"
                       value={formData.idFunction || ''}
                       onChange={handleChange}
-                      className="w-full p-1 h-8 bg-gray-400 border rounded cursor-not-allowed appearance-none pl-2 pr-8"
+                      className="w-full p-1 h-8 bg-[#CCCCCC] border rounded cursor-not-allowed appearance-none pl-2 pr-8"
                       disabled={true || saving}
                     >
                       <option value="" disabled>Seleccione una función</option>

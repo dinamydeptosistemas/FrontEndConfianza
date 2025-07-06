@@ -63,19 +63,23 @@ export default function PerfilAccesoCreateModal({ onClose, onSave }) {
         />
       )}
       <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-      <div className="bg-white py-6 px-14 rounded-lg shadow-lg w-[800px] max-h-[90vh] overflow-y-auto relative">
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl font-bold focus:outline-none"
-          aria-label="Cerrar"
-        >
-          ×
-        </button>
-        <h2 className="text-xl font-bold mb-4 text-gray-800 pt-4">Nuevo Perfil de Acceso</h2>
-        <hr className="col-span-2 border-blue-500 mr-6 m-0 pb-5 mt-3" />
-        <form onSubmit={handleSubmit} className="grid grid-cols-3 gap-4">
-          <div className="col-span-3">
+      <div className="bg-white py-6 px-10 rounded-lg shadow-lg w-[750px] max-h-[90vh] overflow-y-auto relative">
+      <div className="grid grid-cols-2 items-center ">
+        <h2 className="text-2xl font-bold text-gray-800 mt-6">Nuevo Perfil de Acceso</h2>
+        <div className="flex justify-end gap-3 mr-[25px] mb-2">
+        <ActionButtons
+          onClose={onClose}
+          handleSubmit={handleSubmit}
+          disabled={!isFormValid()}
+          loading={loading}
+          loadingText="Guardando..."
+          
+         />
+            </div>
+            </div>
+        <hr className="col-span-2 border-blue-500 mr-6 m-0 p-0" />
+        <form onSubmit={handleSubmit} className="grid mt-5 grid-cols-2 gap-x-4 gap-y-3 relative">
+          <div className="col-span-3 mb-5">
             <label className="block text-sm font-medium text-gray-700">Nombre de Función</label>
             <input
               type="text"
@@ -171,14 +175,7 @@ export default function PerfilAccesoCreateModal({ onClose, onSave }) {
             <input type="checkbox" name="externalModules" checked={formData.externalModules} onChange={handleChange} className="mr-2" />
           </div>
           <div className="col-span-2 flex justify-end mt-2 space-x-4">
-         <ActionButtons
-          onClose={onClose}
-          handleSubmit={handleSubmit}
-          disabled={!isFormValid()}
-          loading={loading}
-          loadingText="Guardando..."
-          
-         />
+      
           </div>
         </form>
         {showSuccess && (

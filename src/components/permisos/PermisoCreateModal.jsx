@@ -297,23 +297,23 @@ export default function PermisoCreateModal({ onClose, onSave }) {
           
           {/* Row 1: Estado del permiso */}
           <div className="flex items-center h-10">
-            <label className="text-sm text-gray-700 font-medium">Estado Activo</label>
-            <input
-              type="checkbox"
-              name="estadoPermisoActivado"
-              checked={formData.estadoPermisoActivado}
-              onChange={handleChange}
-              className="h-4 w-4 ml-2 rounded border-gray-200 text-blue-600 focus:ring-blue-500 outline-none"
-            />
-          </div>
-          <div className="flex items-center h-10">
-            <div className={`inline-flex px-4 py-2 text-[1rem] rounded-full text-xs font-medium ${
+          <div className={`inline-flex px-4 py-2 text-[1rem] rounded-full text-xs font-medium ${
               formData.estadoPermisoActivado 
                 ? 'bg-blue-100 text-blue-800' 
                 : 'bg-red-100 text-red-800'
             }`}> 
               {formData.estadoPermisoActivado ? 'ACTIVO' : 'INACTIVO'}
             </div>
+          </div>
+          <div className="flex items-center h-10">
+          <label className="text-sm text-gray-700 font-medium">Estado Activo</label>
+            <input
+              type="checkbox"
+              name="estadoPermisoActivado"
+              checked={formData.estadoPermisoActivado}
+              onChange={handleChange}
+              className="h-4 w-4 ml-2 rounded border-gray-200 text-blue-600 focus:ring-blue-500 outline-none"
+            /> 
           </div>
 
           {/* Row 2: Usuario + Función */}

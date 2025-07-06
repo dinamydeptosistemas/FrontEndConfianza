@@ -463,7 +463,7 @@ export default function UsuarioDashboard() {
                         Subir Plantilla
                       </button>
                       
-                      <div className="border-t border-gray-200 my-1"></div>
+                      
                       
                       {/* Botón para exportar datos */}
                       <button
@@ -520,7 +520,7 @@ export default function UsuarioDashboard() {
               onSearch={handleBuscar}
               value={busqueda}
               onChange={setBusqueda}
-              placeholder="Buscar por nombre, apellido, usuario o email..."
+              placeholder="Buscar por Apellido, Username..."
               className="w-[300px]"
               debounceTime={300}
             />

@@ -168,9 +168,9 @@ export default function PermisosDashboard() {
 
   return (
     <ManagementDashboardLayout title="PERMISOS:" user={user} negocio={negocio}>
-      <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4 mx-[18px] w-[96%]">
-        <div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
-          <div>
+      <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
+<div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
+<div className="flex gap-2">
             <ButtonGroup
               buttons={[{
                 label: 'Nuevo',
@@ -207,7 +207,7 @@ export default function PermisosDashboard() {
               onSearch={handleBuscar}
               value={filtro}
               onChange={setFiltro}
-              placeholder="Buscar por usuario, permiso o función..."
+              placeholder="Buscar por usuario..."
               className="w-[300px]"
               debounceTime={300}
             />

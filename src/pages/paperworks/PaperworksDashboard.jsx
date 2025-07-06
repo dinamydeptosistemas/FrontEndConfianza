@@ -344,8 +344,8 @@ export default function PaperworksDashboard() {
           
           {/* Columna 3: Buscador */}
           <div className="col-span-1">
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <div className="relative w-full">
+         
+              <div className="flex justify-end  gap-2">
                 <SearchBar
                   onSearch={handleBuscar}
                   value={filtro}
@@ -354,7 +354,7 @@ export default function PaperworksDashboard() {
                   showClearButton={true}
                   onClear={handleClearSearch}
                   disabled={isLoading}
-                  className="w-full"
+                  className="w-[300px]"
                 />
                 {(isSearching || isLoading) && (
                   <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
@@ -372,7 +372,7 @@ export default function PaperworksDashboard() {
                   Limpiar filtros
                 </button>
               )}
-            </div>
+          
           </div>
         </div>
         {/* La tabla está fuera del grid, pero dentro del mismo div principal */}
