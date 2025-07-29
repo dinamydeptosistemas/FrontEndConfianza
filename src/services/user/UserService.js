@@ -28,78 +28,23 @@ console.log('Configuración de axios:', {
  */
 export const getUsers = async (params = {}) => {
     try {
-        // Validar y limpiar parámetros para evitar errores 400
-        const cleanParams = {};
-        
-        // Procesar y mapear los filtros especiales usando los nombres originales
-        if (params.usuarioActivoFiltro !== undefined) {
-            // Mantener el parámetro original y también enviar como 'activo' para compatibilidad
-            cleanParams.usuarioActivoFiltro = params.usuarioActivoFiltro;
-            cleanParams.activo = params.usuarioActivoFiltro ? 1 : 0;
-            console.log('UserService: Aplicando filtro usuarioActivoFiltro =', params.usuarioActivoFiltro);
-            console.log('UserService: Aplicando filtro activo =', cleanParams.activo);
-        }
-        
-        if (params.tipoUserFiltro) {
-            // Mantener el parámetro original y también enviar como 'tipoUsuario' para compatibilidad
-            cleanParams.tipoUserFiltro = params.tipoUserFiltro;
-            cleanParams.tipoUsuario = params.tipoUserFiltro;
-            console.log('UserService: Aplicando filtro tipoUserFiltro/tipoUsuario =', params.tipoUserFiltro);
-        }
-        
-        if (params.relacionUsuarioFiltro) {
-            // Mantener el parámetro original y también enviar como 'relacion' para compatibilidad
-            cleanParams.relacionUsuarioFiltro = params.relacionUsuarioFiltro;
-            cleanParams.relacion = params.relacionUsuarioFiltro;
-            console.log('UserService: Aplicando filtro relacionUsuarioFiltro/relacion =', params.relacionUsuarioFiltro);
-        }
-        
-        // Manejar fechas de registro
-        if (params.fechaRegistroDesde) {
-            // Mantener el parámetro original y también enviar como 'fechaDesde' para compatibilidad
-            cleanParams.fechaRegistroDesde = params.fechaRegistroDesde;
-            cleanParams.fechaDesde = params.fechaRegistroDesde;
-            console.log('UserService: Aplicando filtro fechaRegistroDesde/fechaDesde =', params.fechaRegistroDesde);
-        }
-        
-        if (params.fechaRegistroHasta) {
-            // Mantener el parámetro original y también enviar como 'fechaHasta' para compatibilidad
-            cleanParams.fechaRegistroHasta = params.fechaRegistroHasta;
-            cleanParams.fechaHasta = params.fechaRegistroHasta;
-            console.log('UserService: Aplicando filtro fechaRegistroHasta/fechaHasta =', params.fechaRegistroHasta);
-        }
-        
-        // Copiar el resto de parámetros válidos y no undefined/null
-        Object.entries(params).forEach(([key, value]) => {
-            // Saltamos los filtros que ya procesamos
-            if (['usuarioActivoFiltro', 'tipoUserFiltro', 'relacionUsuarioFiltro', 
-                 'fechaRegistroDesde', 'fechaRegistroHasta'].includes(key)) {
-                return;
-            }
-            
-            if (value !== undefined && value !== null && value !== '') {
-                cleanParams[key] = value;
-                console.log(`UserService: Aplicando parámetro ${key} =`, value);
-            }
-        });
-        
-        // Asegurarnos de que params sea un objeto y contenga el proceso
-        const requestParams = {
-            process: 'getUsers',
-            ...cleanParams
+        const toPascalCase = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+
+        const pascalCaseParams = Object.keys(params).reduce((acc, key) => {
+            const pascalKey = toPascalCase(key);
+            acc[pascalKey] = params[key];
+            return acc;
+        }, {});
+
+        const requestBody = {
+            Process: 'getUsers',
+            ...pascalCaseParams
         };
 
-        // Log de la petición
-        console.log('Enviando petición a /user/process con:', requestParams);
-        console.log('URL completa:', `${axiosInstance.defaults.baseURL}${API_BASE}/users/process`);
-        console.log('Headers de la petición:', axiosInstance.defaults.headers);
+        console.log('Enviando petición a /user/process con:', requestBody);
+        const response = await axiosInstance.post(`${API_BASE}/user/process`, requestBody);
+        console.log('Respuesta de /user/process:', response.data);
 
-        // Realizar la petición
-        const response = await axiosInstance.post(`${API_BASE}/user/process`, requestParams);
-        
-        // Log de la respuesta
-        console.log('Respuesta recibida:', response.data);
-        
         return response.data;
     } catch (error) {
         console.error('Error en getUsers:', error);
@@ -149,10 +94,21 @@ export const getUsers = async (params = {}) => {
  * @returns {Promise<Object>} Usuario creado/actualizado
  */
 export const putUser = async (userData) => {
-    const response = await axiosInstance.post(`${API_BASE}/user/process`, {
-        process: 'putUsers',
-        ...userData
-    });
+    const toPascalCase = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+
+    const pascalCaseData = Object.keys(userData).reduce((acc, key) => {
+        const pascalKey = toPascalCase(key);
+        acc[pascalKey] = userData[key];
+        return acc;
+    }, {});
+
+    const requestBody = {
+        Process: 'putUsers',
+        ...pascalCaseData
+    };
+
+    console.log('Enviando petición (putUser) a /user/process con:', requestBody);
+    const response = await axiosInstance.post(`${API_BASE}/user/process`, requestBody);
     return response.data;
 };
 
@@ -162,10 +118,12 @@ export const putUser = async (userData) => {
  * @returns {Promise<Object>} Resultado de la eliminación
  */
 export const deleteUser = async (idUser) => {
-    const response = await axiosInstance.post(`${API_BASE}/user/process`, {
-        process: 'deleteUsers',
-        idUser
-    });
+    const requestBody = {
+        Process: 'deleteUsers',
+        IdUser: idUser
+    };
+    console.log('Enviando petición (deleteUser) a /user/process con:', requestBody);
+    const response = await axiosInstance.post(`${API_BASE}/user/process`, requestBody);
     return response.data;
 };
 
@@ -185,143 +143,91 @@ export const getUser = async (id) => {
  */
 export const uploadTemplate = async (formData) => {
     try {
+        // Asegurarse de que 'EsActualizacion' sea un string si existe
+        if (formData.has('EsActualizacion')) {
+            const value = formData.get('EsActualizacion');
+            formData.set('EsActualizacion', String(value === 'true' || value === true));
+        }
+
         console.log('Enviando archivo al servidor...');
         const response = await axiosInstance.post('api/user/import', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest' // Evita redirecciones
+                'Accept': 'application/json, text/plain, */*'
             },
-            responseType: 'json' // Forzar respuesta JSON
+            responseType: 'blob', // Recibir como blob para manejar errores de archivo y JSON
         });
 
-        console.log('Respuesta recibida:', {
-            status: response.status,
-            data: response.data
-        });
-
-        // Verificar si la respuesta es un JSON válido
-        if (response.data && typeof response.data === 'object') {
-            return response.data;
+        if (response.data.type.includes('json')) {
+            const jsonResponse = JSON.parse(await response.data.text());
+            console.log('Respuesta JSON recibida:', jsonResponse);
+            return jsonResponse;
+        } else if (response.data.type.includes('text') || response.data.type.includes('octet-stream')) {
+            console.log('Respuesta de archivo de error recibida');
+            return response.data; // Devolver el blob del archivo de error
         }
-        
-        throw new Error('Respuesta del servidor no válida');
+
+        return response.data;
+
     } catch (error) {
-        console.error('Error al subir archivo:', {
-            message: error.message,
-            response: error.response?.data,
-            status: error.response?.status,
-            headers: error.response?.headers
-        });
-        
-        let errorMessage = 'Error al subir el archivo';
-        
-        if (error.response) {
-            if (error.response.status === 401) {
-                errorMessage = 'No autorizado. Por favor, inicie sesión nuevamente.';
-            } else if (error.response.status === 400) {
-                errorMessage = error.response.data?.message || 'Datos del formulario inválidos';
-            } else if (error.response.status >= 500) {
-                errorMessage = 'Error del servidor. Por favor, intente más tarde.';
+        console.error('Error al subir archivo:', error);
+        let errorMessage = 'Error al procesar el archivo';
+        if (error.response && error.response.data) {
+            try {
+                const errorBlob = error.response.data;
+                const errorText = await errorBlob.text();
+                const errorJson = JSON.parse(errorText);
+                errorMessage = errorJson.message || errorJson.error || errorMessage;
+            } catch (e) {
+                // No se pudo parsear el error
             }
-        } else if (error.request) {
-            errorMessage = 'No se pudo conectar con el servidor. Verifique su conexión a internet.';
         }
-        
-        const errorWithMessage = new Error(errorMessage);
-        errorWithMessage.originalError = error;
-        throw errorWithMessage;
+        throw new Error(errorMessage);
     }
 };
 
 /**
  * Descarga una plantilla de usuarios
  * @param {Object} filters - Filtros para la descarga
- * @param {string} [filters.process] - Proceso
- * @param {number} [filters.page=0] - Página (0 para plantilla vacía)
- * @param {number} [filters.idUser] - ID de usuario
- * @param {string} [filters.fechaRegistro] - Fecha de registro
- * @param {string} [filters.fechaRegistroDesde] - Fecha de registro desde
- * @param {string} [filters.fechaRegistroHasta] - Fecha de registro hasta
- * @param {boolean} [filters.usuarioActivoFiltro] - Filtro de usuario activo
- * @param {string} [filters.tipoUserFiltro] - Filtro de tipo de usuario
- * @param {string} [filters.relacionUsuarioFiltro] - Filtro de relación de usuario
- * @param {boolean} [filters.usuarioActivo] - Usuario activo
- * @param {string} [filters.tipoUser] - Tipo de usuario
- * @param {string} [filters.relacionUsuario] - Relación de usuario
- * @param {string} [filters.identificacion] - Identificación
  * @returns {Promise<Blob>} Archivo de plantilla
  */
 export const downloadTemplate = async (filters = {}) => {
     try {
-        console.log('Solicitando plantilla con filtros:', filters);
-        const response = await axiosInstance.post('api/user/export', filters, {
+        const toPascalCase = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+
+        const pascalCaseFilters = Object.keys(filters).reduce((acc, key) => {
+            const pascalKey = toPascalCase(key);
+            acc[pascalKey] = filters[key];
+            return acc;
+        }, {});
+
+        console.log('Solicitando plantilla con filtros (PascalCase):', pascalCaseFilters);
+        const response = await axiosInstance.post('api/user/export', pascalCaseFilters, {
             responseType: 'blob',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/json'
-            },
-            validateStatus: function (status) {
-                return status >= 200 && status < 300;
             }
         });
-        
-        // Verificar si la respuesta es un blob válido
-        if (response.data instanceof Blob) {
+
+        if (response.data instanceof Blob && response.data.size > 0) {
             return response.data;
         } else {
-            // Si no es un blob, intentar parsear como JSON para obtener el mensaje de error
-            const text = await response.data.text();
-            try {
-                const errorData = JSON.parse(text);
-                throw new Error(errorData.message || 'Error al procesar la plantilla');
-            } catch (e) {
-                throw new Error('La respuesta del servidor no es válida');
-            }
+            throw new Error('La respuesta del servidor no es un archivo válido o está vacío.');
         }
     } catch (error) {
-        console.error('Error al descargar plantilla:', {
-            message: error.message,
-            response: error.response?.data,
-            status: error.response?.status,
-            headers: error.response?.headers
-        });
-        
+        console.error('Error al descargar plantilla:', error);
         let errorMessage = 'Error al descargar la plantilla';
-        
-        if (error.response) {
-            // El servidor respondió con un estado de error
-            if (error.response.status === 401) {
-                errorMessage = 'No autorizado. Por favor, inicie sesión nuevamente.';
-            } else if (error.response.status === 403) {
-                errorMessage = 'No tiene permisos para realizar esta acción.';
-            } else if (error.response.status === 404) {
-                errorMessage = 'El recurso solicitado no existe.';
-            } else if (error.response.status >= 500) {
-                errorMessage = 'Error del servidor. Por favor, intente más tarde.';
+        if (error.response && error.response.data) {
+            try {
+                const errorBlob = error.response.data;
+                const errorText = await errorBlob.text();
+                const errorJson = JSON.parse(errorText);
+                errorMessage = errorJson.message || errorMessage;
+            } catch (e) {
+                // El error no es un JSON, puede ser un mensaje de texto plano
             }
-            
-            // Intentar obtener el mensaje de error del cuerpo de la respuesta
-            if (error.response.data) {
-                try {
-                    const errorData = typeof error.response.data === 'object' 
-                        ? error.response.data 
-                        : JSON.parse(error.response.data);
-                    errorMessage = errorData.message || errorMessage;
-                } catch (e) {
-                    // Si no se puede parsear como JSON, usar el texto plano
-                    errorMessage = error.response.data.message || error.response.data || errorMessage;
-                }
-            }
-        } else if (error.request) {
-            // La solicitud fue hecha pero no se recibió respuesta
-            errorMessage = 'No se pudo conectar con el servidor. Verifique su conexión a internet.';
         }
-        
-        const errorWithMessage = new Error(errorMessage);
-        errorWithMessage.originalError = error;
-        throw errorWithMessage;
+        throw new Error(errorMessage);
     }
 };
-
-

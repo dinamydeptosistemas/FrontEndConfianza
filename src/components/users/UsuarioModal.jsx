@@ -57,14 +57,27 @@ const UsuarioModal = ({
 
   // Efecto para inicializar datos cuando se recibe el usuario
   useEffect(() => {
-    if (usuario) {
+    if (isEditing && usuario) {
       setFormData({
-        ...usuario,
-        password: '', // Nunca mostrar ni inicializar password real
-        passnumber: '', // Al editar, el PIN siempre inicia vacío
-        confirmPassword: ''
+        idUser: usuario.idUser || usuario.IdUser,
+        nombreUser: usuario.nombreUser || usuario.NombreUser || '',
+        apellidosUser: usuario.apellidosUser || usuario.ApellidosUser || '',
+        identificacion: usuario.identificacion || usuario.Identificacion || '',
+        usuarioActivo: usuario.usuarioActivo !== undefined ? usuario.usuarioActivo : usuario.UsuarioActivo,
+        username: usuario.username || usuario.Username || '',
+        emailUsuario: usuario.emailUsuario || usuario.EmailUsuario || '',
+        celularUsuario: usuario.celularUsuario || usuario.CelularUsuario || '',
+        sms: usuario.sms || usuario.Sms || false,
+        whatsap: usuario.whatsap || usuario.Whatsap || false,
+        tipoUser: usuario.tipoUser || usuario.TipoUser || '',
+        relacionUsuario: usuario.relacionUsuario || usuario.RelacionUsuario || '',
+        codeEntity: usuario.codeEntity || usuario.CodeEntity || '',
+        password: '',
+        passnumber: '',
+        confirmPassword: '',
       });
     } else {
+      // Reset form for creation
       setFormData({
         nombreUser: '',
         apellidosUser: '',
@@ -83,7 +96,7 @@ const UsuarioModal = ({
         codeEntity: ''
       });
     }
-  }, [usuario]);
+  }, [usuario, isEditing]);
 
   // Efecto para cargar empresas cuando se abre el modal
   useEffect(() => {
@@ -96,25 +109,29 @@ const UsuarioModal = ({
         
         do {
           const response = await getEmpresas({ page });
-          if (Array.isArray(response.companies)) {
-            allEmpresas = allEmpresas.concat(response.companies);
+          const companiesList = response.Companies || response.companies || [];
+          if (Array.isArray(companiesList)) {
+            allEmpresas = allEmpresas.concat(companiesList);
           }
-          totalPages = response.totalPages || totalPages;
+          totalPages = response.TotalPages || response.totalPages || totalPages;
           page++;
-          
-          if (!response.totalPages && (!response.companies || response.companies.length === 0)) {
+
+          if (!totalPages && companiesList.length === 0) {
             break;
           }
         } while (page <= totalPages);
         
         // Si estamos editando y la empresa actual no está en la lista, agrégala
-        if (isEditing && usuario && usuario.codeEntity) {
-          const exists = allEmpresas.some(e => e.codeEntity === usuario.codeEntity);
-          if (!exists) {
-            allEmpresas.unshift({
-              codeEntity: usuario.codeEntity,
-              businessName: '(Empresa actual, no disponible)'
-            });
+        if (isEditing && usuario) {
+          const userCodeEntity = usuario.codeEntity || usuario.CodeEntity;
+          if (userCodeEntity) {
+            const exists = allEmpresas.some(e => (e.codeEntity || e.CodeEntity) === userCodeEntity);
+            if (!exists) {
+              allEmpresas.unshift({
+                CodeEntity: userCodeEntity,
+                BusinessName: `(${(usuario.businessName || usuario.BusinessName) ?? 'Empresa actual'})`
+              });
+            }
           }
         }
         
@@ -362,8 +379,8 @@ const UsuarioModal = ({
                 <option>Cargando...</option>
               ) : (
                 empresas.map(empresa => (
-                  <option key={empresa.codeEntity} value={empresa.codeEntity}>
-                    {empresa.businessName}
+                  <option key={empresa.codeEntity || empresa.CodeEntity} value={empresa.codeEntity || empresa.CodeEntity}>
+                    {empresa.businessName || empresa.BusinessName}
                   </option>
                 ))
               )}

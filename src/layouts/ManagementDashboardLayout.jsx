@@ -9,8 +9,8 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
   const location = useLocation();
   const navigate = useNavigate();
   return (
-    <div className="min-h-screen w-full flex flex-col bg-gray-100 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
-      <div className="w-full shadow-lg">
+    <div className="w-full h-[1000px] flex flex-col bg-gray-100 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
+      <div className="w-full">
         {/* Header superior */}
         <div className="bg-[#e9e9e9] py-2 px-1.5 md:px-1 lg:px-2 xl:px-4 2xl:px-4 flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[#ccc] text-sm w-full">
           <div className="flex items-center mb-2 sm:mb-0 pl-7">
@@ -26,7 +26,8 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
         </div>
 
         {/* Contenido principal */}
-        <div className="bg-white rounded-b-xl text-justify pt-5">
+        <div className="
+         rounded-b-xl text-justify pt-5 h-[1000px]">
           {/* Barra de usuario */}
           <div className="w-full py-2">
             <div className="w-full flex flex-row justify-between items-center px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
@@ -112,8 +113,8 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
           </div>
 
           {/* Área de contenido */}
-          <div className="flex-1 flex flex-col items-center bg-[#f8f9fb] pt-5">
-            <div className="w-full px-2 sm:px-3 md:px-4 lg:px-6 xl:px-8">
+          <div className="flex-1 flex flex-col items-center bg-[#f8f9fb] pt-5 h-[1000px]">
+            <div className="w-full px-2 sm:px-3 md:px-4 lg:px-6 xl:px-8 h-[1000px]" >
               <div className="flex justify-between bg-[#1e4e9c] w-full">
                 <div className="w-full py-1 px-4 h-[50px] flex items-center">
                   <h2 className="text-lg font-bold text-white"> 
@@ -123,15 +124,15 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
                   </h2>
                 </div>
               </div>
-              <div className="w-full mt-1 sm:mt-2">
+              <div className="w-full  mt-1 sm:mt-2 h-[1000px]">
                 {children}
               </div>
             </div>
           </div>
           {/* Sombreado lateral izquierdo */}
-          <div className="hidden xl:block fixed left-0 top-0 h-full w-12 bg-gradient-to-r from-black/5 to-transparent pointer-events-none" />
+          <div className="hidden xl:block fixed left-0 top-0 h-[150vh] w-12 bg-gradient-to-r from-black/5 to-transparent pointer-events-none" />
           {/* Sombreado lateral derecho */}
-          <div className="hidden xl:block fixed right-0 top-0 h-full w-12 bg-gradient-to-l from-black/5 to-transparent pointer-events-none" />
+          <div className="hidden xl:block fixed right-0 top-0 h-[150vh] w-12 bg-gradient-to-l from-black/5 to-transparent pointer-events-none" />
         </div>
       </div>
     </div>

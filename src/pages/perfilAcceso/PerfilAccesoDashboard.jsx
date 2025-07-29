@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { getPerfilesAcceso, deletePerfilAcceso, putPerfilAcceso } from '../../services/accessProfile/AccessProfileService';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { getPerfilesAcceso, deletePerfilAcceso, putPerfilAcceso, downloadTemplate, uploadTemplate } from '../../services/accessProfile/AccessProfileService';
 import ManagementDashboardLayout from '../../layouts/ManagementDashboardLayout';
 import ButtonGroup from '../../components/common/ButtonGroup';
 import ConfirmEliminarModal from '../../components/common/ConfirmEliminarModal';
@@ -13,7 +13,7 @@ import { useNotification } from '../../context/NotificationContext';
 
 export default function PerfilAccesoDashboard() {
   const { user, negocio } = useAuth();
-  const { showSuccessMessage } = useNotification();
+  const { showSuccessMessage, showErrorMessage } = useNotification();
   const [perfilesOriginales, setPerfilesOriginales] = useState([]);
   const [perfiles, setPerfiles] = useState([]);
   const [filtro, setFiltro] = useState('');
@@ -26,6 +26,107 @@ export default function PerfilAccesoDashboard() {
   const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
+  const [showExcelMenu, setShowExcelMenu] = useState(false);
+  const excelMenuRef = useRef(null);
+  const [mostrarModalSubirPlantilla, setMostrarModalSubirPlantilla] = useState(false);
+  const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
+  const [mostrarConfirmacionActualizacion, setMostrarConfirmacionActualizacion] = useState(false);
+  
+  // Cerrar menú al hacer clic fuera
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (excelMenuRef.current && !excelMenuRef.current.contains(event.target)) {
+        setShowExcelMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
+  // Función para descargar un archivo desde un Blob
+  const descargarArchivo = (blob, nombreArchivo) => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nombreArchivo || 'perfiles_acceso.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove();
+  };
+  
+  const confirmarSubirPlantilla = async (esActualizacion) => {
+    setMostrarConfirmacionActualizacion(false);
+    
+    try {
+      // Si es una descarga de plantilla
+      if (esActualizacion === undefined) {
+        const blob = await downloadTemplate({
+          process: 'getAccessProfiles',
+          page: 0
+        });
+        if (blob) {
+          descargarArchivo(blob, 'plantilla_perfiles_acceso.xlsx');
+          showSuccessMessage('Plantilla descargada exitosamente');
+        }
+        return;
+      }
+      const formData = new FormData();
+      formData.append('Archivo', archivoSeleccionado);
+      
+      // Según el código del controlador backend, el parámetro se llama 'EsActualizacion' y es de tipo bool
+      // ASP.NET Core model binding acepta varios formatos para booleanos, pero usaremos el formato estándar
+      formData.append('EsActualizacion', esActualizacion);
+      
+      // Mostrar mensaje de carga
+      showSuccessMessage(esActualizacion 
+        ? 'Actualizando registros existentes...' 
+        : 'Creando nuevos registros...');
+      
+      // Registrar los datos que se están enviando
+      console.log('Enviando formData con los siguientes valores:', {
+        archivo: archivoSeleccionado?.name,
+        esActualizacionBoolean: esActualizacion,
+        esActualizacionString: esActualizacion ? "true" : "false",
+        esActualizacionNumber: esActualizacion ? 1 : 0
+      });
+      
+      try {
+        // Subir el archivo y esperar la respuesta
+        const response = await uploadTemplate(formData);
+        console.log('Respuesta recibida del servidor:', response);
+        
+        // Mostrar mensaje de éxito basado en la respuesta del servidor
+        if (response && response.message) {
+          showSuccessMessage(response.message);
+        } else if (response && response.error) {
+          throw new Error(response.error);
+        } else {
+          showSuccessMessage(esActualizacion 
+            ? 'Registros actualizados correctamente' 
+            : 'Registros creados correctamente');
+        }
+        
+        // Recargar los perfiles después de la actualización
+        cargarPerfiles(paginaActual, filtroActivo);
+      } catch (error) {
+        console.error('Error detallado al subir plantilla:', error);
+        showErrorMessage(`Error al ${esActualizacion ? 'actualizar' : 'crear'} registros: ${error.message}`);
+      }
+      
+      // Cerrar el modal y limpiar el estado
+      setMostrarModalSubirPlantilla(false);
+      setArchivoSeleccionado(null);
+      
+      // Recargar perfiles después de subir la plantilla
+      cargarPerfiles(paginaActual, filtroActivo || '');
+    } catch (error) {
+      console.error('Error al subir plantilla:', error);
+      showErrorMessage(error.message || 'Error al procesar el archivo');
+    }
+  };
 
 
   const cargarPerfiles = useCallback(async (pagina = 1, filtroBusqueda = '') => {
@@ -179,6 +280,101 @@ export default function PerfilAccesoDashboard() {
                 className: 'bg-white border-[#1e4e9c] border px-8 py-1 font-bold hover:text-white hover:bg-[#1e4e9c]'
               }]}
             />
+            <div className="relative" ref={excelMenuRef}>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowExcelMenu(!showExcelMenu);
+                }}
+                className="flex items-center gap-1 bg-white border border-[#1e4e9c] text-[#1e4e9c] px-2 py-2 font-bold hover:text-white hover:bg-[#1e4e9c] rounded"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 11-2 0V4H5v11h4a1 1 0 110 2H4a1 1 0 01-1-1V3zm7 4a1 1 0 011-1h5a1 1 0 011 1v5a1 1 0 01-1 1h-5a1 1 0 01-1-1V7z" clipRule="evenodd" />
+                </svg>
+                Plantilla
+              </button>
+              {showExcelMenu && (
+                <div className="absolute z-50 mt-1 w-64 bg-white rounded-md shadow-lg border border-gray-200">
+                  <div className="py-1">
+                    {/* Botón para descargar plantilla vacía */}
+                    <button
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowExcelMenu(false);
+                        try {
+                          const blob = await downloadTemplate({
+                            process: 'getAccessProfiles',
+                            page: 0 // Página 0 para plantilla vacía
+                          });
+                          
+                          if (!blob || !(blob instanceof Blob)) {
+                            throw new Error('El archivo recibido no es válido');
+                          }
+                          
+                          descargarArchivo(blob, 'plantilla_perfiles_acceso.xlsx');
+                          showSuccessMessage('Plantilla descargada exitosamente');
+                        } catch (error) {
+                          console.error('Error al descargar la plantilla:', error);
+                          showErrorMessage(error.message || 'Error al descargar la plantilla');
+                        }
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                    >
+                      Descargar Plantilla (vacía)
+                    </button>
+                    
+                    {/* Botón para subir plantilla */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setMostrarModalSubirPlantilla(true);
+                        setShowExcelMenu(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                    >
+                      Subir Plantilla
+                    </button>
+                    
+                    {/* Botón para exportar datos */}
+                    <button
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        try {
+                          console.log('Iniciando exportación de perfiles de acceso');
+                          const blob = await downloadTemplate({
+                            process: 'getAccessProfiles',
+                            page: 1, // Solicitar todos los registros, no plantilla vacía
+                            ...(filtroActivo && { searchTerm: filtroActivo })
+                          });
+                          
+                          if (!blob || !(blob instanceof Blob)) {
+                            throw new Error('El archivo recibido no es válido');
+                          }
+                          
+                          if (blob.size === 0) {
+                            throw new Error('No hay datos para exportar');
+                          }
+                          
+                          descargarArchivo(blob, `perfiles_acceso_exportacion_${new Date().toISOString().split('T')[0]}.xlsx`);
+                          showSuccessMessage('Exportación completada exitosamente');
+                        } catch (error) {
+                          console.error('Error al exportar datos:', error);
+                          showErrorMessage(error.message || 'Error al exportar los datos');
+                        }
+                        setShowExcelMenu(false);
+                      }}
+                      className="block w-full text-sm text-left px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                    >
+                      Actualizar Plantilla (descargar)
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <div className="w-full flex justify-center">
             <div className="w-full sm:w-auto">
@@ -220,18 +416,18 @@ export default function PerfilAccesoDashboard() {
               { key: 'functionName', label: 'Nombre del Perfil' },
               { 
                 key: 'grantPermissions', 
-                label: 'Permisos', 
+                label: 'Dar Permisos', 
                 render: row => (
                   <span className={`px-2 py-1 rounded-full text-xs ${
                     row.grantPermissions ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                   }`}>
-                    {row.grantPermissions ? 'Concedidos' : 'No concedidos'}
+                    {row.grantPermissions ? 'Si' : 'No'}
                   </span>
                 )
               },
               { 
                 key: 'allModules', 
-                label: 'Acceso Total', 
+                label: 'Todos Mod', 
                 render: row => (
                   <span className={`px-2 py-1 rounded-full text-xs ${
                     row.allModules ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
@@ -264,7 +460,7 @@ export default function PerfilAccesoDashboard() {
                 key: 'cashRegister', 
                 label: 'Caja',
                 render: row => row.cashRegister ? 'Sí' : 'No'
-              }
+              } 
             ]}
             data={perfiles}
             rowKey="idFunction"
@@ -313,6 +509,122 @@ export default function PerfilAccesoDashboard() {
     )}
     {/* El componente de notificación ahora es manejado por el NotificationContext */}
     
+    {/* Modal para subir plantilla */}
+    {mostrarModalSubirPlantilla && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+          <h3 className="text-lg font-bold mb-4">Subir Plantilla</h3>
+          
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-sm font-medium text-gray-700">
+                Seleccionar el archivo
+              </label>
+              <div className="relative">
+                <div className="relative">
+                  <div className="text-sm text-white bg-blue-500 hover:bg-blue-600 py-2 px-4 rounded-md font-medium cursor-pointer w-[100px] text-center">
+                    Seleccionar
+                    <input
+                      type="file"
+                      accept=".xlsx, .xls"
+                      onChange={(e) => setArchivoSeleccionado(e.target.files[0])}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              {archivoSeleccionado ? archivoSeleccionado.name : 'No se ha seleccionado ningún archivo'}
+            </div>
+          </div>
+          
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={() => {
+                setMostrarModalSubirPlantilla(false);
+                setArchivoSeleccionado(null);
+              }}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 w-[100px] text-center"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                if (archivoSeleccionado) {
+                  setMostrarConfirmacionActualizacion(true);
+                } else {
+                  showErrorMessage('Por favor, seleccione un archivo');
+                }
+              }}
+              disabled={!archivoSeleccionado}
+              className={`px-4 py-2 text-sm font-medium text-white rounded-md w-[100px] text-center ${
+                archivoSeleccionado 
+                  ? 'bg-blue-600 hover:bg-blue-700' 
+                  : 'bg-gray-400 cursor-not-allowed'
+              }`}
+            >
+              Subir
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Confirmación de actualización */}
+    {mostrarConfirmacionActualizacion && (
+      <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[1000] p-4">
+        <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md">
+          <h3 className="text-xl font-bold mb-4 text-gray-800">Tipo de Importación</h3>
+          <p className="mb-6 text-gray-700">
+            ¿Necesita crear nuevos registros o actualizar registros existentes?
+          </p>
+          
+          <div className="flex flex-col sm:flex-row justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setMostrarConfirmacionActualizacion(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex-1 sm:flex-none w-[100px]"
+            >
+              Cancelar
+            </button>
+            {mostrarModalSubirPlantilla && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => confirmarSubirPlantilla(false)}
+                  className="px-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 flex-1 sm:flex-none w-[100px]"
+                >
+                  Crear
+                </button>
+                <button
+                  type="button"
+                  onClick={() => confirmarSubirPlantilla(true)}
+                  className="px-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex-1 sm:flex-none w-[100px]"
+                >
+                  Actualizar
+                </button>
+              </>
+            )}
+            {!mostrarModalSubirPlantilla && (
+              <button
+                type="button"
+                onClick={() => confirmarSubirPlantilla()}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex-1 sm:flex-none"
+              >
+                Descargar Plantilla
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+    
+    {/* El modal de confirmación para actualización ha sido reemplazado por el nuevo diseño arriba */}
   </ManagementDashboardLayout>
 );
 

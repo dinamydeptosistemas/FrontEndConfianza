@@ -46,7 +46,7 @@ const DashboardLayoutLighter = () => {
                     </div>
                 </div>
 
-                <div className="bg-white shadow-md min-h-full p-4">
+                <div className="bg-white shadow-md h-[900px] p-4">
                     <Outlet />
                 </div>
             </div>

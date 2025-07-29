@@ -14,6 +14,7 @@ import PerfilAccesoDashboard from '../pages/perfilAcceso/PerfilAccesoDashboard';
 import UsuarioDashboard from '../pages/usuario/UsuarioDashboard';
 import PermisosDashboard from '../pages/permisos/PermisosDashboard';
 import BitacoraDashboard from '../pages/bitacora/BitacoraDashboard';
+import BitacoraUsuariosActivos from '../pages/bitacora/BitacoraUsuariosActivos';
 import SocialMediaDashboard from '../pages/socialmedia/socialmediadashboard';
 import PaperworksDashboard from '../pages/paperworks/PaperworksDashboard';
 import RegistrerUserExternal from '../pages/registrer/RegistrerUserExternal';
@@ -24,10 +25,36 @@ import EmailVerificationPage from '../pages/EmailVerificationPage';
 export const AppRoutes = () => {
     const { user, loading, isInitialized } = useAuth();
 
-    // Verificación más estricta del estado de autenticación
-    const isAuthenticated = user && user.StatusCode === 200;
-    const isManagerSystem = isAuthenticated && (user.CodeFunction === 1 || user.UserFunction === 'MANAGER SYSTEM');
-    const isAdministracion = isAuthenticated && (user.CodeFunction === 2 || user.UserFunction === 'ADMINISTRACION');
+    // Verificación robusta del estado de autenticación
+    const isAuthenticated = user && (
+        user.StatusCode === 200 || 
+        user.LoginMessage === 'Inicio de sesión exitoso' || 
+        user.LoginMessage === 'Sesión válida' ||
+        user.UserID || 
+        user.UserId ||
+        (user.Username && user.CodeFunction !== undefined)
+    );
+    
+    const isManagerSystem = isAuthenticated && (
+        user.CodeFunction === 1 || 
+        user.UserFunction === 'manager system' || 
+        user.UserFunction === 'MANAGER SYSTEM'
+    );
+    
+    const isAdministracion = isAuthenticated && (
+        user.CodeFunction === 2 || 
+        user.UserFunction === 'ADMINISTRACION'
+    );
+    
+    // Debug de autenticación
+    console.log('Estado de autenticación:', {
+        user: user ? { ...user, JWTToken: user.JWTToken ? 'presente' : 'ausente' } : null,
+        isAuthenticated,
+        isManagerSystem,
+        isAdministracion,
+        loading,
+        isInitialized
+    });
 
 
 
@@ -117,7 +144,7 @@ export const AppRoutes = () => {
             {/* Ruta para usuarios activos */}
             <Route 
                 path="/dashboard/usuarios-activos" 
-                element={isAuthenticated && isManagerSystem ? <Navigate to="/dashboard/usuarios" replace /> : <Navigate to="/login" replace />} 
+                element={isAuthenticated && isManagerSystem ? <BitacoraUsuariosActivos /> : <Navigate to="/login" replace />} 
             />
 
             {/* Rutas protegidas */}

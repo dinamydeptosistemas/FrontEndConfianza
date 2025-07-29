@@ -276,28 +276,15 @@ export default function UsuarioDashboard() {
     };
 
     const handleConfirmarEliminar = async () => {
+        if (!usuarioAEliminar) return;
         try {
-            await deleteUser(usuarioAEliminar?.idUser);
-            // Recargar usuarios después de eliminar
-            const data = await getUsers({ page: paginaActual });
-            setUsuariosOriginales(data.users || []);
-            const filtroActual = filtroActivo;
-            if (!filtroActual) {
-                setUsuarios(data.users || []);
-            } else {
-                const filtradas = (data.users || []).filter(u =>
-                    (u.nombreUser && u.nombreUser.toLowerCase().includes(filtroActual.toLowerCase())) ||
-                    (u.apellidosUser && u.apellidosUser.toLowerCase().includes(filtroActual.toLowerCase())) ||
-                    (u.username && u.username.toLowerCase().includes(filtroActual.toLowerCase())) ||
-                    (u.emailUsuario && u.emailUsuario.toLowerCase().includes(filtroActual.toLowerCase())) ||
-                    (u.identificacion && u.identificacion.toLowerCase().includes(filtroActual.toLowerCase()))
-                );
-                setUsuarios(filtradas);
-            }
+            const userId = usuarioAEliminar.IdUser || usuarioAEliminar.idUser;
+            await deleteUser(userId);
             showSuccessMessage('Usuario eliminado correctamente');
+            cargarUsuarios(paginaActual, filtroActivo, filtros);
         } catch (error) {
             console.error('Error al eliminar usuario:', error);
-            alert('Error al eliminar usuario');
+            showErrorMessage(error.message || 'Error al eliminar usuario');
         } finally {
             setUsuarioAEliminar(null);
             setMostrarModal(false);
@@ -316,30 +303,14 @@ export default function UsuarioDashboard() {
 
     const handleSaveUsuario = async (nuevoUsuario) => {
         try {
-            const response = await putUser(nuevoUsuario);
-            if (response) {
-                // Recargar usuarios después de guardar
-                const data = await getUsers({ page: 1 });
-                setUsuariosOriginales(data.users || []);
-                const filtroActual = filtroActivo;
-                if (!filtroActual) {
-                    setUsuarios(data.users || []);
-                } else {
-                    const filtradas = (data.users || []).filter(u =>
-                        (u.nombreUser && u.nombreUser.toLowerCase().includes(filtroActual.toLowerCase())) ||
-                        (u.apellidosUser && u.apellidosUser.toLowerCase().includes(filtroActual.toLowerCase())) ||
-                        (u.username && u.username.toLowerCase().includes(filtroActual.toLowerCase())) ||
-                        (u.emailUsuario && u.emailUsuario.toLowerCase().includes(filtroActual.toLowerCase())) ||
-                        (u.identificacion && u.identificacion.toLowerCase().includes(filtroActual.toLowerCase()))
-                    );
-                    setUsuarios(filtradas);
-                }
-                setPaginaActual(1);
-                showSuccessMessage('Usuario guardado exitosamente');
-            }
+            await putUser(nuevoUsuario);
+            showSuccessMessage('Usuario guardado exitosamente');
+            setMostrarModalCreacion(false);
+            setMostrarModalEdicion(false);
+            cargarUsuarios(paginaActual, filtroActivo, filtros);
         } catch (error) {
             console.error('Error al guardar usuario:', error);
-            alert('Error al guardar usuario');
+            showErrorMessage(error.message || 'Error al guardar usuario');
         }
     };
 
@@ -403,7 +374,7 @@ export default function UsuarioDashboard() {
                     e.stopPropagation();
                     setShowPlantillaMenu(!showPlantillaMenu);
                   }}
-                  className="flex items-center gap-1 bg-white  text-[#1e4e9c] px-2 py-1 font-bold hover:text-white hover:bg-[#1e4e9c] rounded"
+                  className="flex items-center gap-1 bg-white border border-[#1e4e9c] text-[#1e4e9c] px-2 py-2 font-bold hover:text-white hover:bg-[#1e4e9c] rounded"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 11-2 0V4H5v11h4a1 1 0 110 2H4a1 1 0 01-1-1V3zm7 4a1 1 0 011-1h5a1 1 0 011 1v5a1 1 0 01-1 1h-5a1 1 0 01-1-1V7z" clipRule="evenodd" />
@@ -412,7 +383,7 @@ export default function UsuarioDashboard() {
                 </button>
 
                 {showPlantillaMenu && (
-                  <div className="absolute right-0 mt-1 w-64 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                  <div className="absolute right-0 mt-1 w-64 bg-white rounded-md shadow-lg z-50 border border-gray-200">
                     <div className="py-1">
                       {/* Botón para descargar plantilla vacía */}
                       <button
@@ -527,43 +498,42 @@ export default function UsuarioDashboard() {
           </div>
         </div>
                 <div className="mb-4 overflow-x-auto">
-                    <GenericTable 
+                    <GenericTable
                         columns={[
-                            { key: 'idUser', label: 'ID' },
-                            { key: 'nombreUser', label: 'Nombre' },
-                            { key: 'apellidosUser', label: 'Apellidos' },
-                            { key: 'identificacion', label: 'Identificación' },
-                            { 
-                                key: 'relacionUsuario', 
+                            { key: 'idUser', label: 'ID', render: (row) => row.idUser || row.IdUser },
+                            { key: 'nombreUser', label: 'Nombre', render: (row) => row.nombreUser || row.NombreUser },
+                            { key: 'apellidosUser', label: 'Apellidos', render: (row) => row.apellidosUser || row.ApellidosUser },
+                            { key: 'identificacion', label: 'Identificación', render: (row) => row.identificacion || row.Identificacion },
+                            {
+                                key: 'relacionUsuario',
                                 label: 'Relación',
-                                render: (row) => (
-                                    <span className={`px-2 py-1 rounded-full text-xs ${
-                                        row.relacionUsuario === 'EMPLEADO' ? ' text-blue-800' : 'bg-white'
-                                    }`}>
-                                        {row.relacionUsuario || 'N/A'}
-                                    </span>
-                                )
+                                render: (row) => {
+                                    const relacion = row.relacionUsuario || row.RelacionUsuario;
+                                    return (
+                                        <span className={`px-2 py-1 rounded-full text-xs ${relacion === 'EMPLEADO' ? 'text-blue-800' : 'bg-white'}`}>
+                                            {relacion || 'N/A'}
+                                        </span>
+                                    );
+                                }
                             },
-                            { key: 'tipoUser', label: 'Tipo' },
-                            { key: 'username', label: 'Usuario' },
-                            { 
-                                key: 'emailUsuario', 
-                                label: 'Email'
-                            },
-                            { 
-                                key: 'usuarioActivo', 
+                            { key: 'tipoUser', label: 'Tipo', render: (row) => row.tipoUser || row.TipoUser },
+                            { key: 'username', label: 'Usuario', render: (row) => row.username || row.Username },
+                            { key: 'emailUsuario', label: 'Email', render: (row) => row.emailUsuario || row.EmailUsuario },
+                            {
+                                key: 'usuarioActivo',
                                 label: 'Estado',
-                                render: (row) => (
-                                    <span className={`px-2 py-1 rounded-full text-xs ${
-                                        row.usuarioActivo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                    }`}>
-                                        {row.usuarioActivo ? 'Activo' : 'Inactivo'}
-                                    </span>
-                                )
+                                render: (row) => {
+                                    const isActive = row.usuarioActivo !== undefined ? row.usuarioActivo : row.UsuarioActivo;
+                                    return (
+                                        <span className={`px-2 py-1 rounded-full text-xs ${isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                            {isActive ? 'Activo' : 'Inactivo'}
+                                        </span>
+                                    );
+                                }
                             }
-                        ]} 
-                        data={usuarios} 
-                        rowKey="idUser"
+                        ]}
+                        data={usuarios}
+                        rowKey={(row) => row.idUser || row.IdUser}
                         actions={true}
                         onEdit={handleEditar}
                         onDelete={handleEliminar}
@@ -574,7 +544,7 @@ export default function UsuarioDashboard() {
                     isOpen={mostrarModal}
                     onConfirm={handleConfirmarEliminar}
                     onCancel={handleCancelarEliminar}
-                    mensaje={`¿Está seguro de eliminar al usuario ${usuarioAEliminar?.nombreUser || ''}?`}
+                    mensaje={`¿Está seguro de eliminar al usuario ${(usuarioAEliminar?.nombreUser || usuarioAEliminar?.NombreUser) ?? ''} ${(usuarioAEliminar?.apellidosUser || usuarioAEliminar?.ApellidosUser) ?? ''}?`}
                 />
 
                 {mostrarModalEdicion && (

@@ -68,7 +68,7 @@ const DashboardLayoutLight = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white shadow-md min-h-full flex-1 w-full">
+                    <div className="bg-white min-h-full flex-1 w-full">
                         <Outlet />
                     </div>
                 </div>

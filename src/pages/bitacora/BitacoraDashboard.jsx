@@ -401,9 +401,9 @@ export default function BitacoraDashboard() {
                         <input 
                           type="radio" 
                           name="estado" 
-                          value="ACTIVO" 
-                          checked={estadoFiltro === 'ACTIVO'} 
-                          onChange={() => handleFiltroEstado('ACTIVO')} 
+                          value="1" 
+                          checked={estadoFiltro === '1'} 
+                          onChange={() => handleFiltroEstado('1')} 
                           className="form-radio h-4 w-4 text-green-600"
                         />
                         <span className="ml-2">Activo</span>
@@ -412,9 +412,9 @@ export default function BitacoraDashboard() {
                         <input 
                           type="radio" 
                           name="estado" 
-                          value="CERRADO" 
-                          checked={estadoFiltro === 'CERRADO'} 
-                          onChange={() => handleFiltroEstado('CERRADO')} 
+                          value="0" 
+                          checked={estadoFiltro === '0'} 
+                          onChange={() => handleFiltroEstado('0')} 
                           className="form-radio h-4 w-4 text-gray-600"
                         />
                         <span className="ml-2">Cerrado</span>
@@ -423,9 +423,9 @@ export default function BitacoraDashboard() {
                         <input 
                           type="radio" 
                           name="estado" 
-                          value="BLOQUEADO" 
-                          checked={estadoFiltro === 'BLOQUEADO'} 
-                          onChange={() => handleFiltroEstado('BLOQUEADO')} 
+                          value="2" 
+                          checked={estadoFiltro === '2'} 
+                          onChange={() => handleFiltroEstado('2')} 
                           className="form-radio h-4 w-4 text-red-600"
                         />
                         <span className="ml-2">Bloqueado</span>

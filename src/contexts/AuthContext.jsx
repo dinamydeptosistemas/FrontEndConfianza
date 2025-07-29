@@ -23,24 +23,80 @@ export const AuthProvider = ({ children }) => {
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const [lastActivity, setLastActivity] = useState(Date.now());
     const [isInitialized, setIsInitialized] = useState(false);
-    const [showTimeoutModal, setShowTimeoutModal] = useState(false);
+        const [showTimeoutModal, setShowTimeoutModal] = useState(false);
+    const isAuthenticated = !!user;
+
+    const keepAlive = async () => {
+        try {
+            // TODO: Move this to authService.js
+            await axiosInstance.post('/auth/keep-alive');
+        } catch (error) {
+            console.error('Error in keepAlive:', error);
+            throw error; // Propagate error to be handled by the caller
+        }
+    };
     const navigate = useNavigate();
     const location = useLocation();
 
     const cleanupAndRedirect = useCallback(() => {
+        console.log('Ejecutando cleanup y redirección...');
         setLoading(true);
+        
+        // Limpiar datos específicos
         localStorage.removeItem('negocio');
+        localStorage.removeItem('userData');
+        localStorage.removeItem('status');
         sessionStorage.removeItem('negocio');
+        
+        // Limpiar todo el localStorage como fallback
         localStorage.clear();
+        
+        // Resetear estados
         setUser(null);
         setNegocio(null);
         setError(null);
         setIsLogoutModalOpen(false);
         setIsInitialized(false);
+        setLastActivity(Date.now());
+        
+        // Establecer status como deslogueado
+        localStorage.setItem('status', '404');
+        
         navigate('/login');
         setLoading(false);
+        console.log('Cleanup completado, redirigido a login');
     }, [navigate]);
 
+    useEffect(() => {
+        let keepAliveInterval;
+
+        if (isAuthenticated) {
+            // Iniciar el temporizador para mantener la sesión activa
+            keepAliveInterval = setInterval(() => {
+                console.log('Sending keep-alive signal...');
+                keepAlive().catch(error => {
+                    console.error('Failed to send keep-alive signal:', error);
+                    // Solo cerrar sesión si el error indica token expirado o no autorizado (401)
+                    if (error?.response?.status === 401) {
+                        console.warn('Token expirado. Cerrando sesión.');
+                        cleanupAndRedirect();
+                    } else {
+                        // Para otros errores, simplemente registrar y continuar;
+                        // La siguiente llamada keep-alive intentará de nuevo.
+                    }
+                });
+            }, 90000); // Cada 90 segundos (1.5 minutos)
+        }
+
+        // Limpiar el intervalo cuando el componente se desmonte o el usuario se desloguee
+        return () => {
+            if (keepAliveInterval) {
+                clearInterval(keepAliveInterval);
+            }
+        };
+        }, [isAuthenticated, cleanupAndRedirect]); // Depende del estado de autenticación
+
+   
     const confirmLogout = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -135,10 +191,15 @@ export const AuthProvider = ({ children }) => {
             console.log('Respuesta del login:', response.data);
             
             if (response.data.Success) {
+                // Extraer datos del objeto Data anidado
+                const responseData = response.data.Data || response.data;
+                
                 let claims = {};
-                if (response.data.TokenSession) {
+                // Usar el JWT del nivel raíz (response.data.TokenSession) en lugar del GUID de response.data.Data.TokenSession
+                const jwtToken = response.data.TokenSession;
+                if (jwtToken && jwtToken.includes('.')) { // Verificar que sea un JWT válido (contiene puntos)
                     try {
-                        claims = jwtDecode(response.data.TokenSession);
+                        claims = jwtDecode(jwtToken);
                         console.log('Token decodificado:', claims);
                     } catch (e) {
                         console.error('Error al decodificar el token:', e);
@@ -146,21 +207,33 @@ export const AuthProvider = ({ children }) => {
                     }
                 }
                 
-                const userData = { ...response.data, ...claims };
+                // Combinar datos: JWT claims + datos del usuario + respuesta completa
+                const userData = { ...responseData, ...response.data, ...claims };
                 console.log('Datos del usuario después de combinar:', userData);
+                
                 const normalizedUser = {
                     ...userData,
-                    UserId: userData.UserId || userData.userId,
-                    UserType: userData.UserType || userData.userType,
+                    UserId: userData.UserID || userData.UserId || userData.userId,
+                    UserType: userData.TipoUsuario || userData.UserType || userData.userType,
                     UserFunction: userData.UserFunction || userData.userFunction,
                     CodeFunction: userData.CodeFunction || userData.codeFunction,
                     NameEntity: userData.NameEntity || userData.nameEntity,
-                    StatusCode: userData.StatusCode || userData.statusCode,
+                    StatusCode: userData.StatusCode || userData.statusCode || 200,
                     Username: userData.Username || userData.username,
+                    LoginMessage: userData.LoginMessage || userData.loginMessage || 'Inicio de sesión exitoso',
+                    // Mantener ambos tokens para diferentes propósitos
+                    JWTToken: response.data.TokenSession, // El JWT real
+                    SessionToken: userData.TokenSession   // El GUID de sesión
                 };
 
+                console.log('Usuario normalizado en login:', normalizedUser);
                 setUser(normalizedUser);
+                // Guardar token para que otros servicios lo usen
+                if (response.data.TokenSession) {
+                    localStorage.setItem('token', response.data.TokenSession);
+                }
                 localStorage.setItem('status', '200');
+                localStorage.setItem('userData', JSON.stringify(normalizedUser));
                 
                 if (normalizedUser.NameEntity) {
                     const negocioData = {
@@ -186,7 +259,9 @@ export const AuthProvider = ({ children }) => {
 
     const fetchCurrentUser = useCallback(async () => {
         try {
-            console.log('Ruta actual:', location.pathname, '¿Es pública?', publicRoutes.includes(location.pathname));
+            console.log('Verificando usuario actual - Ruta:', location.pathname, '¿Es pública?', publicRoutes.includes(location.pathname));
+            
+            // Restaurar negocio del localStorage si existe
             const storedNegocio = localStorage.getItem('negocio');
             if (storedNegocio) {
                 try {
@@ -197,6 +272,24 @@ export const AuthProvider = ({ children }) => {
                 }
             }
 
+            // Verificar si ya tenemos un usuario válido en localStorage
+            const storedStatus = localStorage.getItem('status');
+            const storedUserData = localStorage.getItem('userData');
+            
+            if (storedStatus === '200' && storedUserData) {
+                try {
+                    const userData = JSON.parse(storedUserData);
+                    console.log('Usuario encontrado en localStorage:', userData);
+                    setUser(userData);
+                    setLoading(false);
+                    setIsInitialized(true);
+                    return;
+                } catch (e) {
+                    console.error('Error al parsear datos de usuario del localStorage:', e);
+                }
+            }
+
+            console.log('Consultando usuario actual al servidor...');
             const response = await axiosInstance.get('/api/auth/current-user', {
                 withCredentials: true,
                 headers: {
@@ -205,30 +298,51 @@ export const AuthProvider = ({ children }) => {
                 }
             });
 
-            if (response.data.success || response.data.statusCode === 200) {
+            console.log('Respuesta del servidor para current-user:', response.data);
+
+            if (
+                response.status === 200 ||
+                response.data.StatusCode === 200 || response.data.statusCode === 200 ||
+                response.data.Success || response.data.success ||
+                response.data.LoginMessage === 'Sesión válida' || response.data.LoginMessage === 'Inicio de sesión exitoso'
+            ) {
+                // Extraer datos del objeto Data anidado
+                const responseData = response.data.Data || response.data;
+                
                 let claims = {};
-                if (response.data.TokenSession) {
+                // Usar el JWT del nivel raíz si está disponible
+                const jwtToken = response.data.TokenSession;
+                if (jwtToken && typeof jwtToken === 'string' && jwtToken.includes('.')) {
                     try {
-                        claims = jwtDecode(response.data.TokenSession);
+                        claims = jwtDecode(jwtToken);
+                        console.log('Token JWT decodificado exitosamente:', claims);
                     } catch (e) {
+                        console.warn('No se pudo decodificar el token JWT:', e);
                         claims = {};
                     }
                 }
 
-                const userData = { ...response.data, ...claims };
+                const userData = { ...responseData, ...response.data, ...claims };
                 const normalizedUser = {
                     ...userData,
-                    UserId: userData.UserId || userData.userId,
-                    UserType: userData.UserType || userData.userType,
+                    UserId: userData.UserId || userData.userId || userData.UserID,
+                    UserType: userData.UserType || userData.userType || userData.TipoUsuario,
                     UserFunction: userData.UserFunction || userData.userFunction,
                     CodeFunction: userData.CodeFunction || userData.codeFunction,
                     NameEntity: userData.NameEntity || userData.nameEntity,
-                    StatusCode: userData.StatusCode || userData.statusCode,
+                    StatusCode: userData.StatusCode || userData.statusCode || 200,
                     Username: userData.Username || userData.username,
+                    LoginMessage: userData.LoginMessage || userData.loginMessage || 'Sesión válida'
                 };
 
+                console.log('Usuario normalizado:', normalizedUser);
                 setUser(normalizedUser);
+                // Guardar token si viene en la respuesta
+                if (response.data.TokenSession) {
+                    localStorage.setItem('token', response.data.TokenSession);
+                }
                 localStorage.setItem('status', '200');
+                localStorage.setItem('userData', JSON.stringify(normalizedUser));
 
                 if (normalizedUser.NameEntity) {
                     const negocioData = {
@@ -240,19 +354,51 @@ export const AuthProvider = ({ children }) => {
                     sessionStorage.setItem('negocio', JSON.stringify(negocioData));
                 }
             } else {
-                
+                console.log('Respuesta del servidor indica sesión inválida');
                 if (!publicRoutes.includes(location.pathname)) {
+                    console.log('Redirigiendo a login por sesión inválida');
                     cleanupAndRedirect();
                 }
             }
         } catch (error) {
-           
-            if (
-                error?.response?.status === 401 &&
-                !publicRoutes.includes(location.pathname)
+            console.error('Error al verificar usuario actual:', error);
+            
+            // Solo redirigir si es un error 401 y no estamos en una ruta pública
+            if (error?.response?.status === 401) {
+                // Intentar usar datos almacenados antes de redirigir
+                const storedStatus = localStorage.getItem('status');
+                const storedUserData = localStorage.getItem('userData');
 
-            ) {
-                cleanupAndRedirect();
+                if (storedStatus === '200' && storedUserData) {
+                    try {
+                        const userData = JSON.parse(storedUserData);
+                        console.warn('Error 401 recibido; utilizando datos locales para mantener la sesión.');
+                        setUser(userData);
+                        return; // Evitar redirección
+                    } catch (e) {
+                        console.error('Error al parsear datos locales tras 401:', e);
+                    }
+                }
+
+                if (!publicRoutes.includes(location.pathname)) {
+                    console.log('Error 401 sin datos locales válidos - Redirigiendo a login');
+                    cleanupAndRedirect();
+                }
+            } else if (!publicRoutes.includes(location.pathname)) {
+                // Para otros errores, intentar usar datos del localStorage si existen
+                const storedStatus = localStorage.getItem('status');
+                const storedUserData = localStorage.getItem('userData');
+                
+                if (storedStatus === '200' && storedUserData) {
+                    try {
+                        const userData = JSON.parse(storedUserData);
+                        console.log('Usando datos de usuario del localStorage como fallback');
+                        setUser(userData);
+                    } catch (e) {
+                        console.error('Error al usar fallback del localStorage:', e);
+                        cleanupAndRedirect();
+                    }
+                }
             }
         } finally {
             setLoading(false);

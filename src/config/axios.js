@@ -12,8 +12,6 @@ const axiosInstance = axios.create({
     }
 });
 
-// Variable para controlar si ya estamos en proceso de redirección
-let isRedirecting = false;
 
 // Interceptor para agregar headers de no-cache a todas las peticiones
 axiosInstance.interceptors.request.use(
@@ -33,26 +31,15 @@ axiosInstance.interceptors.request.use(
     }
 );
 
-// Interceptor para manejar errores de autenticación
+// Interceptor para manejar errores de autenticación (ahora más flexible)
 axiosInstance.interceptors.response.use(
-    response => {
-        return response;
-    },
+    response => response,
     error => {
-        // Solo manejamos errores 401 si no estamos ya redirigiendo
-        if (error.response?.status === 401 && !isRedirecting) {
-            // Evitamos redirecciones múltiples
-            isRedirecting = true;
-            
-            // Limpiar el estado de autenticación
-            localStorage.removeItem('token');
-            
-            // Solo redirigimos si no estamos en una ruta pública
-            if (!window.location.pathname.includes('/login') && 
-                !window.location.pathname.includes('/validate-email') && 
-                !window.location.pathname.includes('/registrar-usuario-interno') && 
-                !window.location.pathname.includes('/registrar-usuario-externo')) {
-                // Usamos replace en lugar de href para evitar que el usuario pueda volver atrás
+        // Dejar que AuthContext decida cómo manejar los 401.
+        // Solo en caso de que *no* exista AuthContext (por ejemplo, peticiones sueltas antes de montar la app)
+        // realizamos una redirección mínima.
+        if (error.response?.status === 401 && !window.AuthContextMounted) {
+            if (!window.location.pathname.includes('/login')) {
                 window.location.replace('/login');
             }
         }
