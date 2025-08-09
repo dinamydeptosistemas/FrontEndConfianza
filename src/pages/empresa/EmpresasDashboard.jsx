@@ -25,6 +25,7 @@ export default function EmpresasDashboard() {
   const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [showPlantillaMenu, setShowPlantillaMenu] = useState(false);
@@ -53,6 +54,7 @@ export default function EmpresasDashboard() {
       // Manejar diferentes formatos de respuesta
       let listaEmpresas = [];
       let totalDePaginas = 1;
+      let totalDeRecords = 0;
       let paginaActualRespuesta = pagina;
 
       if (Array.isArray(response)) {
@@ -62,14 +64,17 @@ export default function EmpresasDashboard() {
         if (Array.isArray(response.companies)) {
           listaEmpresas = response.companies;
           totalDePaginas = response.totalPages || 1;
+          totalDeRecords = response.totalRecords || 0;
           paginaActualRespuesta = response.currentPage || pagina;
         } else if (Array.isArray(response.Companies)) {
           listaEmpresas = response.Companies;
           totalDePaginas = response.TotalPages || 1;
+          totalDeRecords = response.TotalRecords || 0;
           paginaActualRespuesta = response.Page || pagina;
         } else if (Array.isArray(response.data)) {
           listaEmpresas = response.data;
           totalDePaginas = response.last_page || response.totalPages || 1;
+          totalDeRecords = response.total || 0;
           paginaActualRespuesta = response.current_page || response.page || pagina;
         } else if (Array.isArray(response)) {
           listaEmpresas = response;
@@ -99,6 +104,7 @@ export default function EmpresasDashboard() {
       setEmpresas(empresasUnicas);
       setPaginaActual(paginaActualRespuesta);
       setTotalPaginas(totalDePaginas);
+      setTotalRecords(totalDeRecords);
     } catch (error) {
       console.error('Error al cargar empresas:', error);
    
@@ -376,8 +382,19 @@ export default function EmpresasDashboard() {
   }, []);
 
   return (
-    <ManagementDashboardLayout title="EMPRESAS:" user={user} negocio={negocio}>
-      <div className="bg-white p-4">
+           <ManagementDashboardLayout 
+      title={(
+        <>
+          <span className="font-bold">EMPRESAS:</span>
+          <span className="font-light ml-5 text-[16px]">{`${totalRecords} Total`}</span>
+         
+        </>
+      )}
+      user={user} 
+      negocio={negocio}
+    >
+
+        <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
         <div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
           <div className="flex gap-2">
             <ButtonGroup
@@ -479,41 +496,49 @@ export default function EmpresasDashboard() {
               { 
                 key: 'codeEntity', 
                 label: 'Código',
+                align: 'right',
                 render: (row) => row.CodeCompany || row.codeCompany || row.CodeEntity || row.codeEntity || 'N/A'
               },
               { 
                 key: 'businessName', 
                 label: 'Razón Social',
+                align: 'left',
                 render: (row) => row.BusinessName || row.businessName || 'N/A'
               },
               { 
                 key: 'commercialName', 
                 label: 'Nombre Comercial',
+                align: 'left',
                 render: (row) => row.CommercialName || row.commercialName || 'N/A'
               },
               { 
                 key: 'ruc', 
                 label: 'RUC',
+                align: 'right',
                 render: (row) => row.RUC || row.ruc || 'N/A'
               },
               { 
                 key: 'typeEntity', 
                 label: 'Tipo',
+                align: 'left',
                 render: (row) => row.TypeEntity || row.typeEntity || 'N/A'
               },
               { 
                 key: 'taxRegime', 
                 label: 'Régimen',
+                align: 'left',
                 render: (row) => row.TaxRegime || row.taxRegime || 'N/A'
               },
               { 
                 key: 'city', 
                 label: 'Ciudad',
+                align: 'left',
                 render: (row) => row.City || row.city || 'N/A'
               },
               { 
                 key: 'state', 
                 label: 'Estado',
+                align: 'center',
                 render: (row) => {
                   const isActive = row.State !== undefined ? row.State : (row.state !== undefined ? row.state : true);
                   return isActive ? 

@@ -8,6 +8,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 function ManagementDashboardLayout({ title, user, negocio, children }) {
   const location = useLocation();
   const navigate = useNavigate();
+
   return (
     <div className="w-full h-[1000px] flex flex-col bg-gray-100 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
       <div className="w-full">
@@ -118,7 +119,7 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
               <div className="flex justify-between bg-[#1e4e9c] w-full">
                 <div className="w-full py-1 px-4 h-[50px] flex items-center">
                   <h2 className="text-lg font-bold text-white"> 
-                    <span className="text-base ml-2 text-[1.1rem]">
+                    <span className="text-base ml-2 text-[1.2rem]">
                       {title}
                     </span>
                   </h2>
@@ -136,6 +137,7 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
         </div>
       </div>
     </div>
+ 
   );
 }
 

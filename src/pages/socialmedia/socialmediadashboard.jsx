@@ -31,6 +31,8 @@ const INITIAL_FILTERS = {
 };
 
 export default function SocialMediaDashboard() {
+  // Estado para el total de medios sociales
+  const [totalRecords, setTotalRecords] = useState(0);
   const { user, negocio } = useAuth();
   const [mediosSocialesOriginales, setMediosSocialesOriginales] = useState([]);
   const [mediosSociales, setMediosSociales] = useState([]);
@@ -93,28 +95,31 @@ export default function SocialMediaDashboard() {
 
       const response = await getSocialMedia(params);
       console.log('Respuesta del servidor (medios sociales):', response);
-      
       let listaMedios = [];
       let totalDePaginas = 1;
       let paginaActualRespuesta = pagina;
+      let totalRegistros = 0;
 
       if (Array.isArray(response)) {
         listaMedios = response;
+        totalRegistros = response.length;
       } else if (response && typeof response === 'object') {
         if (Array.isArray(response.data)) {
           listaMedios = response.data;
           totalDePaginas = response.last_page || response.totalPages || 1;
           paginaActualRespuesta = response.current_page || response.page || pagina;
+          totalRegistros = response.totalRecords || response.total || response.data.length;
         } else if (Array.isArray(response)) {
           listaMedios = response;
+          totalRegistros = response.length;
         }
       }
 
-      // Guardar los datos originales y mostrar todos
       setMediosSocialesOriginales(listaMedios);
       setMediosSociales(listaMedios);
       setPaginaActual(paginaActualRespuesta);
       setTotalPaginas(totalDePaginas);
+      setTotalRecords(totalRegistros);
     } catch (error) {
       console.error('Error al cargar medios sociales:', error);
     } finally {
@@ -264,7 +269,12 @@ export default function SocialMediaDashboard() {
   console.log('=== DEBUG: datosTabla first item ===', datosTabla[0]);
 
   return (
-    <ManagementDashboardLayout title="MEDIOS SOCIALES:" user={user} negocio={negocio}>
+    <ManagementDashboardLayout title={(
+      <>
+        <span className="font-bold">MEDIOS SOCIALES:</span>
+        <span className="font-light ml-5 text-[16px]">{`${totalRecords} Total`}</span>
+      </>
+    )} user={user} negocio={negocio}>
       <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
              <div className="w-full sm:w-auto">

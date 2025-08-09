@@ -16,6 +16,10 @@ const axiosInstance = axios.create({
 // Interceptor para agregar headers de no-cache a todas las peticiones
 axiosInstance.interceptors.request.use(
     (config) => {
+        // Disparar evento de actividad de API para todas las peticiones
+        if (config.url && !config.url.includes('/api/WorkStatus/status')) {  // Excluir el propio endpoint de verificación
+            dispatchApiActivity();
+        }
         config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
         config.headers['Pragma'] = 'no-cache';
         config.headers['Expires'] = '0';
@@ -31,9 +35,21 @@ axiosInstance.interceptors.request.use(
     }
 );
 
+// Disparador de eventos personalizado para actividad de API
+const dispatchApiActivity = () => {
+    const event = new CustomEvent('apiActivity');
+    window.dispatchEvent(event);
+};
+
 // Interceptor para manejar errores de autenticación (ahora más flexible)
 axiosInstance.interceptors.response.use(
-    response => response,
+    response => {
+        // Disparar evento de actividad de API para respuestas exitosas
+        if (!response.config.url.includes('/api/WorkStatus/status')) {  // Excluir el propio endpoint de verificación
+            dispatchApiActivity();
+        }
+        return response;
+    },
     error => {
         // Dejar que AuthContext decida cómo manejar los 401.
         // Solo en caso de que *no* exista AuthContext (por ejemplo, peticiones sueltas antes de montar la app)

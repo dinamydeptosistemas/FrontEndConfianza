@@ -345,16 +345,18 @@ export default function EmpresaUpdateModal({ empresa, onClose, onUpdate }) {
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Nombre Comercial</label>
+             <div>
+              <label className="block text-sm font-medium text-gray-700">Razón Social</label>
               <input
                 type="text"
-                name="commercialName"
-                value={formData.commercialName}
+                name="businessName"
+                value={formData.businessName}
                 onChange={handleChange}
                 className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
+                required
               />
             </div>
+           
 
             {/* Row 3: Tipo Entidad + Razón Social */}
             <div>
@@ -368,15 +370,14 @@ export default function EmpresaUpdateModal({ empresa, onClose, onUpdate }) {
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Razón Social</label>
+             <div>
+              <label className="block text-sm font-medium text-gray-700">Nombre Comercial</label>
               <input
                 type="text"
-                name="businessName"
-                value={formData.businessName}
+                name="commercialName"
+                value={formData.commercialName}
                 onChange={handleChange}
                 className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
-                required
               />
             </div>
 
@@ -463,27 +464,41 @@ export default function EmpresaUpdateModal({ empresa, onClose, onUpdate }) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Comprobante de Venta</label>
-              <input
-                type="text"
+              <label className="block text-sm font-medium text-gray-700">Tipo Comprobante de Venta</label>
+              <select
                 name="salesReceipt"
                 value={formData.salesReceipt}
                 onChange={handleChange}
                 className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
-              />
+              >
+              <option value="">Seleccione...</option>
+              <option value="FACTURA">Factura</option>
+              <option value="NOTA DE VENTA">Nota de venta - RISE</option>
+              <option value="LIQUIDACION DE COMPRA">Liquidacion de compra de bienes y prestación de servicios</option>
+              <option value="TICKET">Tiquet emitidos por máquinas registradoras</option>
+              <option value="BOLETO">Boleto o entrada a espectáculos públicos</option>
+              <option value="DOC">Otro documento</option>
+              </select>
             </div>
 
             {/* Row 7: Régimen Tributario + Leyenda de Régimen */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Régimen Tributario</label>
-              <input
-                type="text"
-                name="taxRegime"
-                value={formData.taxRegime}
-                onChange={handleChange}
-                className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
-              />
-            </div>
+           <div>
+            <label className="block text-sm font-medium text-gray-700">Régimen Tributario</label>
+            <select
+              name="taxRegime"
+              value={formData.taxRegime}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
+            >
+              <option value="">Seleccione...</option>
+              <option value="Régimen RIMPE Negocio Popular">Régimen RIMPE Negocio Popular</option>
+              <option value="Régimen RIMPE Emprendedor (PN)">Régimen RIMPE Emprendedor (PN)</option>
+              <option value="Régimen RIMPE Emprendedor (SOCIEDAD)">Régimen RIMPE Emprendedor (SOCIEDAD)</option>
+              <option value="Régimen General">Régimen General</option>
+              <option value="Régimen Sociedades">Régimen Sociedades</option>
+              <option value="Instituciones de carácter privado sin fines de lucro">Instituciones de carácter privado sin fines de lucro</option>
+            </select>
+          </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Leyenda de Régimen</label>
               <input

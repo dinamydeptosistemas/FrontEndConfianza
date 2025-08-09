@@ -12,6 +12,8 @@ import axiosInstance from '../../config/axios';
 import { putPermiso, getPermisos } from '../../services/permission/PermissionService';
 
 export default function BitacoraDashboard() {
+  // Estado para el total de bitácoras
+  const [totalRecords, setTotalRecords] = useState(0);
   const { user, negocio  } = useAuth();
   const [bitacoras, setBitacoras] = useState([]);
   const [filtro, setFiltro] = useState('');
@@ -44,6 +46,7 @@ export default function BitacoraDashboard() {
         }
       }
       setBitacoras(registros);
+      setTotalRecords(data.totalRecords || (Array.isArray(registros) ? registros.length : 0));
       console.log('Bitácoras mostradas:', registros);
       setPaginaActual(pagina);
       setTotalPaginas(data.totalPages || 1);
@@ -363,7 +366,20 @@ export default function BitacoraDashboard() {
   // No se necesitan botones principales
 
   return (
-    <ManagementDashboardLayout title="BITACORA DE ACCESO" user={user} negocio={negocio}>
+    <ManagementDashboardLayout title={(
+        <>
+          <span className="font-bold">BITACORA DE ACCESO:</span>
+          <span className="font-light ml-5 text-[16px]">
+            {`${totalRecords} `}
+            {
+              estadoFiltro === '1' ? 'Activos' :
+              estadoFiltro === '2' ? 'Bloqueados' :
+              estadoFiltro === '0' ? 'Cerrados' :
+              'Total'
+            }
+          </span>
+        </>
+      )} user={user} negocio={negocio}>
       <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
         {/* Botón para abrir modal de filtros */}
     

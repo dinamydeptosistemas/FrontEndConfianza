@@ -2,7 +2,7 @@ import React from 'react';
 
 /**
  * columns: [
- *   { key: 'nombre', label: 'Nombre', render?: (row) => ReactNode }
+ *   { key: 'nombre', label: 'Nombre', render?: (row) => ReactNode, align?: 'left' | 'center' | 'right' }
  * ]
  * data: array of objects
  * onEdit, onDelete: (row) => void
@@ -42,7 +42,7 @@ export default function GenericTable({
               acc.push(
                 <th
                   key={col.key}
-                  className={`p-2 text-center min-h-[20px]${col.sticky ? ' bg-gray-200 sticky z-20' : ''}`}
+                  className={`p-2 text-${col.align || 'left'} min-h-[20px]${col.sticky ? ' bg-gray-200 sticky z-20' : ''}`}
                   style={col.sticky ? { left, minWidth: col.width || 140, maxWidth: col.width || 140 } : {}}
                 >
                   {col.label}
@@ -115,7 +115,7 @@ export default function GenericTable({
                 acc.push(
                   <td
                     key={col.key}
-                    className={`p-2 text-center min-h-[20px]${col.sticky ? ' bg-white sticky z-10' : ''}`}
+                    className={`p-2 text-${col.align || 'left'} min-h-[20px]${col.sticky ? ' bg-white sticky z-10' : ''}`}
                     style={col.sticky ? { left, minWidth: col.width || 140, maxWidth: col.width || 140 } : {}}
                   >
                     {col.render ? col.render(row) : row[col.key]}

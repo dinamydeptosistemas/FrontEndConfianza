@@ -231,3 +231,21 @@ export const downloadTemplate = async (filters = {}) => {
         throw new Error(errorMessage);
     }
 };
+
+/**
+ * Obtiene solo usuarios internos.
+ * @param {Object} params - Parámetros de búsqueda adicionales.
+ * @returns {Promise<Object>} Objeto con usuarios y metadatos de paginación.
+ */
+export const getInternalUsers = async (params = {}) => {
+    return getUsers({ ...params, tipoUserFiltro: 'INTERNO' });
+};
+
+/**
+ * Obtiene solo usuarios externos.
+ * @param {Object} params - Parámetros de búsqueda adicionales.
+ * @returns {Promise<Object>} Objeto con usuarios y metadatos de paginación.
+ */
+export const getExternalUsers = async (params = {}) => {
+    return getUsers({ ...params, tipoUserFiltro: 'EXTERNO' });
+};

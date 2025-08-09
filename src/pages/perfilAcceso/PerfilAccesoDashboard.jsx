@@ -26,6 +26,7 @@ export default function PerfilAccesoDashboard() {
   const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
+  const [totalRegistros, setTotalRegistros] = useState(0);
   const [showExcelMenu, setShowExcelMenu] = useState(false);
   const excelMenuRef = useRef(null);
   const [mostrarModalSubirPlantilla, setMostrarModalSubirPlantilla] = useState(false);
@@ -139,6 +140,7 @@ export default function PerfilAccesoDashboard() {
     setPerfiles(data.accessProfiles || []);
     setPaginaActual(pagina);
     setTotalPaginas(data.totalPages || 1);
+    setTotalRegistros(data.totalRecords || 0);
   }, []);
 
   useEffect(() => {
@@ -267,7 +269,13 @@ export default function PerfilAccesoDashboard() {
   };
 
   return (
-    <ManagementDashboardLayout title="PERFILES DE ACCESO:" user={user} negocio={negocio}>
+    <ManagementDashboardLayout 
+    title={(
+        <>
+          <span className="font-bold">PERFILES DE ACCESOS:</span>
+          <span className="font-light ml-5 text-[16px]">{`${totalRegistros} Total`}</span>
+        </>
+      )} user={user} negocio={negocio}>
       <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
 
 <div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
@@ -412,54 +420,166 @@ export default function PerfilAccesoDashboard() {
         <div className="mb-4 overflow-x-auto">
           <GenericTable
             columns={[
-              { key: 'idFunction', label: 'ID' },
-              { key: 'functionName', label: 'Nombre del Perfil' },
+              { key: 'idFunction', label: 'ID', align: 'right' },
+              { key: 'functionName', label: 'Nombre del Perfil', align: 'left' },
               { 
                 key: 'grantPermissions', 
                 label: 'Dar Permisos', 
+                align: 'center',
                 render: row => (
-                  <span className={`px-2 py-1 rounded-full text-xs ${
+                  <span className={`px-2 py-1 rounded-full text-xs flex items-center justify-center ${
                     row.grantPermissions ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {row.grantPermissions ? 'Si' : 'No'}
+                  }`} style={{ minWidth: 32 }}>
+                    {row.grantPermissions ? 'Sí' : 'No'}
                   </span>
                 )
               },
               { 
                 key: 'allModules', 
                 label: 'Todos Mod', 
+                align: 'center',
                 render: row => (
-                  <span className={`px-2 py-1 rounded-full text-xs ${
+                  <span className={`px-2 py-1 rounded-full text-xs flex items-center justify-center ${
                     row.allModules ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
+                  }`} style={{ minWidth: 32 }}>
                     {row.allModules ? 'Sí' : 'No'}
+                  </span>
+                )
+              },
+               { 
+                key: 'externalModules', 
+                label: 'Externos Mod',
+                align: 'center',
+                render: row => (
+                  <span className={`px-2 py-1 rounded-full text-xs flex items-center justify-center ${row.externalModules }`} style={{ minWidth: 32 }}>
+                    {row.externalModules ? 'Sí' : 'No'}
                   </span>
                 )
               },
               { 
                 key: 'administration', 
                 label: 'Admin',
-                render: row => row.administration ? 'Sí' : 'No'
+                align: 'center',
+                render: row => (
+                  <span className={`px-2 py-1 rounded-full text-xs flex items-center justify-center ${row.administration }`} style={{ minWidth: 32 }}>
+                    {row.administration ? 'Sí' : 'No'}
+                  </span>
+                )
+              },
+             
+              { 
+                key: 'product', 
+                label: 'Producto',
+                align: 'center',
+                render: row => (
+                 <span className={`px-2 py-1 rounded-full text-xs flex items-center justify-center ${row.product }`} style={{ minWidth: 32 }}>
+                    {row.product ? 'Sí' : 'No'}
+                  </span>
+                )
+              },
+
+              { 
+                key: 'inventory', 
+                label: 'Inventario',
+                align: 'center',
+                render: row => (
+                 <span className={`px-2 py-1 rounded-full text-xs flex items-center justify-center ${row.inventory }`} style={{ minWidth: 32 }}>
+                    {row.inventory ? 'Sí' : 'No'}
+                  </span>
+                )
+              } , 
+              { 
+                key: 'purchase', 
+                label: 'Compras',
+                align: 'center',
+                render: row => (
+                  <span className={`px-2 py-1 rounded-full text-xs flex items-center justify-center ${row.purchase }`} style={{ minWidth: 32 }}>
+                    {row.purchase ? 'Sí' : 'No'}
+                  </span>
+                )
               },
               { 
                 key: 'sale', 
                 label: 'Ventas',
-                render: row => row.sale ? 'Sí' : 'No'
+                align: 'center',
+                render: row => (
+                  <span className={`px-2 py-1 rounded-full text-xs flex items-center justify-center ${row.sale }`} style={{ minWidth: 32 }}>
+                    {row.sale ? 'Sí' : 'No'}
+                  </span>
+                )
               },
-              { 
-                key: 'inventory', 
-                label: 'Inventario',
-                render: row => row.inventory ? 'Sí' : 'No'
+               //generalCash
+               { 
+                key: 'CashRegister', 
+                label: 'Caja',
+                align: 'center',
+                render: row => (
+                  <span className={`px-2 py-1 rounded-full text-xs flex items-center justify-center ${row.CashRegister }`} style={{ minWidth: 32 }}>
+                    {row.cashRegister ? 'Sí' : 'No'}
+                  </span>
+                )
+              },
+               { 
+                key: 'bank', 
+                label: 'Banco',
+                align: 'center',
+                render: row => (
+                  <span className={`px-2 py-1 rounded-full text-xs flex items-center justify-center ${row.bank }`} style={{ minWidth: 32 }}>
+                    {row.bank ? 'Sí' : 'No'}
+                  </span>
+                )
               },
               { 
                 key: 'accounting', 
                 label: 'Contabilidad',
-                render: row => row.accounting ? 'Sí' : 'No'
+                align: 'center',
+                render: row => (
+                  <span className={`px-2 py-1 rounded-full text-xs flex items-center justify-center ${row.accounting }`} style={{ minWidth: 32 }}>
+                    {row.accounting ? 'Sí' : 'No'}
+                  </span>
+                )
               },
-              { 
-                key: 'cashRegister', 
-                label: 'Caja',
-                render: row => row.cashRegister ? 'Sí' : 'No'
+               { 
+                key: 'payroll', 
+                label: 'Nomina',
+                align: 'center',
+                render: row => (
+                  <span className={`px-2 py-1 rounded-full text-xs flex items-center justify-center ${row.payroll }`} style={{ minWidth: 32 }}>
+                    {row.payroll ? 'Sí' : 'No'}
+                  </span>
+                )
+              } ,
+              // fixedAsset
+               { 
+                key: 'fixedAsset', 
+                label: 'Activo Fijo',
+                align: 'center',
+                render: row => (
+                  <span className={`px-2 py-1 rounded-full text-xs flex items-center justify-center ${row.fixedAsset }`} style={{ minWidth: 32 }}>
+                    {row.fixedAsset ? 'Sí' : 'No'}
+                  </span>
+                )
+              },
+              // generalCash
+                { 
+                key: 'generalCash', 
+                label: 'Caja General',
+                align: 'center',
+                render: row => (
+                  <span className={`px-2 py-1 rounded-full text-xs flex items-center justify-center ${row.generalCash }`} style={{ minWidth: 32 }}>
+                    {row.generalCash ? 'Sí' : 'No'}
+                  </span>
+                )
+              },
+                 { 
+                key: 'closeCashGen', 
+                label: 'Cierre Caja Gen',
+                align: 'center',
+                render: row => (
+                  <span className={`px-2 py-1 rounded-full text-xs flex items-center justify-center ${row.closeCashGen }`} style={{ minWidth: 32 }}>
+                    {row.closeCashGen ? 'Sí' : 'No'}
+                  </span>
+                )
               } 
             ]}
             data={perfiles}

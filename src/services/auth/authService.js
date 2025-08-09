@@ -2,36 +2,6 @@
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5201';
 const API_BASE = `${API_URL}/api`;
 
-// Función para mantener viva la sesión
-export const keepAlive = async () => {
-  try {
-    const token = localStorage.getItem('sessionToken');
-    if (!token) {
-      console.log('No hay token para la solicitud keep-alive.');
-      return;
-    }
-
-    const response = await api.post('/auth/keep-alive', {}, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-
-    if (response.status === 200) {
-      updateLastActivity(); // Reutiliza la función existente
-      console.log('Keep-alive signal sent successfully.');
-    }
-
-    return response.data;
-  } catch (error) {
-    console.error('Error sending keep-alive signal:', error.response ? error.response.data : error.message);
-    if (error.response && error.response.status === 401) {
-      // La lógica en AuthContext se encargará de desloguear
-    }
-    throw error;
-  }
-};
-
 // Variable para controlar si ya estamos en proceso de logout
 let isLoggingOut = false;
 

@@ -20,6 +20,7 @@ export default function PerfilAccesoUpdateModal({ onClose, onUpdate, perfil }) {
     payroll: false,
     generalCash: false,
     closeCashGen: false,
+    fixedAsset: false,
     cashRegister001: false,
     cashRegister002: false,
     cashRegister003: false,
@@ -34,26 +35,36 @@ export default function PerfilAccesoUpdateModal({ onClose, onUpdate, perfil }) {
 
   useEffect(() => {
     if (perfil) {
+      let activoFijo = perfil.fixedAsset !== undefined ? perfil.fixedAsset : perfil.FixedAsset;
+      if (typeof activoFijo === 'string') {
+        activoFijo = activoFijo === 'true' || activoFijo === '1';
+      } else if (typeof activoFijo === 'number') {
+        activoFijo = activoFijo === 1;
+      } else {
+        activoFijo = Boolean(activoFijo);
+      }
       setFormData({
+        idFunction: perfil.idFunction,
         functionName: perfil.functionName || '',
-        grantPermissions: perfil.grantPermissions || false,
-        allModules: perfil.allModules || false,
-        administration: perfil.administration || false,
-        product: perfil.product || false,
-        inventory: perfil.inventory || false,
-        purchase: perfil.purchase || false,
-        sale: perfil.sale || false,
-        cashRegister: perfil.cashRegister || false,
-        bank: perfil.bank || false,
-        accounting: perfil.accounting || false,
-        payroll: perfil.payroll || false,
-        generalCash: perfil.generalCash || false,
-        closeCashGen: perfil.closeCashGen || false,
-        cashRegister001: perfil.cashRegister001 || false,
-        cashRegister002: perfil.cashRegister002 || false,
-        cashRegister003: perfil.cashRegister003 || false,
-        cashRegister004: perfil.cashRegister004 || false,
-        externalModules: perfil.externalModules || false
+        grantPermissions: !!perfil.grantPermissions,
+        allModules: !!perfil.allModules,
+        administration: !!perfil.administration,
+        product: !!perfil.product,
+        inventory: !!perfil.inventory,
+        purchase: !!perfil.purchase,
+        sale: !!perfil.sale,
+        cashRegister: !!perfil.cashRegister,
+        bank: !!perfil.bank,
+        accounting: !!perfil.accounting,
+        payroll: !!perfil.payroll,
+        generalCash: !!perfil.generalCash,
+        closeCashGen: !!perfil.closeCashGen,
+        fixedAsset: !!perfil.fixedAsset,
+        cashRegister001: !!perfil.cashRegister001,
+        cashRegister002: !!perfil.cashRegister002,
+        cashRegister003: !!perfil.cashRegister003,
+        cashRegister004: !!perfil.cashRegister004,
+        externalModules: !!perfil.externalModules
       });
     }
   }, [perfil]);
@@ -82,6 +93,8 @@ export default function PerfilAccesoUpdateModal({ onClose, onUpdate, perfil }) {
     return formData.functionName.trim() !== '';
   };
 
+  const isEditBlocked = formData.idFunction === 1;
+
   return (
     <>
       {showSuccess && (
@@ -102,7 +115,7 @@ export default function PerfilAccesoUpdateModal({ onClose, onUpdate, perfil }) {
             <ActionButtons 
               onClose={onClose} 
               handleSubmit={handleSubmit} 
-              disabled={!isFormValid()} 
+              disabled={!isFormValid() || isEditBlocked} 
               loading={loading}
               loadingText="Actualizando..." 
             />
@@ -117,8 +130,8 @@ export default function PerfilAccesoUpdateModal({ onClose, onUpdate, perfil }) {
               name="functionName"
               value={formData.functionName}
               onChange={handleChange}
-              disabled={true}
-              className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-gray-100 hover:bg-gray-100 transition-colors outline-none cursor-not-allowed"
+              disabled={isEditBlocked}
+              className={`mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 transition-colors outline-none ${isEditBlocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
             />
           </div>
           <div>
@@ -128,6 +141,7 @@ export default function PerfilAccesoUpdateModal({ onClose, onUpdate, perfil }) {
               name="grantPermissions"
               checked={formData.grantPermissions}
               onChange={handleChange}
+              disabled={isEditBlocked}
               className="mt-1 h-4 w-4 text-[#285398] focus:ring-[#285398] border-gray-300 rounded"
             />
           </div>
@@ -138,73 +152,79 @@ export default function PerfilAccesoUpdateModal({ onClose, onUpdate, perfil }) {
               name="allModules"
               checked={formData.allModules}
               onChange={handleChange}
+              disabled={isEditBlocked}
               className="mt-1 h-4 w-4 text-[#285398] focus:ring-[#285398] border-gray-300 rounded"
             />
           </div>
+             <div>
+            <label className="block text-sm font-medium text-gray-700">Módulos Externos</label>
+            <input type="checkbox" name="externalModules" checked={formData.externalModules} onChange={handleChange} disabled={isEditBlocked} className="mr-2" />
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Administración</label>
-            <input type="checkbox" name="administration" checked={formData.administration} onChange={handleChange} className="mr-2" />
+            <input type="checkbox" name="administration" checked={formData.administration} onChange={handleChange} disabled={isEditBlocked} className="mr-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Producto</label>
-            <input type="checkbox" name="product" checked={formData.product} onChange={handleChange} className="mr-2" />
+            <input type="checkbox" name="product" checked={formData.product} onChange={handleChange} disabled={isEditBlocked} className="mr-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Inventario</label>
-            <input type="checkbox" name="inventory" checked={formData.inventory} onChange={handleChange} className="mr-2" />
+            <input type="checkbox" name="inventory" checked={formData.inventory} onChange={handleChange} disabled={isEditBlocked} className="mr-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Compra</label>
-            <input type="checkbox" name="purchase" checked={formData.purchase} onChange={handleChange} className="mr-2" />
+            <input type="checkbox" name="purchase" checked={formData.purchase} onChange={handleChange} disabled={isEditBlocked} className="mr-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Venta</label>
-            <input type="checkbox" name="sale" checked={formData.sale} onChange={handleChange} className="mr-2" />
+            <input type="checkbox" name="sale" checked={formData.sale} onChange={handleChange} disabled={isEditBlocked} className="mr-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Caja</label>
-            <input type="checkbox" name="cashRegister" checked={formData.cashRegister} onChange={handleChange} className="mr-2" />
+            <input type="checkbox" name="cashRegister" checked={formData.cashRegister} onChange={handleChange} disabled={isEditBlocked} className="mr-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Banco</label>
-            <input type="checkbox" name="bank" checked={formData.bank} onChange={handleChange} className="mr-2" />
+            <input type="checkbox" name="bank" checked={formData.bank} onChange={handleChange} disabled={isEditBlocked} className="mr-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Contabilidad</label>
-            <input type="checkbox" name="accounting" checked={formData.accounting} onChange={handleChange} className="mr-2" />
+            <input type="checkbox" name="accounting" checked={formData.accounting} onChange={handleChange} disabled={isEditBlocked} className="mr-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Nómina</label>
-            <input type="checkbox" name="payroll" checked={formData.payroll} onChange={handleChange} className="mr-2" />
+            <input type="checkbox" name="payroll" checked={formData.payroll} onChange={handleChange} disabled={isEditBlocked} className="mr-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Caja General</label>
-            <input type="checkbox" name="generalCash" checked={formData.generalCash} onChange={handleChange} className="mr-2" />
+            <input type="checkbox" name="generalCash" checked={formData.generalCash} onChange={handleChange} disabled={isEditBlocked} className="mr-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Cierre Caja Gen.</label>
-            <input type="checkbox" name="closeCashGen" checked={formData.closeCashGen} onChange={handleChange} className="mr-2" />
+            <input type="checkbox" name="closeCashGen" checked={formData.closeCashGen} onChange={handleChange} disabled={isEditBlocked} className="mr-2" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Activo Fijo</label>
+            <input type="checkbox" name="fixedAsset" checked={formData.fixedAsset} onChange={handleChange} disabled={isEditBlocked} className="mr-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Caja 001</label>
-            <input type="checkbox" name="cashRegister001" checked={formData.cashRegister001} onChange={handleChange} className="mr-2" />
+            <input type="checkbox" name="cashRegister001" checked={formData.cashRegister001} onChange={handleChange} disabled={isEditBlocked} className="mr-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Caja 002</label>
-            <input type="checkbox" name="cashRegister002" checked={formData.cashRegister002} onChange={handleChange} className="mr-2" />
+            <input type="checkbox" name="cashRegister002" checked={formData.cashRegister002} onChange={handleChange} disabled={isEditBlocked} className="mr-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Caja 003</label>
-            <input type="checkbox" name="cashRegister003" checked={formData.cashRegister003} onChange={handleChange} className="mr-2" />
+            <input type="checkbox" name="cashRegister003" checked={formData.cashRegister003} onChange={handleChange} disabled={isEditBlocked} className="mr-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Caja 004</label>
-            <input type="checkbox" name="cashRegister004" checked={formData.cashRegister004} onChange={handleChange} className="mr-2" />
+            <input type="checkbox" name="cashRegister004" checked={formData.cashRegister004} onChange={handleChange} disabled={isEditBlocked} className="mr-2" />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Módulos Externos</label>
-            <input type="checkbox" name="externalModules" checked={formData.externalModules} onChange={handleChange} className="mr-2" />
-          </div>
+       
 
         </form>
         {showSuccess && (
@@ -214,4 +234,4 @@ export default function PerfilAccesoUpdateModal({ onClose, onUpdate, perfil }) {
     </div>
     </>
   );
-} 
+}

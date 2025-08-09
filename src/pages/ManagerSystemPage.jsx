@@ -36,11 +36,11 @@ const ManagerSystemPage = () => {
                                 <Link to="/dashboard/empresas" className="text-[#1e4e9c] hover:underline block">
                                     <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>1 Empresas</span>
                                 </Link>
-                                <div className="text-sm text-gray-500 ml-4 mt-1">
+                                <div className="text-sm text-gray-500  mt-1">
                                     {loading ? (
                                         <span className="animate-pulse">Cargando...</span>
                                     ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 p-2 bg-gray-200">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200">
                                             <span>Total: <span className="text-blue-500 font-bold text-[16px]">{statistics.empresas.total}</span></span>
                                             <span className="flex justify-start sm:ml-[-30px]">Activas: <span className="text-blue-500 font-bold text-[16px]">{statistics.empresas.activos}</span></span>
                                             <span className="sm:ml-[-18px]">Inactivas: <span className="text-blue-500 font-bold text-[16px]">{statistics.empresas.inactivos}</span></span>
@@ -52,11 +52,11 @@ const ManagerSystemPage = () => {
                                 <Link to="/dashboard/perfil-acceso" className="text-[#1e4e9c] hover:underline block">
                                     <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>2 Configurar Perfil Acceso</span>
                                 </Link>
-                                <div className="text-sm text-gray-500 ml-4 mt-1">
+                                <div className="text-sm text-gray-500  mt-1">
                                     {loading ? (
                                         <span className="animate-pulse">Cargando...</span>
                                     ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 p-2 bg-gray-200">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200">
                                             <span>Total: <span className="text-blue-500 font-bold text-[16px]">{statistics.perfiles.total}</span></span>
                                             <span className="sm:ml-[-30px]">Dan Permisos: <span className="text-blue-500 font-bold text-[16px]">{statistics.perfiles.profilesWithGrantPermissions}</span></span>
                                             <span className="sm:ml-[-18px]">Todos Módulos: <span className="text-blue-500 font-bold text-[16px]">{statistics.perfiles.profilesWithAllModules}</span></span>
@@ -68,11 +68,11 @@ const ManagerSystemPage = () => {
                                 <Link to="/dashboard/usuarios" className="text-[#1e4e9c] hover:underline block">
                                     <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>3 Usuarios</span>
                                 </Link>
-                                <div className="text-sm text-gray-500 ml-4 mt-1">
+                                <div className="text-sm text-gray-500  mt-1">
                                     {loading ? (
                                         <span className="animate-pulse">Cargando...</span>
                                     ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 p-2 bg-gray-200">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200">
                                             <span>Total: <span className="text-blue-500 font-bold text-[16px]">{statistics.usuarios.total}</span></span>
                                             <span className="sm:ml-[-30px]">Internos: <span className="text-blue-500 font-bold text-[16px]">{statistics.usuarios.internos}</span></span>
                                             <span className="sm:ml-[-18px]">Externos: <span className="text-blue-500 font-bold text-[16px]">{statistics.usuarios.externos}</span></span>
@@ -84,11 +84,11 @@ const ManagerSystemPage = () => {
                                 <Link to="/dashboard/permisos" className="text-[#1e4e9c] hover:underline block">
                                     <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>4 Permisos</span>
                                 </Link>
-                                <div className="text-sm text-gray-500 ml-4 mt-1">
+                                <div className="text-sm text-gray-500  mt-1">
                                     {loading ? (
                                         <span className="animate-pulse">Cargando...</span>
                                     ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 p-2 bg-gray-200">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200">
                                             <span>Total: <span className="text-blue-500 font-bold text-[16px]">{statistics.permisos.total}</span></span>
                                             <span className="sm:ml-[-30px]">Activos: <span className="text-blue-500 font-bold text-[16px]">{statistics.permisos.activos}</span></span>
                                             <span className="sm:ml-[-18px]">Inactivos: <span className="text-blue-500 font-bold text-[16px]">{statistics.permisos.inactivos}</span></span>
@@ -100,11 +100,11 @@ const ManagerSystemPage = () => {
                                 <Link to="/dashboard/bitacora" className="text-[#1e4e9c] hover:underline block">
                                     <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>5 Bitacora de Accesos</span>
                                 </Link>
-                                <div className="text-sm text-gray-500 ml-4 mt-1">
+                                <div className="text-sm text-gray-500  mt-1">
                                     {loading ? (
                                         <span className="animate-pulse">Cargando...</span>
                                     ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 p-2 bg-gray-200">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200">
                                             <span>Total: <span className="text-blue-500 font-bold text-[16px]">{statistics.bitacora.total}</span></span>
                                             <span className="sm:ml-[-30px]">Abiertas: <span className="text-blue-500 font-bold text-[16px]">{statistics.bitacora.sesionesAbiertas}</span></span>
                                             <span className="sm:ml-[-18px]">Cerradas: <span className="text-blue-500 font-bold text-[16px]">{statistics.bitacora.sesionesCerradas}</span></span>
@@ -124,11 +124,11 @@ const ManagerSystemPage = () => {
                                     <Link to="/dashboard/tramites" className="text-[#1e4e9c] hover:underline block">
                                         <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>6 Tramites de Acceso</span>
                                     </Link>
-                                    <div className="text-sm text-gray-500 ml-4 mt-1">
+                                    <div className="text-sm text-gray-500  mt-1">
                                         {loading ? (
                                             <span className="animate-pulse">Cargando...</span>
                                         ) : (
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 p-2 bg-gray-200 w-[86.5%]">
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200 w-[86.5%]">
                                                 <span>Total: <span className="text-blue-500 font-bold text-[16px]">{statistics.tramites.total}</span></span>
                                                 <span className="sm:ml-[-30px]">Aprobados: <span className="text-blue-500 font-bold text-[16px]">{statistics.tramites.aprobados}</span></span>
                                                 <span className="sm:ml-[-18px]">Rechazados: <span className="text-blue-500 font-bold text-[16px]">{statistics.tramites.rechazados}</span></span>
@@ -145,11 +145,11 @@ const ManagerSystemPage = () => {
                                     <Link to="/dashboard/redes-sociales" className="text-[#1e4e9c] hover:underline block">
                                         <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>7 Email y Redes Sociales</span>
                                     </Link>
-                                    <div className="text-sm text-gray-500 ml-4 mt-1">
+                                    <div className="text-sm text-gray-500  mt-1">
                                         {loading ? (
                                             <span className="animate-pulse">Cargando...</span>
                                         ) : (
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 p-2 bg-gray-200 w-[86%]">
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200 w-[86%]">
                                                 <span>Total: <span className="text-blue-500 font-bold text-[16px]">{statistics.redesSociales.total}</span></span>
                                                 <span className="sm:ml-[-30px]">Activas: <span className="text-blue-500 font-bold text-[16px]">{statistics.redesSociales.activos}</span></span>
                                                 <span className="sm:ml-[-18px]">Inactivas: <span className="text-blue-500 font-bold text-[16px]">{statistics.redesSociales.inactivos}</span></span>

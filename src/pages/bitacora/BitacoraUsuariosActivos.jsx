@@ -10,10 +10,40 @@ import { es } from 'date-fns/locale';
 import { getBitacora } from '../../services/bitacora/BitacoraService';
 
 export default function BitacoraUsuariosActivos() {
-  const [estadoSesionFiltro, setEstadoSesionFiltro] = useState('1'); // Por defecto activos
-  const [estadoSesionFiltroTemp, setEstadoSesionFiltroTemp] = useState('1'); // Para el modal
-  const { negocio, setNegocio, user, setUser } = useAuth();
+  // ...existing code...
+  
+const { negocio, setNegocio, user, setUser } = useAuth();
   const [bitacoras, setBitacoras] = useState([]);
+  // Agrupar registros por día y usuario
+  const bitacorasAgrupadas = React.useMemo(() => {
+    if (!Array.isArray(bitacoras)) return [];
+    const grupos = {};
+    bitacoras.forEach(registro => {
+      // Normalizar fecha a formato dd-mm-yyyy
+      let fecha = '';
+      if (registro.accesoFechaInicial) {
+        const d = new Date(registro.accesoFechaInicial);
+        if (!isNaN(d.getTime())) {
+          fecha = `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth()+1).toString().padStart(2, '0')}-${d.getFullYear()}`;
+        } else {
+          fecha = registro.accesoFechaInicial;
+        }
+      }
+      const usuario = registro.username || registro.nombreCompleto || 'Sin usuario';
+      const clave = `${fecha}_${usuario}`;
+      if (!grupos[clave]) {
+        grupos[clave] = {
+          ...registro,
+          accesoFechaInicial: fecha,
+          numeroDeHoras: 0
+        };
+      }
+      grupos[clave].numeroDeHoras += parseFloat(registro.numeroDeHoras) || 0;
+      // Si el estadoSesion actual es mayor que el guardado, lo actualizamos
+   
+    });
+    return Object.values(grupos);
+  }, [bitacoras]);
   const [filtro, setFiltro] = useState('');
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
@@ -39,9 +69,8 @@ export default function BitacoraUsuariosActivos() {
   const cargarBitacora = useCallback(async (pagina = 1, filtroBusqueda = '', filtrosExtra = {}) => {
     setLoading(true);
     const params = {
-      page: pagina,
-      pageSize: 25,
-      estadoSesion: estadoSesionFiltro, // Usa el filtro dinámico
+      page: 1,
+      pageSize: 10000, // Traer todos los registros posibles para sumar el total
       fechaInicio: fechaInicio,
       fechaFin: fechaFin,
       ...filtrosExtra
@@ -75,7 +104,7 @@ export default function BitacoraUsuariosActivos() {
     } finally {
       setLoading(false);
     }
-  }, [estadoSesionFiltro, fechaInicio, fechaFin, funcionFiltro, usernameFiltro]);
+  }, [fechaInicio, fechaFin, funcionFiltro, usernameFiltro]);
 
   // Al entrar a la pestaña, setear el nombre de la empresa y el usuario en el contexto si es necesario
   useEffect(() => {
@@ -102,7 +131,7 @@ export default function BitacoraUsuariosActivos() {
     setTipoFiltroFechaTemp(tipoFiltroFecha);
     setFechaInicioTemp(fechaInicio);
     setFechaFinTemp(fechaFin);
-    setEstadoSesionFiltroTemp(estadoSesionFiltro);
+
     
     // Configurar el tipo de filtro y su valor
     if (funcionFiltro) {
@@ -338,7 +367,7 @@ export default function BitacoraUsuariosActivos() {
     const nuevoTipoFiltroFecha = tipoFiltroFechaTemp;
     const nuevaFechaInicio = fechaInicioTemp;
     const nuevaFechaFin = fechaFinTemp;
-    const nuevoEstadoSesionFiltro = estadoSesionFiltroTemp;
+ 
     
     // Determinar los valores de filtro de usuario
     let nuevoFuncionFiltro = '';
@@ -354,7 +383,6 @@ export default function BitacoraUsuariosActivos() {
     setTipoFiltroFecha(nuevoTipoFiltroFecha);
     setFechaInicio(nuevaFechaInicio);
     setFechaFin(nuevaFechaFin);
-    setEstadoSesionFiltro(nuevoEstadoSesionFiltro);
     setFuncionFiltro(nuevoFuncionFiltro);
     setUsernameFiltro(nuevoUsernameFiltro);
     
@@ -362,9 +390,9 @@ export default function BitacoraUsuariosActivos() {
     setModalFiltros(false);
     
     // Llamar a cargarBitacora con los nuevos valores directamente
-    // en lugar de esperar a que los estados se actualicen
+
     const params = {
-      estadoSesion: nuevoEstadoSesionFiltro,
+    
       fechaInicio: nuevaFechaInicio,
       fechaFin: nuevaFechaFin
     };
@@ -380,50 +408,50 @@ export default function BitacoraUsuariosActivos() {
 
   return (
     <ManagementDashboardLayout title="REPORTE DE USUARIOS ACTIVOS" user={user} negocio={negocio}>
-      <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
+  <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4 min-h-screen flex flex-col">
         {/* Cabecera de contexto de empresa, periodo y usuario */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2 gap-2">
-      
-       
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-         
-          <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" onClick={handleAbrirFiltros}>
-          <i className="fa fa-filter"></i> Filtros
-          </button>
+          <div className="flex gap-2">
+            <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" onClick={handleAbrirFiltros}>
+              <i className="fa fa-filter"></i> Filtros
+            </button>
+          </div>
+          <div className="flex-1 flex justify-center">
+            <Paginador
+              paginaActual={paginaActual}
+              totalPaginas={totalPaginas}
+              onPageChange={handlePagina}
+            />
+          </div>
+          <div className="flex items-center justify-end gap-2">
+            <SearchBar
+              value={filtro}
+              onSearch={handleBuscar}
+              className="w-[300px]"
+              placeholder="Buscar por usuario..."
+            />
+          </div>
         </div>
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-          <SearchBar
-            value={filtro}
-            onSearch={handleBuscar}
-            className="w-[300px]"
-            placeholder="Buscar por usuario..."
-          />
-        </div>
-        </div>
-        <div className="overflow-x-auto rounded-lg border border-gray-300 bg-white" style={{height: '400px', maxHeight: '400px'}} >
+  <div className="flex-1 overflow-x-auto rounded-lg border border-gray-300 bg-white flex flex-col" style={{maxHeight: '300px', height: '200px'}}>
           <GenericTable
             columns={columns}
-            data={Array.isArray(bitacoras) ? bitacoras : []}
+            data={bitacorasAgrupadas}
             loading={loading}
             actions={false}
+            style={{height: '100%'}}
           />
-          {(!bitacoras || bitacoras.length === 0) && !loading && (
+          {(bitacorasAgrupadas.length === 0 && !loading) && (
             <div className="text-center text-gray-500 py-4">No hay registros para mostrar.</div>
           )}
         </div>
         {/* Fila de total de horas */}
         <div className="w-full flex justify-end items-center bg-gray-100 border border-t-0 border-gray-300 rounded-b px-4 py-2 text-gray-800 font-semibold text-base">
           Total de horas trabajadas:&nbsp;
-          {Array.isArray(bitacoras)
-            ? bitacoras.reduce((acc, r) => acc + (parseFloat(r.numeroDeHoras) || 0), 0)
-            : 0}
-        </div>
-        <div className="mt-4 flex justify-center">
-          <Paginador
-            paginaActual={paginaActual}
-            totalPaginas={totalPaginas}
-            onPageChange={handlePagina}
-          />
+          {typeof bitacoras === 'object' && bitacoras !== null && !Array.isArray(bitacoras) && bitacoras.numeroDeHoras !== undefined
+            ? bitacoras.numeroDeHoras
+            : Array.isArray(bitacoras)
+              ? bitacoras.reduce((acc, r) => acc + (parseFloat(r.numeroDeHoras) || 0), 0)
+              : 0}
         </div>
         {/* Modal de filtros avanzado */}
         {modalFiltros && (

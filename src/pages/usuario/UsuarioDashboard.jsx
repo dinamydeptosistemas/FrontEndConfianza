@@ -39,6 +39,10 @@ export default function UsuarioDashboard() {
     const [filtros, setFiltros] = useState({});
     const [showPlantillaMenu, setShowPlantillaMenu] = useState(false);
     const plantillaMenuRef = useRef(null);
+    // Estados para totales dinámicos
+    const [totalRegistros, setTotalRegistros] = useState(0);
+    const [totalInternos, setTotalInternos] = useState(0);
+    const [totalExternos, setTotalExternos] = useState(0);
 
     // Close menu when clicking outside
     useEffect(() => {
@@ -214,18 +218,10 @@ export default function UsuarioDashboard() {
         try {
             const data = await getUsers(params);
             console.log('Datos recibidos de la API:', data);
-            console.log('Usuarios recibidos:', data.users);
-            console.log('Total de usuarios:', data.users?.length || 0);
-            
-            // Verificar si los datos están siendo filtrados correctamente
-            if (params.usuarioActivo === false) {
-                console.log('Filtrando por usuarios inactivos, total recibidos:', data.users?.length || 0);
-                console.log('Primer usuario recibido:', data.users?.[0]);
-            } else if (params.usuarioActivo === true) {
-                console.log('Filtrando por usuarios activos, total recibidos:', data.users?.length || 0);
-                console.log('Primer usuario recibido:', data.users?.[0]);
-            }
-            
+            // Actualizar los totales desde la respuesta del servicio
+            setTotalRegistros(data.totalRecords || 0);
+            setTotalInternos(data.totalInternos || 0);
+            setTotalExternos(data.totalExternos || 0);
             setUsuariosOriginales(data.users || []);
             setUsuarios(data.users || []);
             setPaginaActual(pagina);
@@ -316,7 +312,18 @@ export default function UsuarioDashboard() {
 
 
     return (
-        <ManagementDashboardLayout title="USUARIOS:" user={user} negocio={negocio}>
+        <ManagementDashboardLayout title={(
+        <>
+          <span className="font-bold">USUARIOS:</span>
+          {filtros.tipoUserFiltro === 'INTERNO' ? (
+            <span className="font-light ml-5 text-[16px]">{`${totalInternos} Internos`}</span>
+          ) : filtros.tipoUserFiltro === 'EXTERNO' ? (
+            <span className="font-light ml-5 text-[16px]">{`${totalExternos} Externos`}</span>
+          ) : (
+            <span className="font-light ml-5 text-[16px]">{`${totalRegistros} Totales`}</span>
+          )}
+        </>
+      )} user={user} negocio={negocio}>
             <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
 
                 <div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">

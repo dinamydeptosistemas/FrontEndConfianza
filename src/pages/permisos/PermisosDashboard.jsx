@@ -6,12 +6,18 @@ import ButtonGroup from '../../components/common/ButtonGroup';
 import SearchBar from '../../components/common/SearchBar';
 import ConfirmEliminarModal from '../../components/common/ConfirmEliminarModal';
 import PermisoCreateModal from '../../components/permisos/PermisoCreateModal';
+import PermisosFilterModal from '../../components/permisos/PermisosFilterModal';
 import PermisosModal from '../../components/bitacora/PermisosModal';
 import Paginador from '../../components/common/Paginador';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 
 export default function PermisosDashboard() {
+  // Estado para mostrar el modal de filtros
+  const [mostrarModalFiltros, setMostrarModalFiltros] = useState(false);
+  const [filtros, setFiltros] = useState({});
+  // Estado para el total de permisos
+  const [totalRecords, setTotalRecords] = useState(0);
   const { user, negocio } = useAuth();
   const { showSuccessMessage } = useNotification();
   const [permisosOriginales, setPermisosOriginales] = useState([]);
@@ -42,6 +48,7 @@ export default function PermisosDashboard() {
     setPermisos(data.permissions || []);
     setPaginaActual(pagina);
     setTotalPaginas(data.totalPages || 1);
+    setTotalRecords(data.totalRecords || (data.permissions ? data.permissions.length : 0));
   }, []);
 
   useEffect(() => {
@@ -167,7 +174,12 @@ export default function PermisosDashboard() {
   };
 
   return (
-    <ManagementDashboardLayout title="PERMISOS:" user={user} negocio={negocio}>
+    <ManagementDashboardLayout title={(
+        <>
+          <span className="font-bold">PERMISOS:</span>
+          <span className="font-light ml-5 text-[16px]">{`${totalRecords} Total`}</span>
+        </>
+      )}  user={user} negocio={negocio}>
       <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
 <div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
 <div className="flex gap-2">
@@ -179,6 +191,31 @@ export default function PermisosDashboard() {
                 className: 'bg-white border-[#1e4e9c] border px-8 py-1 font-bold hover:text-white hover:bg-[#1e4e9c]'
               }]}
             />
+             
+        {/* Modal de filtros para permisos */}
+        <PermisosFilterModal
+          isOpen={mostrarModalFiltros}
+          onClose={() => setMostrarModalFiltros(false)}
+          onApply={(filtrosAplicados) => {
+            setFiltros(filtrosAplicados);
+            setMostrarModalFiltros(false);
+            // Aquí puedes agregar la lógica para filtrar los permisos
+          }}
+        />
+              <button
+              onClick={() => setMostrarModalFiltros(true)}
+              className="flex items-center text-[#1e4e9c]  gap-1 bg-white border-[#1e4e9c] border px-4 py-1 font-bold hover:text-white hover:bg-[#1e4e9c] rounded"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              
+              {Object.keys(filtros).length > 0 && (
+                <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                  {Object.keys(filtros).length}
+                </span>
+              )}
+            </button>
           </div>
           <div className="w-full flex justify-center">
             <div className="w-full sm:w-auto">
@@ -218,7 +255,7 @@ export default function PermisosDashboard() {
             columns={[
               {
                 key: 'regPermiso',
-                label: 'N° Registro',
+                label: 'N° Reg',
                 render: (row) => row.regPermiso || 'N/A'
               },
               { 
