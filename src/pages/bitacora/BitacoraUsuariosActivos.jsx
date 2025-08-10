@@ -161,8 +161,8 @@ const { negocio, setNegocio, user, setUser } = useAuth();
         const estado = String(row.estadoSesion || '');
         switch (estado) {
           case '1': return 'Activo';
-          case '2': return 'Cerrada';
-          case '0': return 'Bloqueada';
+          case '0': return 'Cerrada';
+          case '2': return 'Bloqueada';
           default: return row.estadoSesion; // Mantener el valor original si no coincide
         }
       }

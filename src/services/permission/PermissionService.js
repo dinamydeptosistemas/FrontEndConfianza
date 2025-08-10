@@ -31,6 +31,8 @@ export const getPermisos = async (params = {}) => {
       process: 'getPermissions',
       ...params
     };
+    console.log('[PermissionService] Endpoint:', API_BASE);
+    console.log('[PermissionService] Params:', JSON.stringify(requestParams));
     const response = await axiosInstance.post(API_BASE, requestParams, commonConfig);
     
     if (!response?.data) {

@@ -16,6 +16,7 @@ export default function PermisosDashboard() {
   // Estado para mostrar el modal de filtros
   const [mostrarModalFiltros, setMostrarModalFiltros] = useState(false);
   const [filtros, setFiltros] = useState({});
+  const [mostrarListaFiltros, setMostrarListaFiltros] = useState(false);
   // Estado para el total de permisos
   const [totalRecords, setTotalRecords] = useState(0);
   const { user, negocio } = useAuth();
@@ -35,14 +36,31 @@ export default function PermisosDashboard() {
   const [eliminando, setEliminando] = useState(false);
   const [errorEliminacion, setErrorEliminacion] = useState('');
 
-  // Ya no necesitamos este efecto porque el NotificationContext maneja el cierre automático
+  // Limpia los filtros para no enviar valores vacíos, nulos o undefined
+  function limpiarFiltros(obj) {
+    const limpio = {};
+    Object.entries(obj).forEach(([key, value]) => {
+      // No enviar FiltroEstadoPermiso si es '' (Todos)
+      if (key === 'FiltroEstadoPermiso' && value === '') return;
+      // Enviar booleanos como true o false, y strings solo si no son vacíos
+      if (typeof value === 'boolean') {
+        limpio[key] = value;
+      } else if (value !== '' && value !== null && value !== undefined) {
+        limpio[key] = value;
+      }
+    });
+    return limpio;
+  }
 
-  const cargarPermisos = useCallback(async (pagina = 1, filtroBusqueda = '') => {
-    const params = { page: pagina };
+  // Ahora acepta un tercer parámetro opcional para filtros extra
+  const cargarPermisos = useCallback(async (pagina = 1, filtroBusqueda = '', filtrosExtra = {}) => {
+    const filtrosLimpios = limpiarFiltros(filtrosExtra);
+    const params = { page: pagina, ...filtrosLimpios };
     if (filtroBusqueda) {
       params.searchTerm = filtroBusqueda;
       setFiltroActivo(filtroBusqueda);
     }
+    console.log('Filtros enviados al servidor:', params);
     const data = await getPermisos(params);
     setPermisosOriginales(data.permissions || []);
     setPermisos(data.permissions || []);
@@ -199,23 +217,69 @@ export default function PermisosDashboard() {
           onApply={(filtrosAplicados) => {
             setFiltros(filtrosAplicados);
             setMostrarModalFiltros(false);
-            // Aquí puedes agregar la lógica para filtrar los permisos
+            // Solo enviar los filtros requeridos
+            cargarPermisos(1, '', {
+              FiltroEstadoPermiso: filtrosAplicados.FiltroEstadoPermiso,
+              FiltroTodasEmpresas: filtrosAplicados.FiltroTodasEmpresas,
+              FiltroMasDeUnaSesion: filtrosAplicados.FiltroMasDeUnaSesion
+            });
           }}
         />
-              <button
-              onClick={() => setMostrarModalFiltros(true)}
-              className="flex items-center text-[#1e4e9c]  gap-1 bg-white border-[#1e4e9c] border px-4 py-1 font-bold hover:text-white hover:bg-[#1e4e9c] rounded"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
-              
-              {Object.keys(filtros).length > 0 && (
-                <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                  {Object.keys(filtros).length}
-                </span>
-              )}
-            </button>
+              <div className="relative">
+                <div className="flex items-center">
+                  <button
+                    onClick={() => setMostrarModalFiltros(true)}
+                  className="flex items-center text-[#1e4e9c]  gap-1 bg-white border-[#1e4e9c] border px-4 py-3 font-bold hover:text-white hover:bg-[#1e4e9c] rounded"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                    </svg>
+                    {Object.keys(filtros).length > 0 && (
+                      <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                        {Object.keys(filtros).length}
+                      </span>
+                    )}
+                  </button>
+                  {Object.keys(filtros).length > 0 && (
+                    <button
+                      className="ml-2 text-xs text-blue-700"
+                      style={{ height: '32px', textDecoration: 'none' }}
+                      onClick={() => setMostrarListaFiltros((v) => !v)}
+                    >Ver/Quitar filtros</button>
+                  )}
+                </div>
+                {mostrarListaFiltros && (
+                  <div className="absolute z-50 bg-white border rounded shadow-lg mt-2 right-0 min-w-[180px]">
+                    <div className="p-2 border-b font-bold">Filtros activos</div>
+                    {Object.entries(filtros).map(([key, value]) => (
+                      value ? (
+                        <div key={key} className="flex items-center justify-between px-2 py-1 text-sm">
+                          <span>{key}: {typeof value === 'boolean' ? (value ? 'Sí' : 'No') : value}</span>
+                          <button
+                            className="ml-2 text-blue-600 hover:text-blue-800"
+                            onClick={() => {
+                              const nuevos = { ...filtros };
+                              nuevos[key] = typeof value === 'boolean' ? false : '';
+                              setFiltros(nuevos);
+                              cargarPermisos(1, '', nuevos);
+                            }}
+                          >Quitar</button>
+                        </div>
+                      ) : null
+                    ))}
+                    <div className="px-2 py-1">
+                      <button
+                        className="text-xs text-blue-700 hover:text-blue-900 font-bold"
+                        onClick={() => {
+                          setFiltros({});
+                          setMostrarListaFiltros(false);
+                          cargarPermisos(1, '', {});
+                        }}
+                      >Quitar todos</button>
+                    </div>
+                  </div>
+                )}
+              </div>
           </div>
           <div className="w-full flex justify-center">
             <div className="w-full sm:w-auto">

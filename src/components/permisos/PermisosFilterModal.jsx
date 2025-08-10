@@ -10,20 +10,19 @@ import PropTypes from 'prop-types';
  */
 function PermisosFilterModal({ isOpen, onClose, onApply }) {
   const [filters, setFilters] = useState({
-    usuario: '',
-    funcion: '',
-    estado: '',
-    fechaInicio: '',
-    fechaFin: ''
+    FiltroEstadoPermiso: '', // '', true, false
+    FiltroTodasEmpresas: '', // '', true, false
+    FiltroMasDeUnaSesion: '', // '', true, false
   });
 
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
-  }
 
   function handleApply() {
-    if (onApply) onApply(filters);
+    // Limpiar los filtros para no enviar los que son '' (Todos)
+    const filtrosEnviar = {};
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== '') filtrosEnviar[key] = value;
+    });
+    if (onApply) onApply(filtrosEnviar);
     if (onClose) onClose();
   }
 
@@ -34,46 +33,105 @@ function PermisosFilterModal({ isOpen, onClose, onApply }) {
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
         <h2 className="text-lg font-bold mb-4">Filtrar Permisos</h2>
         <div className="space-y-3">
-          <input
-            type="text"
-            name="usuario"
-            value={filters.usuario}
-            onChange={handleChange}
-            placeholder="Usuario"
-            className="w-full border rounded px-2 py-1"
-          />
-          <input
-            type="text"
-            name="funcion"
-            value={filters.funcion}
-            onChange={handleChange}
-            placeholder="Función"
-            className="w-full border rounded px-2 py-1"
-          />
-          <select
-            name="estado"
-            value={filters.estado}
-            onChange={handleChange}
-            className="w-full border rounded px-2 py-1"
-          >
-            <option value="">Estado</option>
-            <option value="activo">Activo</option>
-            <option value="inactivo">Inactivo</option>
-          </select>
-          <input
-            type="date"
-            name="fechaInicio"
-            value={filters.fechaInicio}
-            onChange={handleChange}
-            className="w-full border rounded px-2 py-1"
-          />
-          <input
-            type="date"
-            name="fechaFin"
-            value={filters.fechaFin}
-            onChange={handleChange}
-            className="w-full border rounded px-2 py-1"
-          />
+          <div className="flex flex-col gap-2">
+            <span className="font-semibold">Estado del permiso:</span>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="FiltroEstadoPermiso"
+                value=""
+                checked={filters.FiltroEstadoPermiso === ''}
+                onChange={() => setFilters(prev => ({ ...prev, FiltroEstadoPermiso: '' }))}
+              />
+              Todos
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="FiltroEstadoPermiso"
+                value="true"
+                checked={filters.FiltroEstadoPermiso === true}
+                onChange={() => setFilters(prev => ({ ...prev, FiltroEstadoPermiso: true }))}
+              />
+              Activo
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="FiltroEstadoPermiso"
+                value="false"
+                checked={filters.FiltroEstadoPermiso === false}
+                onChange={() => setFilters(prev => ({ ...prev, FiltroEstadoPermiso: false }))}
+              />
+              Inactivo
+            </label>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="font-semibold">Todas las empresas:</span>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="FiltroTodasEmpresas"
+                value=""
+                checked={filters.FiltroTodasEmpresas === ''}
+                onChange={() => setFilters(prev => ({ ...prev, FiltroTodasEmpresas: '' }))}
+              />
+              Todos
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="FiltroTodasEmpresas"
+                value="true"
+                checked={filters.FiltroTodasEmpresas === true}
+                onChange={() => setFilters(prev => ({ ...prev, FiltroTodasEmpresas: true }))}
+              />
+              Sí
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="FiltroTodasEmpresas"
+                value="false"
+                checked={filters.FiltroTodasEmpresas === false}
+                onChange={() => setFilters(prev => ({ ...prev, FiltroTodasEmpresas: false }))}
+              />
+              No
+            </label>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="font-semibold">Permisos con más de una sesión:</span>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="FiltroMasDeUnaSesion"
+                value=""
+                checked={filters.FiltroMasDeUnaSesion === ''}
+                onChange={() => setFilters(prev => ({ ...prev, FiltroMasDeUnaSesion: '' }))}
+              />
+              Todos
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="FiltroMasDeUnaSesion"
+                value="true"
+                checked={filters.FiltroMasDeUnaSesion === true}
+                onChange={() => setFilters(prev => ({ ...prev, FiltroMasDeUnaSesion: true }))}
+              />
+              Sí
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="FiltroMasDeUnaSesion"
+                value="false"
+                checked={filters.FiltroMasDeUnaSesion === false}
+                onChange={() => setFilters(prev => ({ ...prev, FiltroMasDeUnaSesion: false }))}
+              />
+              No
+            </label>
+          </div>
         </div>
         <div className="flex justify-end gap-2 mt-6">
           <button onClick={onClose} className="px-4 py-1 rounded bg-gray-200 hover:bg-gray-300">Cancelar</button>
