@@ -187,7 +187,7 @@ const DashboardLayout = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white h-[900px] shadow-md flex-1 w-full">
+                    <div className="bg-white shadow-md flex-1 w-full">
                         <Outlet />
                     </div>
                 </div>

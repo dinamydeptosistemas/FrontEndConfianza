@@ -1,14 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useMenuStatistics } from '../hooks/useMenuStatistics';
+import { countTestData } from '../services/DataCleanup/DataCleanupService';
+import { useConfirmarEliminacion } from '../components/common/ConfirmEliminarModal';
+import DataManagementModal from '../components/DataManagementModal';
 
 const ManagerSystemPage = () => {
     const { user } = useAuth();
     const { statistics, loading } = useMenuStatistics();
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const [testDataCount, setTestDataCount] = useState(0);
+    const {  ConfirmDialog } = useConfirmarEliminacion();
+    // Agregar estado para controlar la visibilidad del modal
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    
+    // Obtener contador de datos de prueba
+    const fetchTestDataCount = useCallback(async () => {
+        if (user?.codeFunction === 1 || user?.codeFunction === "1") {
+            try {
+                const data = await countTestData();
+                setTestDataCount(data.count || 0);
+            } catch (error) {
+                console.error("Error al obtener contador de datos de prueba:", error);
+                setTestDataCount(0);
+            }
+        }
+    }, [user]);
 
-    // Effect para manejar cambios de tamaño de pantalla
+    useEffect(() => {
+        fetchTestDataCount();
+    }, [fetchTestDataCount]);
+
+    // Manejar redimensionamiento de ventana
     useEffect(() => {
         const handleResize = () => {
             setIsMobile(window.innerWidth < 768);
@@ -18,25 +42,28 @@ const ManagerSystemPage = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Ya no necesitamos estilos adicionales para las estadísticas
-    // El grid se encarga de la alineación uniforme
+    // Función para abrir el modal
+    const openModal = () => setIsModalOpen(true);
+
+    // Función para cerrar el modal
+    const closeModal = () => setIsModalOpen(false);
 
     return (
-        <div className="w-full overflow-hidden h-[1000px]">
-            {/* Manager System Title */}
- 
-            {/* Main content */}
-            <div className="p-10 text-[20px] w-full h-full">
+        <div className="w-full overflow-hidden h-full">
+            <ConfirmDialog />
+            {isModalOpen && <DataManagementModal onClose={closeModal} />}
+
+            <div className="relative p-10 text-lg w-full h-full">
                 <div className="flex flex-col md:flex-row mb-6">
                     {/* Columna izquierda - Accesos */}
                     <div className="w-full md:w-1/2 pr-0 md:pr-8 mb-6 md:mb-0">
-                        <h3 className="text-base text-gray-600 mb-3 text-[20px]">Accesos</h3>
-                        <ul className="space-y-2">
+                        <h2 className="text-xl text-gray-700 mb-4 font-semibold">Accesos</h2>
+                <ul className="space-y-2">
                             <li>
                                 <Link to="/dashboard/empresas" className="text-[#1e4e9c] hover:underline block">
                                     <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>1 Empresas</span>
                                 </Link>
-                                <div className="text-sm text-gray-500  mt-1">
+                                <div className="text-sm text-gray-500 mt-1">
                                     {loading ? (
                                         <span className="animate-pulse">Cargando...</span>
                                     ) : (
@@ -52,7 +79,7 @@ const ManagerSystemPage = () => {
                                 <Link to="/dashboard/perfil-acceso" className="text-[#1e4e9c] hover:underline block">
                                     <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>2 Configurar Perfil Acceso</span>
                                 </Link>
-                                <div className="text-sm text-gray-500  mt-1">
+                                <div className="text-sm text-gray-500 mt-1">
                                     {loading ? (
                                         <span className="animate-pulse">Cargando...</span>
                                     ) : (
@@ -68,7 +95,7 @@ const ManagerSystemPage = () => {
                                 <Link to="/dashboard/usuarios" className="text-[#1e4e9c] hover:underline block">
                                     <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>3 Usuarios</span>
                                 </Link>
-                                <div className="text-sm text-gray-500  mt-1">
+                                <div className="text-sm text-gray-500 mt-1">
                                     {loading ? (
                                         <span className="animate-pulse">Cargando...</span>
                                     ) : (
@@ -84,14 +111,14 @@ const ManagerSystemPage = () => {
                                 <Link to="/dashboard/permisos" className="text-[#1e4e9c] hover:underline block">
                                     <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>4 Permisos</span>
                                 </Link>
-                                <div className="text-sm text-gray-500  mt-1">
+                                <div className="text-sm text-gray-500 mt-1">
                                     {loading ? (
                                         <span className="animate-pulse">Cargando...</span>
                                     ) : (
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200">
                                             <span>Total: <span className="text-blue-500 font-bold text-[16px]">{statistics.permisos.total}</span></span>
                                             <span className="sm:ml-[-30px]">Activos: <span className="text-blue-500 font-bold text-[16px]">{statistics.permisos.activos}</span></span>
-                                            <span className="sm:ml-[-18px]">Inactivos: <span className="text-blue-500 font-bold text-[16px]">{statistics.permisos.inactivos}</span></span>
+                                            <span className="sm:ml-[-18px]">Inactivas: <span className="text-blue-500 font-bold text-[16px]">{statistics.permisos.inactivos}</span></span>
                                         </div>
                                     )}
                                 </div>
@@ -100,7 +127,7 @@ const ManagerSystemPage = () => {
                                 <Link to="/dashboard/bitacora" className="text-[#1e4e9c] hover:underline block">
                                     <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>5 Bitacora de Accesos</span>
                                 </Link>
-                                <div className="text-sm text-gray-500  mt-1">
+                                <div className="text-sm text-gray-500 mt-1">
                                     {loading ? (
                                         <span className="animate-pulse">Cargando...</span>
                                     ) : (
@@ -112,19 +139,20 @@ const ManagerSystemPage = () => {
                                     )}
                                 </div>
                             </li>
+                       
                         </ul>
                     </div>
 
                     {/* Columna derecha - Tramites y Medios */}
                     <div className="w-full md:w-1/2">
                         <div className="mb-6">
-                            <h3 className="text-base mb-3 text-[20px] text-gray-600">Tramites</h3>
+                            <h2 className="text-base mb-3 text-[20px] text-gray-600">Tramites</h2>
                             <ul className="space-y-2">
                                 <li>
                                     <Link to="/dashboard/tramites" className="text-[#1e4e9c] hover:underline block">
-                                        <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>6 Tramites de Acceso</span>
+                                        <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>7 Tramites de Acceso</span>
                                     </Link>
-                                    <div className="text-sm text-gray-500  mt-1">
+                                    <div className="text-sm text-gray-500 mt-1">
                                         {loading ? (
                                             <span className="animate-pulse">Cargando...</span>
                                         ) : (
@@ -138,14 +166,15 @@ const ManagerSystemPage = () => {
                                 </li>
                             </ul>
                         </div>
-                        <div>
+                        
+                        <div className="mb-6">
                             <h3 className="text-base text-gray-600 mb-3 text-[20px]">Medios y Redes</h3>
                             <ul className="space-y-2">
                                 <li>
                                     <Link to="/dashboard/redes-sociales" className="text-[#1e4e9c] hover:underline block">
-                                        <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>7 Email y Redes Sociales</span>
+                                        <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>8 Email y Redes Sociales</span>
                                     </Link>
-                                    <div className="text-sm text-gray-500  mt-1">
+                                    <div className="text-sm text-gray-500 mt-1">
                                         {loading ? (
                                             <span className="animate-pulse">Cargando...</span>
                                         ) : (
@@ -160,63 +189,85 @@ const ManagerSystemPage = () => {
                             </ul>
                         </div>
                     </div>
-                </div>
 
-                {/* Diagrama */}
+                        {/* Widget de datos de prueba */}
+                        {(user?.codeFunction === 1 || user?.codeFunction === "1") && (
+                            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 w-fit ml-auto mt-8">
+                                <div className="text-center">
+                                    <div className="text-sm font-semibold text-gray-700 mb-2">
+                                        Registros de Prueba
+                                    </div>
+                                    <div className="text-2xl font-bold text-blue-600 mb-3">
+                                        {testDataCount}
+                                    </div>
+                                    <button 
+                                        onClick={openModal}
+                                        disabled={testDataCount === 0}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
+                                    >
+                                        {testDataCount === 0 ? 'Sin datos' : 'Gestionar'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                       {/* Diagrama de flujo */}
+                  {/* Diagrama */}
                 {(user?.codeFunction === 1 || user?.codeFunction === "1") && (
-                  <div className="mt-6 w-full flex">
-                     
-                <div className="w-[450px] h-[400px] max-w-5xl justify-start p-2 rounded-lg bg-white" id="flujo-permiso-acceso">
-                    <div className="text-center text-2xl font-bold text-gray-700 mb-2">FLUJO PERMISO DE ACCESO</div>
+                    <div className="mt-6 w-full flex">
+                        <div className="w-[450px] h-[400px] max-w-5xl justify-start p-2 rounded-lg bg-white" id="flujo-permiso-acceso">
+                            <div className="text-center text-2xl font-bold text-gray-700 mb-2">FLUJO PERMISO DE ACCESO</div>
 
-                    <div className="flex justify-between ">
-                        <div className="w-[120px] h-[70px] border border-gray-300 rounded-md flex flex-col justify-center items-center bg-white">
-                            <div className="font-semibold text-center text-gray-700 text-[14px]">1 Empresas</div>
-                            <div className="text-xs text-center text-gray-500">codigoentidad</div>
-                        </div>
-                        <div className="w-[120px] h-[70px] border border-gray-300 rounded-md flex flex-col justify-center items-center bg-white">
-                            <div className="font-semibold text-center text-gray-700 text-[14px]">2 Perfil Acceso</div>
-                            <div className="text-xs text-center text-gray-500">idfuncion</div>
-                        </div>
-                        <div className="w-[120px] h-[70px] border border-gray-300 rounded-md flex flex-col justify-center items-center bg-white">
-                            <div className="font-semibold text-center text-gray-700 text-[14px]">3 Usuarios</div>
-                            <div className="text-xs text-center text-gray-500">idusuario</div>
+                            <div className="flex justify-between">
+                                <div className="w-[120px] h-[70px] border border-gray-300 rounded-md flex flex-col justify-center items-center bg-white">
+                                    <div className="font-semibold text-center text-gray-700 text-[14px]">1 Empresas</div>
+                                    <div className="text-xs text-center text-gray-500">codigoentidad</div>
+                                </div>
+                                <div className="w-[120px] h-[70px] border border-gray-300 rounded-md flex flex-col justify-center items-center bg-white">
+                                    <div className="font-semibold text-center text-gray-700 text-[14px]">2 Perfil Acceso</div>
+                                    <div className="text-xs text-center text-gray-500">idfuncion</div>
+                                </div>
+                                <div className="w-[120px] h-[70px] border border-gray-300 rounded-md flex flex-col justify-center items-center bg-white">
+                                    <div className="font-semibold text-center text-gray-700 text-[14px]">3 Usuarios</div>
+                                    <div className="text-xs text-center text-gray-500">idusuario</div>
+                                </div>
+                            </div>
+
+                            <div className="relative h-8">
+                                <div className="absolute left-[60px] h-4 w-px bg-gray-400"></div>
+                                <div className="absolute left-1/2 h-4 w-px bg-gray-400"></div>
+                                <div className="absolute right-[60px] h-4 w-px bg-gray-400"></div>
+                                <div className="absolute top-4 left-[60px] right-[60px] h-px bg-gray-400"></div>
+                                <div className="absolute left-1/2 top-4 h-4 w-px bg-gray-400"></div>
+                                <div className="absolute left-1/2 top-8 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-400"></div>
+                            </div>
+
+                            <div className="flex justify-center">
+                                <div className="w-[120px] h-[70px] border border-gray-300 rounded-md flex flex-col justify-center items-center bg-white">
+                                    <div className="font-semibold text-center text-gray-700 text-[14px]">4 Permisos</div>
+                                    <div className="text-xs text-center text-gray-500">regpermiso</div>
+                                </div>
+                            </div>
+
+                            <div className="relative h-8">
+                                <div className="absolute left-1/2 h-8 w-px bg-gray-400"></div>
+                                <div className="absolute left-1/2 top-8 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-400"></div>
+                            </div>
+
+                            <div className="flex justify-center">
+                                <div className="w-[120px] h-[70px] border border-gray-300 rounded-md flex flex-col justify-center items-center bg-white">
+                                    <div className="font-semibold text-center text-gray-700 text-[14px]">5 Bitácora</div>
+                                    <div className="text-xs text-center text-gray-500">regacceso</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-
-                    <div className="relative h-8 ">
-                        <div className="absolute left-[60px] h-4 w-px bg-gray-400"></div>
-                        <div className="absolute left-1/2 h-4 w-px bg-gray-400"></div>
-                        <div className="absolute right-[60px] h-4 w-px bg-gray-400"></div>
-                        <div className="absolute top-4 left-[60px] right-[60px] h-px bg-gray-400"></div>
-                        <div className="absolute left-1/2 top-4 h-4 w-px bg-gray-400"></div>
-                        <div className="absolute left-1/2 top-8 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-400"></div>
-                    </div>
-
-                    <div className="flex justify-center ">
-                        <div className="w-[120px] h-[70px] border border-gray-300 rounded-md flex flex-col justify-center items-center bg-white">
-                            <div className="font-semibold text-center text-gray-700 text-[14px]">4 Permisos</div>
-                            <div className="text-xs text-center text-gray-500">regpermiso</div>
-                        </div>
-                    </div>
-
-                    <div className="relative h-8"> 
-                        <div className="absolute left-1/2 h-8 w-px bg-gray-400"></div>
-                        <div className="absolute left-1/2 top-8 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-400"></div>
-                    </div>
-
-                    <div className="flex justify-center">
-                        <div className="w-[120px] h-[70px] border border-gray-300 rounded-md flex flex-col justify-center items-center bg-white">
-                            <div className="font-semibold text-center text-gray-700 text-[14px]">5 Bitácora</div>
-                            <div className="text-xs text-center text-gray-500">regacceso</div>
-                        </div>
-                    </div>
-                </div>
-            
-                  </div>
                 )}
+                </div>
+
+             
             </div>
-        </div>
+  
     );
 };
 

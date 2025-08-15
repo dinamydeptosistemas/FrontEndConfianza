@@ -19,6 +19,8 @@ import SocialMediaDashboard from '../pages/socialmedia/socialmediadashboard';
 import PaperworksDashboard from '../pages/paperworks/PaperworksDashboard';
 import RegistrerUserExternal from '../pages/registrer/RegistrerUserExternal';
 import EmailVerificationPage from '../pages/EmailVerificationPage';
+import DataCleanup from '../components/DataCleanup/DataCleanup';
+
 
 
 
@@ -145,6 +147,11 @@ export const AppRoutes = () => {
             <Route 
                 path="/dashboard/usuarios-activos" 
                 element={isAuthenticated && isManagerSystem ? <BitacoraUsuariosActivos /> : <Navigate to="/login" replace />} 
+            />
+            {/* Ruta para limpieza de datos */}
+            <Route
+                path="/dashboard/data-cleanup"
+                element={isAuthenticated && isManagerSystem ? <DataCleanup /> : <Navigate to="/login" replace />}
             />
 
             {/* Rutas protegidas */}
