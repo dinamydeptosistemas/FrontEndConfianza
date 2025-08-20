@@ -127,6 +127,7 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
               </div>
               <div className="w-full  mt-1 sm:mt-2 h-[1000px]">
                 {children}
+                
               </div>
             </div>
           </div>

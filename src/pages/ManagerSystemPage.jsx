@@ -56,12 +56,12 @@ const ManagerSystemPage = () => {
             <div className="relative p-10 text-lg w-full h-full">
                 <div className="flex flex-col md:flex-row mb-6">
                     {/* Columna izquierda - Accesos */}
-                    <div className="w-full md:w-1/2 pr-0 md:pr-8 mb-6 md:mb-0">
+                    <div className="w-full md:w-1/2 md:pr-4 mb-6 md:mb-0">
                         <h2 className="text-xl text-gray-700 mb-4 font-semibold">Accesos</h2>
                 <ul className="space-y-2">
                             <li>
                                 <Link to="/dashboard/empresas" className="text-[#1e4e9c] hover:underline block">
-                                    <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>1 Empresas</span>
+                                    <span className={`inline-block w-full`}>1 Empresas</span>
                                 </Link>
                                 <div className="text-sm text-gray-500 mt-1">
                                     {loading ? (
@@ -77,7 +77,7 @@ const ManagerSystemPage = () => {
                             </li>
                             <li>
                                 <Link to="/dashboard/perfil-acceso" className="text-[#1e4e9c] hover:underline block">
-                                    <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>2 Configurar Perfil Acceso</span>
+                                    <span className={`inline-block w-full`}>2 Configurar Perfil Acceso</span>
                                 </Link>
                                 <div className="text-sm text-gray-500 mt-1">
                                     {loading ? (
@@ -93,7 +93,7 @@ const ManagerSystemPage = () => {
                             </li>
                             <li>
                                 <Link to="/dashboard/usuarios" className="text-[#1e4e9c] hover:underline block">
-                                    <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>3 Usuarios</span>
+                                    <span className={`inline-block w-full`}>3 Usuarios</span>
                                 </Link>
                                 <div className="text-sm text-gray-500 mt-1">
                                     {loading ? (
@@ -109,7 +109,7 @@ const ManagerSystemPage = () => {
                             </li>
                             <li>
                                 <Link to="/dashboard/permisos" className="text-[#1e4e9c] hover:underline block">
-                                    <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>4 Permisos</span>
+                                    <span className={`inline-block w-full`}>4 Permisos</span>
                                 </Link>
                                 <div className="text-sm text-gray-500 mt-1">
                                     {loading ? (
@@ -125,7 +125,7 @@ const ManagerSystemPage = () => {
                             </li>
                             <li>
                                 <Link to="/dashboard/bitacora" className="text-[#1e4e9c] hover:underline block">
-                                    <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>5 Bitacora de Accesos</span>
+                                    <span className={`inline-block w-full`}>5 Bitacora de Accesos</span>
                                 </Link>
                                 <div className="text-sm text-gray-500 mt-1">
                                     {loading ? (
@@ -144,19 +144,19 @@ const ManagerSystemPage = () => {
                     </div>
 
                     {/* Columna derecha - Tramites y Medios */}
-                    <div className="w-full md:w-1/2">
+                     <div className="w-full md:w-1/2 md:pl-4">
                         <div className="mb-6">
                             <h2 className="text-base mb-3 text-[20px] text-gray-600">Tramites</h2>
                             <ul className="space-y-2">
                                 <li>
                                     <Link to="/dashboard/tramites" className="text-[#1e4e9c] hover:underline block">
-                                        <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>7 Tramites de Acceso</span>
+                                        <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-full'}`}>7 Tramites de Acceso</span>
                                     </Link>
                                     <div className="text-sm text-gray-500 mt-1">
                                         {loading ? (
                                             <span className="animate-pulse">Cargando...</span>
                                         ) : (
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200 w-[86.5%]">
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[6px] bg-gray-200 w-full">
                                                 <span>Total: <span className="text-blue-500 font-bold text-[16px]">{statistics.tramites.total}</span></span>
                                                 <span className="sm:ml-[-30px]">Aprobados: <span className="text-blue-500 font-bold text-[16px]">{statistics.tramites.aprobados}</span></span>
                                                 <span className="sm:ml-[-18px]">Rechazados: <span className="text-blue-500 font-bold text-[16px]">{statistics.tramites.rechazados}</span></span>
@@ -178,7 +178,7 @@ const ManagerSystemPage = () => {
                                         {loading ? (
                                             <span className="animate-pulse">Cargando...</span>
                                         ) : (
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200 w-[86%]">
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200 w-full">
                                                 <span>Total: <span className="text-blue-500 font-bold text-[16px]">{statistics.redesSociales.total}</span></span>
                                                 <span className="sm:ml-[-30px]">Activas: <span className="text-blue-500 font-bold text-[16px]">{statistics.redesSociales.activos}</span></span>
                                                 <span className="sm:ml-[-18px]">Inactivas: <span className="text-blue-500 font-bold text-[16px]">{statistics.redesSociales.inactivos}</span></span>
@@ -192,12 +192,12 @@ const ManagerSystemPage = () => {
 
                         {/* Widget de datos de prueba */}
                         {(user?.codeFunction === 1 || user?.codeFunction === "1") && (
-                            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 w-fit ml-auto mt-8">
+                            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 w-fit mr-[100px] mt-[280px] h-[150px]">
                                 <div className="text-center">
-                                    <div className="text-sm font-semibold text-gray-700 mb-2">
+                                    <div className="text-sm font-semibold text-gray-700">
                                         Registros de Prueba
                                     </div>
-                                    <div className="text-2xl font-bold text-blue-600 mb-3">
+                                    <div className="text-2xl font-bold text-blue-600">
                                         {testDataCount}
                                     </div>
                                     <button 

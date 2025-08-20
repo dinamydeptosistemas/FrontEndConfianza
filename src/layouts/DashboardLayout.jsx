@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Outlet, Navigate } from 'react-router-dom';
+import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import useInactivityLogout from '../hooks/useInactivityLogout';
 import WorkJustificationModal from '../components/modals/WorkJustificationModal';
 
-const DashboardLayout = () => {
+const DashboardLayout = ({ children }) => {
     const { user, negocio, logout, loading, error } = useAuth();
     const [isJustificationModalOpen, setJustificationModalOpen] = useState(false);
     const [lastActivity, setLastActivity] = useState(null);
@@ -44,6 +44,8 @@ const DashboardLayout = () => {
     // Lógica de roles basada solo en el contexto
     const isAdmin = user?.CodeFunction === 2;
     const isManagerSystem = user?.UserFunction === 'MANAGER SYSTEM';
+
+    const location = useLocation();
 
     // Mostrar loading state
     if (loading) {
@@ -103,6 +105,8 @@ const DashboardLayout = () => {
 
     // Mostrar función del usuario
     const getUserFunctionDisplay = () => {
+        console.log('Current Pathname:', location.pathname); // Added for debugging
+        if (location.pathname === '/configuracion') return 'CONFIGURACION GENERAL:';
         if (isAdmin) return 'ADMINISTRACION:';
         if (isManagerSystem) return 'MANAGER SYSTEM:';
         return `${user?.UserFunction || 'Usuario'}:`;
@@ -118,6 +122,8 @@ const DashboardLayout = () => {
     if (!user) {
         return <Navigate to="/login" replace />;
     }
+
+    const functionBarColorClass = location.pathname === '/configuracion' ? 'bg-orange-400' : 'bg-[#1e4e9c]';
 
     return (
         <div className="h-screen w-full flex flex-col">
@@ -144,12 +150,29 @@ const DashboardLayout = () => {
                         <p className="text-xs">Control de Negocios</p>
                     </div>
 
-                    <div className="bg-[#4a4a4a] mx-4 my-4 p-4 flex-grow flex items-start justify-center rounded-lg w-[140px]">
+                    <div className="bg-[#4a4a4a] mx-4 my-4 p-4 flex-grow flex flex-col justify-between items-center rounded-lg w-[140px]">
                         <div className="text-center text-white leading-[1.1] font-bold text-md">
                             {getModuleTitle()}
                         </div>
+                        {location.pathname === '/configuracion' ? (
+                            <div className="flex flex-col items-center w-full mt-4">
+                                <Link to="/dashboard" className="bg-gray-300 text-gray-800 text-xs font-bold py-2 px-4 rounded-lg hover:bg-gray-400 w-full text-center mb-2">
+                                    Anterior
+                                </Link>
+                                <Link to="/configuracion/next" className="bg-blue-600 text-white text-xs font-bold py-2 px-4 rounded-lg hover:bg-blue-700 w-full text-center">
+                                    Siguiente
+                                </Link>
+                            </div>
+                        ) : (
+                            <Link 
+                                to={location.pathname === '/configuracion' ? '/configuracion/next' : '/configuracion'}
+                                className="mt-4 bg-gray-200 text-gray-800 text-xs font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-200 text-center"
+                            >
+                                {location.pathname === '/configuracion' ? 'Siguiente' : 'Ir a configuración'}
+                            </Link>
+                        )}
                     </div>
-
+                    
                     <button
                         onClick={logout}
                         className="bg-white text-blue-800 border border-r-2 border-[#1e4e9c] mx-auto w-[110px] hover:border-white hover:text-white mb-4 py-2 hover:bg-[#173d7a] font-bold text-sm rounded"
@@ -177,18 +200,18 @@ const DashboardLayout = () => {
                     </div>
 
                     {/* Manager System bar */}
-                    <div className="flex justify-between bg-[#1e4e9c] mx-[40px] w-[87%] ">
+                    <div className={`flex justify-between ${functionBarColorClass} mx-[40px] w-[87%] `}>
                         <div className="w-full py-1 px-4 h-[50px] flex items-center">
                             <h2 className="text-lg font-bold text-white"> 
-                                <span className="text-base ml-2 text-[1.2rem]">
+                                <span className="text-[1.2rem]">
                                     {getUserFunctionDisplay()}
                                 </span>
                             </h2>
                         </div>
                     </div>
 
-                    <div className="bg-white shadow-md flex-1 w-full">
-                        <Outlet />
+                    <div className="bg-white shadow-md flex-1 w-full p-6">
+                        {children ? children : <Outlet />}
                     </div>
                 </div>
             </div>

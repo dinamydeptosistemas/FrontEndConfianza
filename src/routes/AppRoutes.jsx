@@ -20,6 +20,8 @@ import PaperworksDashboard from '../pages/paperworks/PaperworksDashboard';
 import RegistrerUserExternal from '../pages/registrer/RegistrerUserExternal';
 import EmailVerificationPage from '../pages/EmailVerificationPage';
 import DataCleanup from '../components/DataCleanup/DataCleanup';
+import ConfiguracionPage from '../pages/ConfiguracionPage';
+import EmptyPage from '../pages/EmptyPage'; // Importa la nueva página
 
 
 
@@ -159,7 +161,9 @@ export const AppRoutes = () => {
                 path="/dashboard/*" 
                 element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" replace />}
             >
+                  
                 <Route index element={<ManagerSystemPage />} />
+            
                 <Route path="internal" element={isManagerSystem ? <ManagerSystemPage /> : <Navigate to="/dashboard" replace />} />
                 <Route path="gerencia" element={isAdministracion ? <DashboardGerencia /> : <Navigate to="/dashboard" replace />} />
                 <Route path="usuarios" element={<UsuarioDashboard />} />
@@ -176,6 +180,11 @@ export const AppRoutes = () => {
                     } 
                 />
             </Route>
+
+            <Route path="configuracion" element={isManagerSystem ? <ConfiguracionPage/> : <Navigate to="/dashboard" replace /> }/>  
+
+            {/* Ruta para la página siguiente de configuración */}
+            <Route path="/configuracion/next" element={isAuthenticated ? <EmptyPage /> : <Navigate to="/login" replace />} />
 
             <Route 
                 path="/dashboard-light/*" 
