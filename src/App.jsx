@@ -4,23 +4,27 @@ import RegisterUserInternal from './pages/registrer/RegisterUserInternal';
 import { AppRoutes } from './routes/AppRoutes';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { ConfigProvider } from './contexts/ConfigContext';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 const App = () => {
     return (
-        <BrowserRouter>
-            <Routes>
-                {/* Ruta pública realmente fuera del AuthProvider */}
-                <Route path="/registrar-usuario-interno" element={<RegisterUserInternal />} />
-                {/* Todas las demás rutas, incluyendo /login, dentro del AuthProvider */}
-                <Route path="/*" element={
-                    <AuthProvider>
+        <ErrorBoundary>
+            <BrowserRouter>
+                <AuthProvider>
+                    <ConfigProvider>
                         <NotificationProvider>
-                            <AppRoutes />
+                            <Routes>
+                                {/* Ruta pública realmente fuera del AuthProvider */}
+                                <Route path="/registrar-usuario-interno" element={<RegisterUserInternal />} />
+                                {/* Todas las demás rutas, incluyendo /login, dentro del AuthProvider */}
+                                <Route path="/*" element={<AppRoutes />} />
+                            </Routes>
                         </NotificationProvider>
-                    </AuthProvider>
-                } />
-            </Routes>
-        </BrowserRouter>
+                    </ConfigProvider>
+                </AuthProvider>
+            </BrowserRouter>
+        </ErrorBoundary>
     );
 };
 

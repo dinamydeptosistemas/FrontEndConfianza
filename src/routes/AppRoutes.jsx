@@ -21,8 +21,8 @@ import RegistrerUserExternal from '../pages/registrer/RegistrerUserExternal';
 import EmailVerificationPage from '../pages/EmailVerificationPage';
 import DataCleanup from '../components/DataCleanup/DataCleanup';
 import ConfiguracionPage from '../pages/ConfiguracionPage';
-import EmptyPage from '../pages/EmptyPage'; // Importa la nueva página
-
+import NotFound from '../pages/NotFound'; 
+import EmptyPage from '../pages/EmptyPage';
 
 
 
@@ -77,7 +77,6 @@ export const AppRoutes = () => {
     }
 
     console.log('Ruta actual en AppRoutes:', window.location.pathname);
-    const publicRoutes = ['/login', '/registrar-usuario-interno', '/registrar-usuario-externo', '/validate-email'];
     return (
         <Routes>
             {/* Rutas públicas */}
@@ -211,12 +210,8 @@ export const AppRoutes = () => {
             <Route path="cajero" element={isAuthenticated ? <DashboardGerencia /> : <Navigate to="/login" replace />} />
             <Route path="vendedor" element={isAuthenticated ? <DashboardGerencia /> : <Navigate to="/login" replace />} />
 
-            {/* Ruta por defecto */}
-            <Route path="*" element={
-                publicRoutes.includes(window.location.pathname)
-                    ? null
-                    : <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-            } />
+            {/* Ruta para página no encontrada */}
+            <Route path="*" element={<NotFound />} />
         </Routes>
     );
 }; 

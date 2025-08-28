@@ -126,9 +126,18 @@ const DashboardLayout = ({ children }) => {
     const functionBarColorClass = location.pathname === '/configuracion' ? 'bg-orange-400' : 'bg-[#1e4e9c]';
 
     return (
-        <div className="h-screen w-full flex flex-col">
+        <div className="h-screen w-[95%] flex flex-col">
+            <style>{`
+                .no-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+                .no-scrollbar {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+            `}</style>
             {/* Header superior */}
-            <div className="bg-[#e9e9e9] py-3 flex justify-between items-center px-8 text-xs border-b border-[#dadada] w-[90.8%]">
+            <div className="bg-[#e9e9e9] py-3 flex justify-between items-center px-8 text-xs border-b border-[#dadada] w-full">
                 <div className="flex items-center px-[186px]">
                     <span className="font-bold text-[#7a7a7a] text-[14px]">NEGOCIO:</span>
                     <span className="text-[#444444] text-[14px] ml-2">{getNegocioDisplay()}</span>
@@ -168,7 +177,7 @@ const DashboardLayout = ({ children }) => {
                                 to={location.pathname === '/configuracion' ? '/configuracion/next' : '/configuracion'}
                                 className="mt-4 bg-gray-200 text-gray-800 text-xs font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-200 text-center"
                             >
-                                {location.pathname === '/configuracion' ? 'Siguiente' : 'Ir a configuración'}
+                                {location.pathname === '/configuracion' ? 'Siguiente' : 'Siguiente'}
                             </Link>
                         )}
                     </div>
@@ -182,9 +191,9 @@ const DashboardLayout = ({ children }) => {
                 </div>
 
                 {/* Contenido dinámico */}
-                <div className="flex-1 overflow-auto  flex flex-col">
+                <div className="flex-1 overflow-auto flex flex-col w-full no-scrollbar">
                     {/* User bar */}
-                    <div className="flex bg-white mx-[23px] w-[87%]">
+                    <div className="flex bg-white mx-auto w-full">
                         <div className="w-full py-2 px-4 flex justify-between text-xs">
                             <div className="flex ">
                                 <span className="font-bold text-[#7a7a7a] text-[14px] mt-4 ">USER:</span>
@@ -200,7 +209,7 @@ const DashboardLayout = ({ children }) => {
                     </div>
 
                     {/* Manager System bar */}
-                    <div className={`flex justify-between ${functionBarColorClass} mx-[40px] w-[87%] `}>
+                    <div className={`flex justify-between ${functionBarColorClass}  ml-8 mr-auto w-full `}>
                         <div className="w-full py-1 px-4 h-[50px] flex items-center">
                             <h2 className="text-lg font-bold text-white"> 
                                 <span className="text-[1.2rem]">
@@ -210,7 +219,7 @@ const DashboardLayout = ({ children }) => {
                         </div>
                     </div>
 
-                    <div className="bg-white shadow-md flex-1 w-full p-6">
+                    <div className="bg-white shadow-md flex-1 w-full p-6 mx-auto">
                         {children ? children : <Outlet />}
                     </div>
                 </div>
@@ -227,4 +236,4 @@ const DashboardLayout = ({ children }) => {
     );
 };
 
-export default DashboardLayout; 
+export default DashboardLayout;

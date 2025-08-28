@@ -103,6 +103,28 @@ const userDataUtils = {
       nombre: userData.NameEntity,
       codigo: userData.CodeEntity
     };
+  },
+
+  isTokenValid: (token) => {
+    if (!token || typeof token !== 'string' || !token.includes('.')) {
+      return false;
+    }
+
+    try {
+      const decoded = jwtDecode(token);
+      const currentTime = Date.now() / 1000;
+      
+      // Verificar si el token ha expirado
+      if (decoded.exp && decoded.exp < currentTime) {
+        console.log('Token JWT expirado');
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error validando token JWT:', error);
+      return false;
+    }
   }
 };
 
@@ -146,66 +168,186 @@ export const AuthProvider = ({ children }) => {
     
     updateState({ loading: true });
     
-    // Limpiar localStorage
-    Object.values(STORAGE_KEYS).forEach(key => storageUtils.removeItem(key));
-    sessionStorage.removeItem(STORAGE_KEYS.NEGOCIO);
-    storageUtils.clearAll();
+    try {
+      // Limpiar localStorage de manera más eficiente
+      Object.values(STORAGE_KEYS).forEach(key => {
+        try {
+          localStorage.removeItem(key);
+        } catch (error) {
+          console.warn(`Error removiendo ${key} del localStorage:`, error);
+        }
+      });
+      
+      // Limpiar sessionStorage
+      try {
+        sessionStorage.removeItem(STORAGE_KEYS.NEGOCIO);
+        sessionStorage.clear();
+      } catch (error) {
+        console.warn('Error limpiando sessionStorage:', error);
+      }
+      
+      // Limpiar localStorage completamente como respaldo
+      try {
+        localStorage.clear();
+      } catch (error) {
+        console.warn('Error limpiando localStorage completamente:', error);
+      }
+    } catch (error) {
+      console.error('Error durante la limpieza:', error);
+    }
     
     // Resetear estado
     setState(initialState);
     
     // Establecer status como deslogueado
-    storageUtils.setItem(STORAGE_KEYS.STATUS, STATUS_CODES.UNAUTHENTICATED);
+    try {
+      storageUtils.setItem(STORAGE_KEYS.STATUS, STATUS_CODES.UNAUTHENTICATED);
+    } catch (error) {
+      console.warn('Error estableciendo status de logout:', error);
+    }
     
-    navigate('/login');
-    console.log('Cleanup completado, redirigido a login');
+    // Navegar a login
+    try {
+      navigate('/login', { replace: true });
+      console.log('Cleanup completado, redirigido a login');
+    } catch (error) {
+      console.error('Error navegando a login:', error);
+      // Fallback usando window.location
+      window.location.href = '/login';
+    }
   }, [navigate, updateState]);
+
+  // Función auxiliar para realizar logout con reintentos
+  const performLogoutRequest = useCallback(async (retries = 0) => {
+    // Para logout, no hacemos reintentos por defecto ya que lo importante es limpiar el estado local
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        // Usar el endpoint correcto según el README: POST /api/auth/logout-cookie
+        // Este endpoint maneja la invalidación de cookies en el servidor
+        await axiosInstance.post('/api/auth/logout-cookie', {}, {
+          withCredentials: true,
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          },
+          timeout: 5000 // 5 segundos de timeout
+        });
+        return { success: true };
+      } catch (error) {
+        console.error(`Intento ${attempt + 1} de logout falló:`, error);
+
+        // Si es un error 401 (no autorizado), el usuario ya está deslogueado en el servidor
+        // En este caso, procedemos con el logout localmente sin más reintentos
+        if (error?.response?.status === 401) {
+          console.log('Usuario ya deslogueado en el servidor (401), procediendo con logout local');
+          return { success: true };
+        }
+
+        // Para errores de red o de servidor, solo reintentamos una vez
+        if (attempt === retries) {
+          // Obtener mensaje de error específico del servidor si está disponible
+          const errorMessage = error?.response?.data?.message ||
+                              error?.response?.data?.Message ||
+                              error?.message ||
+                              'Error al cerrar sesión en el servidor';
+          return {
+            success: false,
+            error: errorMessage
+          };
+        }
+
+        // Esperar antes del siguiente intento (solo para errores de red)
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+  }, []);
 
   // Logout confirmado por el usuario
   const confirmLogout = useCallback(async () => {
     updateState({ loading: true, error: null });
     storageUtils.setItem(STORAGE_KEYS.STATUS, STATUS_CODES.UNAUTHENTICATED);
-    
+
     try {
-      await axiosInstance.post('/api/Auth/logout-cookie', null, {
-        withCredentials: true,
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      
-      updateState({ isLogoutModalOpen: false });
-      cleanupAndRedirect();
+      // Solo un reintento para logout confirmado
+      const result = await performLogoutRequest(1);
+
+      if (result.success) {
+        updateState({ isLogoutModalOpen: false, error: null, loading: false });
+        cleanupAndRedirect();
+      } else {
+        console.error('Error al cerrar sesión:', result.error);
+        updateState({
+          error: result.error || 'Error desconocido al cerrar sesión',
+          loading: false,
+          isLogoutModalOpen: false
+        });
+        // Ejecutar cleanup después de un breve delay para mostrar el error
+        setTimeout(() => {
+          cleanupAndRedirect();
+        }, 3000);
+      }
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      updateState({ 
-        error: error?.response?.data?.Message || 'Error al cerrar sesión', 
-        loading: false 
+      console.error('Error inesperado en confirmLogout:', error);
+      updateState({
+        error: error.message || 'Error inesperado al cerrar sesión',
+        loading: false,
+        isLogoutModalOpen: false
       });
+      setTimeout(() => {
+        cleanupAndRedirect();
+      }, 3000);
     }
-  }, [cleanupAndRedirect, updateState]);
+  }, [performLogoutRequest, cleanupAndRedirect, updateState]);
 
   // Logout directo (sin confirmación)
   const directLogout = useCallback(async () => {
     try {
       updateState({ loading: true });
       storageUtils.setItem(STORAGE_KEYS.STATUS, STATUS_CODES.UNAUTHENTICATED);
-      
-      await axiosInstance.post('/api/Auth/logout-cookie', null, {
-        withCredentials: true
-      });
+
+      // Para logout directo, no hacemos reintentos
+      const result = await performLogoutRequest(0);
+      if (!result.success) {
+        console.error('Error en logout directo:', result.error);
+        updateState({
+          error: result.error || 'Error desconocido en logout directo',
+          loading: false,
+        });
+      }
     } catch (error) {
-      console.error('Error en logout:', error);
+      console.error('Error inesperado en logout directo:', error);
+      updateState({
+        error: error.message || 'Error inesperado en logout directo',
+        loading: false,
+      });
     } finally {
       cleanupAndRedirect();
     }
-  }, [cleanupAndRedirect, updateState]);
+  }, [performLogoutRequest, cleanupAndRedirect, updateState]);
 
   // Mostrar modal de confirmación de logout
   const logout = useCallback(() => {
+    // Verificar si el usuario está autenticado antes de mostrar el modal
+    const currentStatus = storageUtils.getItem(STORAGE_KEYS.STATUS);
+    const currentUser = storageUtils.getItem(STORAGE_KEYS.USER_DATA, true);
+    const currentToken = storageUtils.getItem(STORAGE_KEYS.TOKEN);
+    
+    // Validaciones múltiples para asegurar que el usuario está realmente autenticado
+    const isAuthenticated = (
+      currentStatus === STATUS_CODES.AUTHENTICATED && 
+      currentUser && 
+      currentToken && 
+      userDataUtils.isTokenValid(currentToken)
+    );
+    
+    if (!isAuthenticated) {
+      console.log('Usuario no autenticado o token inválido, redirigiendo directamente');
+      cleanupAndRedirect();
+      return;
+    }
+    
     updateState({ isLogoutModalOpen: true });
-  }, [updateState]);
+  }, [updateState, cleanupAndRedirect]);
 
   // Cancelar logout
   const cancelLogout = useCallback(() => {

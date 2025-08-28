@@ -9,13 +9,10 @@ import DataManagementModal from '../components/DataManagementModal';
 const ManagerSystemPage = () => {
     const { user } = useAuth();
     const { statistics, loading } = useMenuStatistics();
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [testDataCount, setTestDataCount] = useState(0);
-    const {  ConfirmDialog } = useConfirmarEliminacion();
-    // Agregar estado para controlar la visibilidad del modal
+    const { ConfirmDialog } = useConfirmarEliminacion();
     const [isModalOpen, setIsModalOpen] = useState(false);
-    
-    // Obtener contador de datos de prueba
+
     const fetchTestDataCount = useCallback(async () => {
         if (user?.codeFunction === 1 || user?.codeFunction === "1") {
             try {
@@ -32,187 +29,111 @@ const ManagerSystemPage = () => {
         fetchTestDataCount();
     }, [fetchTestDataCount]);
 
-    // Manejar redimensionamiento de ventana
-    useEffect(() => {
-        const handleResize = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
-        
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    // Función para abrir el modal
     const openModal = () => setIsModalOpen(true);
-
-    // Función para cerrar el modal
     const closeModal = () => setIsModalOpen(false);
+
+    const accessItems = [
+        { to: "/dashboard/empresas", title: "1 Empresas", stats: statistics.empresas, fields: { total: 'Total', activos: 'Activas', inactivos: 'Inactivas' } },
+        { to: "/dashboard/perfil-acceso", title: "2 Configurar Perfil Acceso", stats: statistics.perfiles, fields: { total: 'Total', profilesWithGrantPermissions: 'Dan Permisos', profilesWithAllModules: 'Todos Módulos' } },
+        { to: "/dashboard/usuarios", title: "3 Usuarios", stats: statistics.usuarios, fields: { total: 'Total', internos: 'Internos', externos: 'Externos' } },
+        { to: "/dashboard/permisos", title: "4 Permisos", stats: statistics.permisos, fields: { total: 'Total', activos: 'Activos', inactivos: 'Inactivos' } },
+        { to: "/dashboard/bitacora", title: "5 Bitacora de Accesos", stats: statistics.bitacora, fields: { total: 'Total', sesionesAbiertas: 'Abiertas', sesionesCerradas: 'Cerradas' } }
+    ];
+
+    const mediaItems = [
+        { to: "/dashboard/tramites", title: "Trámites", stats: statistics.tramites, fields: { total: 'Total', aprobados: 'Aprobados', rechazados: 'Rechazados' } },
+        { to: "/dashboard/redes-sociales", title: "8 Email y Redes Sociales", stats: statistics.redesSociales, fields: { total: 'Total', activos: 'Activas', inactivos: 'Inactivas' } }
+    ];
+
+    const StatDisplay = ({ stats, fields }) => (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200">
+            {Object.entries(fields).map(([field, label], index) => {
+                const value = stats ? stats[field] : 0;
+                const marginClass = index === 1 ? 'sm:ml-[-30px]' : index === 2 ? 'sm:ml-[-18px]' : '';
+
+                return (
+                    <span key={field} className={`flex justify-start ${marginClass}`}>
+                        {label}: <span className="text-blue-500 font-bold text-[16px] ml-1">{value}</span>
+                    </span>
+                );
+            })}
+        </div>
+    );
 
     return (
         <div className="w-full overflow-hidden h-full">
             <ConfirmDialog />
-            {isModalOpen && <DataManagementModal onClose={closeModal} />}
+            {isModalOpen && <DataManagementModal onClose={closeModal} onDataCleaned={fetchTestDataCount} />}
 
-            <div className="relative p-10 text-lg w-full h-full">
+            <div className="relative text-lg w-100 h-full">
                 <div className="flex flex-col md:flex-row mb-6">
                     {/* Columna izquierda - Accesos */}
-                    <div className="w-full md:w-1/2 md:pr-4 mb-6 md:mb-0">
+                    <div className="w-full md:w-1/2  md:pr-4 mb-6 md:mb-0">
                         <h2 className="text-xl text-gray-700 mb-4 font-semibold">Accesos</h2>
-                <ul className="space-y-2">
-                            <li>
-                                <Link to="/dashboard/empresas" className="text-[#1e4e9c] hover:underline block">
-                                    <span className={`inline-block w-full`}>1 Empresas</span>
-                                </Link>
-                                <div className="text-sm text-gray-500 mt-1">
-                                    {loading ? (
-                                        <span className="animate-pulse">Cargando...</span>
-                                    ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200">
-                                            <span>Total: <span className="text-blue-500 font-bold text-[16px]">{statistics.empresas.total}</span></span>
-                                            <span className="flex justify-start sm:ml-[-30px]">Activas: <span className="text-blue-500 font-bold text-[16px]">{statistics.empresas.activos}</span></span>
-                                            <span className="sm:ml-[-18px]">Inactivas: <span className="text-blue-500 font-bold text-[16px]">{statistics.empresas.inactivos}</span></span>
-                                        </div>
-                                    )}
-                                </div>
-                            </li>
-                            <li>
-                                <Link to="/dashboard/perfil-acceso" className="text-[#1e4e9c] hover:underline block">
-                                    <span className={`inline-block w-full`}>2 Configurar Perfil Acceso</span>
-                                </Link>
-                                <div className="text-sm text-gray-500 mt-1">
-                                    {loading ? (
-                                        <span className="animate-pulse">Cargando...</span>
-                                    ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200">
-                                            <span>Total: <span className="text-blue-500 font-bold text-[16px]">{statistics.perfiles.total}</span></span>
-                                            <span className="sm:ml-[-30px]">Dan Permisos: <span className="text-blue-500 font-bold text-[16px]">{statistics.perfiles.profilesWithGrantPermissions}</span></span>
-                                            <span className="sm:ml-[-18px]">Todos Módulos: <span className="text-blue-500 font-bold text-[16px]">{statistics.perfiles.profilesWithAllModules}</span></span>
-                                        </div>
-                                    )}
-                                </div>
-                            </li>
-                            <li>
-                                <Link to="/dashboard/usuarios" className="text-[#1e4e9c] hover:underline block">
-                                    <span className={`inline-block w-full`}>3 Usuarios</span>
-                                </Link>
-                                <div className="text-sm text-gray-500 mt-1">
-                                    {loading ? (
-                                        <span className="animate-pulse">Cargando...</span>
-                                    ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200">
-                                            <span>Total: <span className="text-blue-500 font-bold text-[16px]">{statistics.usuarios.total}</span></span>
-                                            <span className="sm:ml-[-30px]">Internos: <span className="text-blue-500 font-bold text-[16px]">{statistics.usuarios.internos}</span></span>
-                                            <span className="sm:ml-[-18px]">Externos: <span className="text-blue-500 font-bold text-[16px]">{statistics.usuarios.externos}</span></span>
-                                        </div>
-                                    )}
-                                </div>
-                            </li>
-                            <li>
-                                <Link to="/dashboard/permisos" className="text-[#1e4e9c] hover:underline block">
-                                    <span className={`inline-block w-full`}>4 Permisos</span>
-                                </Link>
-                                <div className="text-sm text-gray-500 mt-1">
-                                    {loading ? (
-                                        <span className="animate-pulse">Cargando...</span>
-                                    ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200">
-                                            <span>Total: <span className="text-blue-500 font-bold text-[16px]">{statistics.permisos.total}</span></span>
-                                            <span className="sm:ml-[-30px]">Activos: <span className="text-blue-500 font-bold text-[16px]">{statistics.permisos.activos}</span></span>
-                                            <span className="sm:ml-[-18px]">Inactivas: <span className="text-blue-500 font-bold text-[16px]">{statistics.permisos.inactivos}</span></span>
-                                        </div>
-                                    )}
-                                </div>
-                            </li>
-                            <li>
-                                <Link to="/dashboard/bitacora" className="text-[#1e4e9c] hover:underline block">
-                                    <span className={`inline-block w-full`}>5 Bitacora de Accesos</span>
-                                </Link>
-                                <div className="text-sm text-gray-500 mt-1">
-                                    {loading ? (
-                                        <span className="animate-pulse">Cargando...</span>
-                                    ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200">
-                                            <span>Total: <span className="text-blue-500 font-bold text-[16px]">{statistics.bitacora.total}</span></span>
-                                            <span className="sm:ml-[-30px]">Abiertas: <span className="text-blue-500 font-bold text-[16px]">{statistics.bitacora.sesionesAbiertas}</span></span>
-                                            <span className="sm:ml-[-18px]">Cerradas: <span className="text-blue-500 font-bold text-[16px]">{statistics.bitacora.sesionesCerradas}</span></span>
-                                        </div>
-                                    )}
-                                </div>
-                            </li>
-                       
+                        <ul className="space-y-2">
+                            {accessItems.map((item, index) => (
+                                <li key={index}>
+                                    <Link to={item.to} className="text-[#1e4e9c] hover:underline block">
+                                        <span className="inline-block w-full">{item.title}</span>
+                                    </Link>
+                                    <div className="text-sm text-gray-500 mt-1">
+                                        {loading ? (
+                                            <span className="animate-pulse">Cargando...</span>
+                                        ) : (
+                                            <StatDisplay stats={item.stats} fields={item.fields} />
+                                        )}
+                                    </div>
+                                </li>
+                            ))}
                         </ul>
                     </div>
 
-                    {/* Columna derecha - Tramites y Medios */}
-                     <div className="w-full md:w-1/2 md:pl-4">
-                        <div className="mb-6">
-                            <h2 className="text-base mb-3 text-[20px] text-gray-600">Tramites</h2>
-                            <ul className="space-y-2">
-                                <li>
-                                    <Link to="/dashboard/tramites" className="text-[#1e4e9c] hover:underline block">
-                                        <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-full'}`}>7 Tramites de Acceso</span>
-                                    </Link>
-                                    <div className="text-sm text-gray-500 mt-1">
-                                        {loading ? (
-                                            <span className="animate-pulse">Cargando...</span>
-                                        ) : (
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[6px] bg-gray-200 w-full">
-                                                <span>Total: <span className="text-blue-500 font-bold text-[16px]">{statistics.tramites.total}</span></span>
-                                                <span className="sm:ml-[-30px]">Aprobados: <span className="text-blue-500 font-bold text-[16px]">{statistics.tramites.aprobados}</span></span>
-                                                <span className="sm:ml-[-18px]">Rechazados: <span className="text-blue-500 font-bold text-[16px]">{statistics.tramites.rechazados}</span></span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                        
+                    {/* Columna derecha - Medios y Redes */}
+                    <div className="w-full md:w-1/2 md:pl-5 md:ml-8">
                         <div className="mb-6">
                             <h3 className="text-base text-gray-600 mb-3 text-[20px]">Medios y Redes</h3>
                             <ul className="space-y-2">
-                                <li>
-                                    <Link to="/dashboard/redes-sociales" className="text-[#1e4e9c] hover:underline block">
-                                        <span className={`inline-block ${isMobile ? 'w-full' : 'min-w-[210px]'}`}>8 Email y Redes Sociales</span>
-                                    </Link>
-                                    <div className="text-sm text-gray-500 mt-1">
-                                        {loading ? (
-                                            <span className="animate-pulse">Cargando...</span>
-                                        ) : (
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 border border-gray-200 py-[7px] px-[16px] bg-gray-200 w-full">
-                                                <span>Total: <span className="text-blue-500 font-bold text-[16px]">{statistics.redesSociales.total}</span></span>
-                                                <span className="sm:ml-[-30px]">Activas: <span className="text-blue-500 font-bold text-[16px]">{statistics.redesSociales.activos}</span></span>
-                                                <span className="sm:ml-[-18px]">Inactivas: <span className="text-blue-500 font-bold text-[16px]">{statistics.redesSociales.inactivos}</span></span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </li>
+                                {mediaItems.map((item, index) => (
+                                     <li key={index}>
+                                        <Link to={item.to} className="text-[#1e4e9c] hover:underline block">
+                                            <span className="inline-block w-full">{item.title}</span>
+                                        </Link>
+                                        <div className="text-sm text-gray-500 mt-1">
+                                            {loading ? (
+                                                <span className="animate-pulse">Cargando...</span>
+                                            ) : (
+                                                <StatDisplay stats={item.stats} fields={item.fields} />
+                                            )}
+                                        </div>
+                                    </li>
+                                ))}
                             </ul>
                         </div>
                     </div>
+                </div>
 
-                        {/* Widget de datos de prueba */}
-                        {(user?.codeFunction === 1 || user?.codeFunction === "1") && (
-                            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 w-fit mr-[100px] mt-[280px] h-[150px]">
-                                <div className="text-center">
-                                    <div className="text-sm font-semibold text-gray-700">
-                                        Registros de Prueba
-                                    </div>
-                                    <div className="text-2xl font-bold text-blue-600">
-                                        {testDataCount}
-                                    </div>
-                                    <button 
-                                        onClick={openModal}
-                                        disabled={testDataCount === 0}
-                                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
-                                    >
-                                        {testDataCount === 0 ? 'Sin datos' : 'Gestionar'}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+                {/* "Registros de Prueba" block */}
+                {(user?.codeFunction === 1 || user?.codeFunction === "1") && (
+                  <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 w-full mt-5">
+                    <div className="flex flex-row items-center justify-end w-full space-x-2">
+                      <span className="text-sm font-semibold text-gray-700">Registros de Prueba:</span>
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="w-10 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center">
+                          <span className="text-sm font-bold">{testDataCount}</span>
+                        </div>
+                        <button
+                          onClick={openModal}
+                          disabled={testDataCount === 0}
+                          className="w-10 h-8 bg-gray-200 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed text-xs"
+                        >
+                          <span className="text-xs font-semibold text-gray-700">...</span>
+                        </button>
+                      </div>
                     </div>
-                       {/* Diagrama de flujo */}
-                  {/* Diagrama */}
+                  </div>
+                )}
+
+                {/* Flow diagram */}
                 {(user?.codeFunction === 1 || user?.codeFunction === "1") && (
                     <div className="mt-6 w-full flex">
                         <div className="w-[450px] h-[400px] max-w-5xl justify-start p-2 rounded-lg bg-white" id="flujo-permiso-acceso">
@@ -263,11 +184,8 @@ const ManagerSystemPage = () => {
                         </div>
                     </div>
                 )}
-                </div>
-
-             
             </div>
-  
+        </div>
     );
 };
 

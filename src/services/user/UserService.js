@@ -41,9 +41,9 @@ export const getUsers = async (params = {}) => {
             ...pascalCaseParams
         };
 
-        console.log('Enviando petición a /user/process con:', requestBody);
-        const response = await axiosInstance.post(`${API_BASE}/user/process`, requestBody);
-        console.log('Respuesta de /user/process:', response.data);
+        console.log('Enviando petición a /Users/Process con:', requestBody);
+        const response = await axiosInstance.post(`${API_BASE}/Users/Process`, requestBody);
+        console.log('Respuesta de /Users/Process:', response.data);
 
         return response.data;
     } catch (error) {
@@ -107,8 +107,8 @@ export const putUser = async (userData) => {
         ...pascalCaseData
     };
 
-    console.log('Enviando petición (putUser) a /user/process con:', requestBody);
-    const response = await axiosInstance.post(`${API_BASE}/user/process`, requestBody);
+    console.log('Enviando petición (putUser) a /Users/Process con:', requestBody);
+    const response = await axiosInstance.post(`${API_BASE}/Users/Process`, requestBody);
     return response.data;
 };
 
@@ -122,8 +122,8 @@ export const deleteUser = async (idUser) => {
         Process: 'deleteUsers',
         IdUser: idUser
     };
-    console.log('Enviando petición (deleteUser) a /user/process con:', requestBody);
-    const response = await axiosInstance.post(`${API_BASE}/user/process`, requestBody);
+    console.log('Enviando petición (deleteUser) a /Users/Process con:', requestBody);
+    const response = await axiosInstance.post(`${API_BASE}/Users/Process`, requestBody);
     return response.data;
 };
 
