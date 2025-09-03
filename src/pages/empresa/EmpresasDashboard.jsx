@@ -468,7 +468,7 @@ export default function EmpresasDashboard() {
                   aria-label="Limpiar búsqueda"
                   style={{ fontSize: '1.1em', lineHeight: 1 }}
                 >
-                  ×
+                 x
                 </button>
               </span>
             )}
@@ -478,7 +478,6 @@ export default function EmpresasDashboard() {
                   value={filtro}
                   onChange={handleBuscar}
                   placeholder="Buscar por RUC o Razon Social..."
-                  showClearButton={true}
                   onClear={handleClearSearch}
                   disabled={isLoading}
                    className="w-[300px]"
@@ -552,6 +551,13 @@ export default function EmpresasDashboard() {
             actions={true}
             onEdit={handleEditClick}
             onDelete={handleDeleteClick}
+            rowClassName={(row) => {
+              const enviroment = (row.enviroment || row.environment || '').toUpperCase();
+              if (enviroment === 'PRUEBAS') {
+                return 'bg-red-100';
+              }
+              return '';
+            }}
           />
         </div>
         <ConfirmEliminarModal

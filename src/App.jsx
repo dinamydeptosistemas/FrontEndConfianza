@@ -11,8 +11,8 @@ const App = () => {
     return (
         <ErrorBoundary>
             <BrowserRouter>
-                <AuthProvider>
-                    <ConfigProvider>
+                <ConfigProvider>
+                    <AuthProvider>
                         <NotificationProvider>
                             <Routes>
                                 {/* Ruta pública realmente fuera del AuthProvider */}
@@ -21,8 +21,8 @@ const App = () => {
                                 <Route path="/*" element={<AppRoutes />} />
                             </Routes>
                         </NotificationProvider>
-                    </ConfigProvider>
-                </AuthProvider>
+                    </AuthProvider>
+                </ConfigProvider>
             </BrowserRouter>
         </ErrorBoundary>
     );

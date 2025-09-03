@@ -40,7 +40,7 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
               </div>
               <button 
                 className="border border-orange-500 text-orange-500 px-6 h-9 text-xs sm:text-sm font-bold rounded bg-white hover:bg-orange-50 transition-colors" 
-                onClick={() => navigate('/dashboard-internal')}
+                onClick={() => navigate('/dashboard')}
               >
                 SALIR
               </button>

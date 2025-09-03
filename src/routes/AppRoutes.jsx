@@ -80,6 +80,7 @@ export const AppRoutes = () => {
     return (
         <Routes>
             {/* Rutas públicas */}
+             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route 
                 path="/login" 
                 element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginGeneral />} 

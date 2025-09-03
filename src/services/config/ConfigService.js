@@ -42,10 +42,10 @@ export const getConfig = async () => {
  * @param {Object} configData - Configuration data to save
  * @returns {Promise<Object>} - Response from the server
  */
-export const saveConfig = async (configData, Process = 'putConfig') => {
+export const saveConfig = async (configData, process = 'putConfig') => {
   try {
     // Include the process field in the request body
-    const requestBody = { Process, ...configData };
+    const requestBody = { process, ...configData };
     const response = await axiosInstance.post(`${API_BASE}/config/ProcessConfig`, requestBody);
     console.log('Configuration saved successfully:', response.data);
     return response.data;

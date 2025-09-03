@@ -167,6 +167,7 @@ export const getEmpresas = async (params = {}) => {
  * @param {boolean} [empresa.retentionAgent] - ¿Es agente de retención?
  * @param {string} [empresa.logoImagePath] - Ruta de la imagen del logo
  * @param {boolean} [empresa.state] - ¿Está activa?
+ * @param {string} [empresa.Enviroment] - Ambiente del sistema
  */
 export const putEmpresa = async (empresa) => {
   // Convertir nombres de propiedades a PascalCase como espera el backend
@@ -206,7 +207,7 @@ export const putEmpresa = async (empresa) => {
     console.error('Error: El objeto empresa es null o undefined');
     throw new Error('El objeto empresa es inválido');
   }
-  
+  empresaDTO.Enviroment = 'PRODUCCION';
   console.log('Enviando datos de empresa:', empresaDTO);
   try {
     const response = await axiosInstance.post(`${API_BASE}/Companies/Process`, empresaDTO);

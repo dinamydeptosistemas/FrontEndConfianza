@@ -15,6 +15,7 @@ export default function GenericTable({
   onUpdatePermissions,
   rowKey = 'id', 
   actions = true,
+  rowClassName,
   showActions = {
     edit: true,
     delete: true,
@@ -54,7 +55,7 @@ export default function GenericTable({
         </thead>
         <tbody>
           {data.map((row, idx) => (
-            <tr key={rowKey && row[rowKey] !== undefined ? row[rowKey] : idx} className="border-t min-h-[20px]">
+            <tr key={rowKey && row[rowKey] !== undefined ? row[rowKey] : idx} className={`border-t min-h-[20px] ${rowClassName ? rowClassName(row) : ''}`}>
               {actions && (showActions.edit || showActions.delete || showActions.updatePermissions) && (
                 <td className="p-2 text-center">
                   <div className="flex space-x-1">

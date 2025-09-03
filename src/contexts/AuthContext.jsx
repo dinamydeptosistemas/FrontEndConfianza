@@ -4,6 +4,7 @@ import { jwtDecode } from "jwt-decode";
 import PropTypes from 'prop-types';
 
 import axiosInstance from '../config/axios';
+import { useConfig } from './ConfigContext';
 import { LogoutConfirmModal } from '../components/modals/LogoutConfirmModal';
 import TimeoutModal from '../components/modals/TimeoutModal';
 import WorkActivityMonitor from '../components/WorkActivityMonitor';
@@ -153,6 +154,7 @@ const initialState = {
 export const AuthProvider = ({ children }) => {
   // Estados principales
   const [state, setState] = useState(initialState);
+  const { reloadConfig, clearConfig } = useConfig();
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -167,6 +169,7 @@ export const AuthProvider = ({ children }) => {
     console.log('Ejecutando cleanup y redirección...');
     
     updateState({ loading: true });
+    clearConfig();
     
     try {
       // Limpiar localStorage de manera más eficiente
@@ -215,7 +218,7 @@ export const AuthProvider = ({ children }) => {
       // Fallback usando window.location
       window.location.href = '/login';
     }
-  }, [navigate, updateState]);
+  }, [navigate, updateState, clearConfig]);
 
   // Función auxiliar para realizar logout con reintentos
   const performLogoutRequest = useCallback(async (retries = 0) => {
@@ -400,6 +403,8 @@ export const AuthProvider = ({ children }) => {
         storageUtils.setItem(STORAGE_KEYS.NEGOCIO, negocioData);
         sessionStorage.setItem(STORAGE_KEYS.NEGOCIO, JSON.stringify(negocioData));
       }
+
+      await reloadConfig();
       
       return normalizedUser;
       
@@ -410,7 +415,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       updateState({ loading: false });
     }
-  }, [updateState]);
+  }, [updateState, reloadConfig]);
 
   // Funciones auxiliares para fetchCurrentUser
   const restoreStoredData = useCallback(() => {
