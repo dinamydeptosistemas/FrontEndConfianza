@@ -336,6 +336,12 @@ const ConfiguracionPage = () => {
   }, [config]);
 
   useEffect(() => {
+    if (!modoEntidad) {
+      setTipoEntidad('AMBOS');
+    }
+  }, [modoEntidad]);
+
+  useEffect(() => {
     if (gestionGrupo) {
       if (tipoGestion === 'INDIVIDUAL') {
         setTipoGestion('MULTINEGOCIO');
