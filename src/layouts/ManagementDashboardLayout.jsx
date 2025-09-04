@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useConfig } from '../contexts/ConfigContext';
 
 /**
  * Layout especializado para las páginas de gestión (empresa, usuario, perfil, permisos).
@@ -8,9 +9,36 @@ import { useLocation, useNavigate } from 'react-router-dom';
 function ManagementDashboardLayout({ title, user, negocio, children }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { config } = useConfig();
+
+  const renderEnvironmentBanner = () => {
+    if (!config || !config.ambienteTrabajoModo) {
+      return null;
+    }
+
+    const isTest = config.ambienteTrabajoModo.toLowerCase() === 'pruebas';
+    const isProd = config.ambienteTrabajoModo.toLowerCase() === 'produccion';
+
+    if (!isTest && !isProd) {
+      return null;
+    }
+
+    const bannerClass = isTest 
+      ? "bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4"
+      : "bg-green-100 border-l-4 border-green-500 text-green-700 p-4";
+    
+    const environmentText = isTest ? 'Pruebas' : 'Producción';
+
+    return (
+      <div className={`${bannerClass} w-full mb-4`} role="alert">
+        <p className="font-bold">Ambiente de Trabajo: {environmentText}</p>
+      </div>
+    );
+  };
 
   return (
-    <div className="w-full h-[1000px] flex flex-col bg-gray-100 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
+    <div className="w-full h-full flex flex-col bg-gray-100 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
+      {renderEnvironmentBanner()}
       <div className="w-full">
         {/* Header superior */}
         <div className="bg-[#e9e9e9] py-2 px-1.5 md:px-1 lg:px-2 xl:px-4 2xl:px-4 flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[#ccc] text-sm w-full">
@@ -28,7 +56,7 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
 
         {/* Contenido principal */}
         <div className="
-         rounded-b-xl text-justify pt-5 h-[1000px]">
+         rounded-b-xl text-justify pt-5 h-full">
           {/* Barra de usuario */}
           <div className="w-full py-2">
             <div className="w-full flex flex-row justify-between items-center px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
@@ -114,8 +142,8 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
           </div>
 
           {/* Área de contenido */}
-          <div className="flex-1 flex flex-col items-center bg-[#f8f9fb] pt-5 h-[1000px]">
-            <div className="w-full px-2 sm:px-3 md:px-4 lg:px-6 xl:px-8 h-[1000px]" >
+          <div className="flex-1 flex flex-col items-center bg-[#f8f9fb] pt-5 h-full">
+            <div className="w-full px-2 sm:px-3 md:px-4 lg:px-6 xl:px-8 h-full" >
               <div className="flex justify-between bg-[#1e4e9c] w-full">
                 <div className="w-full py-1 px-4 h-[50px] flex items-center">
                   <h2 className="text-lg font-bold text-white"> 
@@ -125,7 +153,7 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
                   </h2>
                 </div>
               </div>
-              <div className="w-full  mt-1 sm:mt-2 h-[1000px]">
+              <div className="w-full  mt-1 sm:mt-2 h-full">
                 {children}
                 
               </div>

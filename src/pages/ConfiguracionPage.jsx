@@ -220,8 +220,7 @@ const styles = {
 };
 
 const ConfiguracionPage = () => {
-  // Contexto de configuración global
-  const { config: contextConfig, loading: contextLoading, error: contextError } = useConfig();
+  const { config, loading, error, reloadConfig } = useConfig();
 
   // Estados principales
   const [originalConfig, setOriginalConfig] = useState(null);
@@ -283,83 +282,73 @@ const ConfiguracionPage = () => {
     },
   });
 
-  const loadInitialData = async () => {
-    try {
-      const response = await getConfig();
-      if (!response || !response.config || response.config.length === 0) return;
+  useEffect(() => {
+    if (config) {
+        setOriginalConfig(config);
 
-      const data = response.config[0];
+        const newEditableConfig = {
+            mostrarNombreComercial: config.mostrarnombrecomerciallogin,
+            valorNombreComercial: config.nombrecomerciallogin,
+            mostrarImagenLogo: config.mostrarimagenlogologin,
+            valorImagenLogo: config.archivologo,
+            permitirAccesoManager: config.permitiraccesomanagersystem,
+            valorAccesoManager: config.nombreusuariomanagersystem,
+            sesionInactiva: config.cerradosesioninactiva,
+            valorSesionInactiva: config.minutoscerrarsesion,
+            justificarPausa: config.opcionjustificarsesionpausada,
+            valorJustificarPausa: config.minutosjustificarsesion,
+            reportarTareasPausa: config.opcionreportartareasdespues,
+            valorReportarTareasPausa: config.minutosreportartareas,
+            reportarProyectoTareas: config.opcionreportarproyectotareasdespues,
+            valorReportarProyectoTareas: config.minutosreportarproyectotareas,
+            periodoVigente: config.periodovigente,
+            periodoAnteriorHabilitado: !!config.periodoanteriorhabilitado,
+            fechaInicioPeriodo: config.fechainicioperiodovigente,
+            fechaFinPeriodo: config.fechafinalperiodovigente,
+            bloqueoAsientosAnteriores: config.bloqueomodificacionasientosanteriores,
+            permitirNuevosAsientosAnterior: config.permitirnuevosasientosanterior,
+            permitirCrearNuevosLibros: config.permitircrearnuevoslibros,
+            permitirCrearNuevasCuentas: config.permitircrearnuevascuentas,
+        };
+        setEditableConfig(newEditableConfig);
 
-      setOriginalConfig(data);
+        setModoEntidad(!!config.modorentidad);
+        setTipoEntidad(config.nombremodorentidad || 'AMBOS');
+        setGestionGrupo(!!config.gestiongrupomatriz);
+        setTipoGestion(config.nombregestiongrupo || 'INDIVIDUAL');
+        setSelectedEmpresa(config.nombrecomerciallogin || '');
+        setSelectedUsuario(config.nombreusuariomanagersystem || '');
+        setLogoPath(config.archivologo || '');
 
-      const newEditableConfig = {
-          mostrarNombreComercial: data.mostrarnombrecomerciallogin,
-          valorNombreComercial: data.nombrecomerciallogin,
-          mostrarImagenLogo: data.mostrarimagenlogologin,
-          valorImagenLogo: data.archivologo,
-          permitirAccesoManager: data.permitiraccesomanagersystem,
-          valorAccesoManager: data.nombreusuariomanagersystem,
-          sesionInactiva: data.cerradosesioninactiva,
-          valorSesionInactiva: data.minutoscerrarsesion,
-          justificarPausa: data.opcionjustificarsesionpausada,
-          valorJustificarPausa: data.minutosjustificarsesion,
-          reportarTareasPausa: data.opcionreportartareasdespues,
-          valorReportarTareasPausa: data.minutosreportartareas,
-          reportarProyectoTareas: data.opcionreportarproyectotareasdespues,
-          valorReportarProyectoTareas: data.minutosreportarproyectotareas,
-          periodoVigente: data.periodovigente,
-          periodoAnteriorHabilitado: !!data.periodoanteriorhabilitado,
-          fechaInicioPeriodo: data.fechainicioperiodovigente,
-          fechaFinPeriodo: data.fechafinalperiodovigente,
-          bloqueoAsientosAnteriores: data.bloqueomodificacionasientosanteriores,
-          permitirNuevosAsientosAnterior: data.permitirnuevosasientosanterior,
-          permitirCrearNuevosLibros: data.permitircrearnuevoslibros,
-          permitirCrearNuevasCuentas: data.permitircrearnuevascuentas,
-      };
-      setEditableConfig(newEditableConfig);
-
-      // Sincronizar estados derivados
-      setModoEntidad(!!data.modorentidad);
-      setTipoEntidad(data.nombremodorentidad);
-      setGestionGrupo(!!data.gestiongrupomatriz);
-      setTipoGestion(data.nombregestiongrupo || 'INDIVIDUAL');
-      setSelectedEmpresa(data.nombrecomerciallogin || '');
-      setSelectedUsuario(data.nombreusuariomanagersystem || '');
-      setLogoPath(data.archivologo || '');
-
-      // Actualizar configuraciones específicas
-      setConfiguraciones(prev => ({
-        ...prev,
-        ambienteTrabajo: {
-          ...prev.ambienteTrabajo,
-          checked: !!data.ambiente_creacion_prueba_habilitado,
-          aplicacion: data.ambiente_creacion_prueba_modo || 'TODO_SISTEMA',
-        },
-        eliminarRegistros: {
-          ...prev.eliminarRegistros,
-          checked: !!data.eliminar_prueba_habilitado,
-        }
-      }));
-    } catch (err) {
-      console.error('Error al cargar configuración:', err);
+        setConfiguraciones(prev => ({
+          ...prev,
+          ambienteTrabajo: {
+            ...prev.ambienteTrabajo,
+            checked: !!config.ambiente_creacion_prueba_habilitado,
+            aplicacion: config.ambiente_creacion_prueba_modo || 'TODO_SISTEMA',
+          },
+          eliminarRegistros: {
+            ...prev.eliminarRegistros,
+            checked: !!config.eliminar_prueba_habilitado,
+          }
+        }));
     }
-  };
-
-  // Cargar datos iniciales desde backend
-  useEffect(() => {
-    loadInitialData();
-  }, []);
-
-  // Add debug logs for modoEntidad and tipoEntidad changes
-  useEffect(() => {
-    console.log('modoEntidad changed:', modoEntidad);
-  }, [modoEntidad]);
+  }, [config]);
 
   useEffect(() => {
-    console.log('tipoEntidad changed:', tipoEntidad);
-  }, [tipoEntidad]);
+    if (gestionGrupo) {
+      if (tipoGestion === 'INDIVIDUAL') {
+        setTipoGestion('MULTINEGOCIO');
+        setIsDirty(true);
+      }
+    } else {
+      if (tipoGestion !== 'INDIVIDUAL') {
+        setTipoGestion('INDIVIDUAL');
+        setIsDirty(true);
+      }
+    }
+  }, [gestionGrupo]);
 
-  // Cargar empresas
   useEffect(() => {
     const fetchEmpresas = async () => {
       setLoadingEmpresas(true);
@@ -375,7 +364,6 @@ const ConfiguracionPage = () => {
     fetchEmpresas();
   }, []);
 
-  // Cargar usuarios internos
   useEffect(() => {
     const fetchUsers = async () => {
       setLoadingUsuarios(true);
@@ -419,28 +407,6 @@ const ConfiguracionPage = () => {
     fetchUsers();
   }, []);
 
-  // Sincronizar selectedEmpresa con valorNombreComercial
-  useEffect(() => {
-    if (editableConfig.valorNombreComercial && editableConfig.valorNombreComercial !== selectedEmpresa) {
-      setSelectedEmpresa(editableConfig.valorNombreComercial);
-    }
-  }, [editableConfig.valorNombreComercial, selectedEmpresa]);
-
-  // Sincronizar logoPath
-  useEffect(() => {
-    if (editableConfig.valorImagenLogo && editableConfig.valorImagenLogo !== logoPath) {
-      setLogoPath(editableConfig.valorImagenLogo);
-    }
-  }, [editableConfig.valorImagenLogo, logoPath]);
-
-  useEffect(() => {
-    if (originalConfig && editableConfig.mostrarNombreComercial && !selectedEmpresa) {
-        setSelectedEmpresa('CONFIANZA SCGC');
-        setEditableConfig(prev => ({ ...prev, valorNombreComercial: 'CONFIANZA SCGC' }));
-    }
-  }, [originalConfig, editableConfig.mostrarNombreComercial, selectedEmpresa]);
-
-
   // Manejo de cambios
   const handleConfigChange = (key, value) => {
     setEditableConfig(prev => ({ ...prev, [key]: value }));
@@ -482,7 +448,6 @@ const ConfiguracionPage = () => {
     }
   };
 
-  // Toggle funciones
   const toggleCategory = (id) => {
     setOpenCategories(prev => ({ ...prev, [id]: !prev[id] }));
   };
@@ -499,11 +464,14 @@ const ConfiguracionPage = () => {
     setIsDirty(true);
   };
 
-  // Guardar configuración
   const handleSave = async () => {
     if (saving) return;
     if (!isDirty) {
       alert('No hay cambios para guardar.');
+      return;
+    }
+    if (!originalConfig) {
+      alert('La configuración original no se ha cargado. Por favor, recargue la página.');
       return;
     }
 
@@ -512,89 +480,54 @@ const ConfiguracionPage = () => {
 
     setSaving(true);
     try {
-      const payload = { process: 'putConfig' };
-      const original = originalConfig;
+      const payload = {
+        modoEntidad: modoEntidad,
+        nombreModoEntidad: tipoEntidad,
+        gestionGrupoMatriz: gestionGrupo,
+        nombreGestionGrupo: tipoGestion,
+        mostrarNombreComercialLogin: editableConfig.mostrarNombreComercial,
+        nombreComercialLogin: selectedEmpresa,
+        mostrarImagenLogoLogin: editableConfig.mostrarImagenLogo,
+        archivoLogo: logoPath,
+        permitirAccesoManagerSystem: editableConfig.permitirAccesoManager,
+        nombreUsuarioManagerSystem: selectedUsuario,
+        cerradoSesionInactiva: editableConfig.sesionInactiva,
+        minutosCerrarSesion: Number(editableConfig.valorSesionInactiva),
+        opcionJustificarSesionPausada: editableConfig.justificarPausa,
+        minutosJustificarSesion: Number(editableConfig.valorJustificarPausa),
+        opcionReportarTareasDespues: editableConfig.reportarTareasPausa,
+        minutosReportarTareas: Number(editableConfig.valorReportarTareasPausa),
+        opcionReportarProyectoTareasDespues: editableConfig.reportarProyectoTareas,
+        minutosReportarProyectoTareas: Number(editableConfig.valorReportarProyectoTareas),
+        periodoVigente: Number(editableConfig.periodoVigente),
+        periodoAnteriorHabilitado: editableConfig.periodoAnteriorHabilitado,
+        fechaInicioPeriodoVigente: new Date(editableConfig.fechaInicioPeriodo).toISOString(),
+        fechaFinalPeriodoVigente: new Date(editableConfig.fechaFinPeriodo).toISOString(),
+        bloqueoModificacionAsientosAnteriores: editableConfig.bloqueoAsientosAnteriores,
+        permitirNuevosAsientosAnterior: editableConfig.permitirNuevosAsientosAnterior,
+        permitirCrearNuevosLibros: editableConfig.permitirCrearNuevosLibros,
+        permitirCrearNuevasCuentas: editableConfig.permitirCrearNuevasCuentas,
+        ambienteTrabajoHabilitado: configuraciones.ambienteTrabajo.checked,
+        ambienteTrabajoModo: configuraciones.ambienteTrabajo.checked ? 'PRUEBAS' : 'PRODUCCION',
+      };
 
-      if (modoEntidad !== !!original.modorentidad) payload.modorentidad = modoEntidad;
-      if (tipoEntidad !== (original.nombremodorentidad)) payload.nombremodorentidad = tipoEntidad;
-      if (gestionGrupo !== !!original.gestiongrupomatriz) payload.gestiongrupomatriz = gestionGrupo;
-      if (tipoGestion !== (original.nombregestiongrupo || 'INDIVIDUAL')) payload.nombregestiongrupo = tipoGestion;
-      if (selectedEmpresa !== (original.nombrecomerciallogin || '')) payload.nombrecomerciallogin = selectedEmpresa;
-      if (logoPath !== (original.archivologo || '')) payload.archivologo = logoPath;
-      if (selectedUsuario !== (original.nombreusuariomanagersystem || '')) payload.nombreusuariomanagersystem = selectedUsuario;
-
-      if (editableConfig.mostrarNombreComercial !== original.mostrarnombrecomerciallogin) payload.mostrarnombrecomerciallogin = editableConfig.mostrarNombreComercial;
-      if (editableConfig.mostrarImagenLogo !== original.mostrarimagenlogologin) payload.mostrarimagenlogologin = editableConfig.mostrarImagenLogo;
-      if (editableConfig.permitirAccesoManager !== original.permitiraccesomanagersystem) payload.permitiraccesomanagersystem = editableConfig.permitirAccesoManager;
-      if (editableConfig.sesionInactiva !== original.cerradosesioninactiva) payload.cerradosesioninactiva = editableConfig.sesionInactiva;
-      if (Number(editableConfig.valorSesionInactiva) !== original.minutoscerrarsesion) payload.minutoscerrarsesion = Number(editableConfig.valorSesionInactiva);
-      if (editableConfig.justificarPausa !== original.opcionjustificarsesionpausada) payload.opcionjustificarsesionpausada = editableConfig.justificarPausa;
-      if (Number(editableConfig.valorJustificarPausa) !== original.minutosjustificarsesion) payload.minutosjustificarsesion = Number(editableConfig.valorJustificarPausa);
-      if (editableConfig.reportarTareasPausa !== original.opcionreportartareasdespues) payload.opcionreportartareasdespues = editableConfig.reportarTareasPausa;
-      if (Number(editableConfig.valorReportarTareasPausa) !== original.minutosreportartareas) payload.minutosreportartareas = Number(editableConfig.valorReportarTareasPausa);
-      if (editableConfig.reportarProyectoTareas !== original.opcionreportarproyectotareasdespues) payload.opcionreportarproyectotareasdespues = editableConfig.reportarProyectoTareas;
-      if (Number(editableConfig.valorReportarProyectoTareas) !== original.minutosreportarproyectotareas) payload.minutosreportarproyectotareas = Number(editableConfig.valorReportarProyectoTareas);
-      if (Number(editableConfig.periodoVigente) !== original.periodovigente) payload.periodovigente = Number(editableConfig.periodoVigente);
-      if (editableConfig.periodoAnteriorHabilitado !== !!original.periodoanteriorhabilitado) payload.periodoanteriorhabilitado = editableConfig.periodoAnteriorHabilitado ? 1 : 0;
-      if (new Date(editableConfig.fechaInicioPeriodo).toISOString().split('.')[0] !== new Date(original.fechainicioperiodovigente).toISOString().split('.')[0]) payload.fechainicioperiodovigente = new Date(editableConfig.fechaInicioPeriodo).toISOString();
-      if (new Date(editableConfig.fechaFinPeriodo).toISOString().split('.')[0] !== new Date(original.fechafinalperiodovigente).toISOString().split('.')[0]) payload.fechafinalperiodovigente = new Date(editableConfig.fechaFinPeriodo).toISOString();
-      if (editableConfig.bloqueoAsientosAnteriores !== original.bloqueomodificacionasientosanteriores) payload.bloqueomodificacionasientosanteriores = editableConfig.bloqueoAsientosAnteriores;
-      if (editableConfig.permitirNuevosAsientosAnterior !== original.permitirnuevosasientosanterior) payload.permitirnuevosasientosanterior = editableConfig.permitirNuevosAsientosAnterior;
-      if (editableConfig.permitirCrearNuevosLibros !== original.permitircrearnuevoslibros) payload.permitircrearnuevoslibros = editableConfig.permitirCrearNuevosLibros;
-      if (editableConfig.permitirCrearNuevasCuentas !== original.permitircrearnuevascuentas) payload.permitircrearnuevascuentas = editableConfig.permitirCrearNuevasCuentas;
+      await saveConfig(payload);
       
-      if (configuraciones.ambienteTrabajo.checked !== !!original.ambiente_creacion_prueba_habilitado) payload.ambiente_creacion_prueba_habilitado = configuraciones.ambienteTrabajo.checked;
-      if (configuraciones.ambienteTrabajo.aplicacion !== (original.ambiente_creacion_prueba_modo || 'TODO_SISTEMA')) payload.ambiente_creacion_prueba_modo = configuraciones.ambienteTrabajo.aplicacion;
-      if (configuraciones.eliminarRegistros.checked !== !!original.eliminar_prueba_habilitado) payload.eliminar_prueba_habilitado = configuraciones.eliminarRegistros.checked;
+      alert('Configuración guardada con éxito. La página se refrescará para aplicar los cambios.');
+      
+      setTimeout(() => {
+        reloadConfig();
+        setIsDirty(false);
+        setSaving(false);
+      }, 1000);
 
-      const response = await saveConfig(payload);
-
-      // Actualizar originalConfig con los valores guardados para evitar sobrescrituras
-      setOriginalConfig(prev => ({
-        ...prev,
-        modorentidad: payload.modorentidad !== undefined ? payload.modorentidad : prev.modorentidad,
-        nombremodorentidad: payload.nombremodorentidad !== undefined ? payload.nombremodorentidad : prev.nombremodorentidad,
-        gestiongrupomatriz: payload.gestiongrupomatriz !== undefined ? payload.gestiongrupomatriz : prev.gestiongrupomatriz,
-        nombregestiongrupo: payload.nombregestiongrupo !== undefined ? payload.nombregestiongrupo : prev.nombregestiongrupo,
-        nombrecomerciallogin: payload.nombrecomerciallogin !== undefined ? payload.nombrecomerciallogin : prev.nombrecomerciallogin,
-        archivologo: payload.archivologo !== undefined ? payload.archivologo : prev.archivologo,
-        nombreusuariomanagersystem: payload.nombreusuariomanagersystem !== undefined ? payload.nombreusuariomanagersystem : prev.nombreusuariomanagersystem,
-        mostrarnombrecomerciallogin: payload.mostrarnombrecomerciallogin !== undefined ? payload.mostrarnombrecomerciallogin : prev.mostrarnombrecomerciallogin,
-        mostrarimagenlogologin: payload.mostrarimagenlogologin !== undefined ? payload.mostrarimagenlogologin : prev.mostrarimagenlogologin,
-        permitiraccesomanagersystem: payload.permitiraccesomanagersystem !== undefined ? payload.permitiraccesomanagersystem : prev.permitiraccesomanagersystem,
-        cerradosesioninactiva: payload.cerradosesioninactiva !== undefined ? payload.cerradosesioninactiva : prev.cerradosesioninactiva,
-        minutoscerrarsesion: payload.minutoscerrarsesion !== undefined ? payload.minutoscerrarsesion : prev.minutoscerrarsesion,
-        opcionjustificarsesionpausada: payload.opcionjustificarsesionpausada !== undefined ? payload.opcionjustificarsesionpausada : prev.opcionjustificarsesionpausada,
-        minutosjustificarsesion: payload.minutosjustificarsesion !== undefined ? payload.minutosjustificarsesion : prev.minutosjustificarsesion,
-        opcionreportartareasdespues: payload.opcionreportartareasdespues !== undefined ? payload.opcionreportartareasdespues : prev.opcionreportartareasdespues,
-        minutosreportartareas: payload.minutosreportartareas !== undefined ? payload.minutosreportartareas : prev.minutosreportartareas,
-        opcionreportarproyectotareasdespues: payload.opcionreportarproyectotareasdespues !== undefined ? payload.opcionreportarproyectotareasdespues : prev.opcionreportarproyectotareasdespues,
-        minutosreportarproyectotareas: payload.minutosreportarproyectotareas !== undefined ? payload.minutosreportarproyectotareas : prev.minutosreportarproyectotareas,
-        periodovigente: payload.periodovigente !== undefined ? payload.periodovigente : prev.periodovigente,
-        periodoanteriorhabilitado: payload.periodoanteriorhabilitado !== undefined ? payload.periodoanteriorhabilitado : prev.periodoanteriorhabilitado,
-        fechainicioperiodovigente: payload.fechainicioperiodovigente !== undefined ? payload.fechainicioperiodovigente : prev.fechainicioperiodovigente,
-        fechafinalperiodovigente: payload.fechafinalperiodovigente !== undefined ? payload.fechafinalperiodovigente : prev.fechafinalperiodovigente,
-        bloqueomodificacionasientosanteriores: payload.bloqueomodificacionasientosanteriores !== undefined ? payload.bloqueomodificacionasientosanteriores : prev.bloqueomodificacionasientosanteriores,
-        permitirnuevosasientosanterior: payload.permitirnuevosasientosanterior !== undefined ? payload.permitirnuevosasientosanterior : prev.permitirnuevosasientosanterior,
-        permitircrearnuevoslibros: payload.permitircrearnuevoslibros !== undefined ? payload.permitircrearnuevoslibros : prev.permitircrearnuevoslibros,
-        permitircrearnuevascuentas: payload.permitircrearnuevascuentas !== undefined ? payload.permitircrearnuevascuentas : prev.permitircrearnuevascuentas,
-      }));
-
-      // Add a delay before reloading initial data to ensure backend has processed changes
-    
-
-      setIsDirty(false);
-      alert('Configuración guardada con éxito.');
     } catch (err) {
       console.error('Error al guardar:', err);
-      alert(`Error al guardar: ${err.message || 'Intente nuevamente.'}`);
-    } finally {
+      alert(`Error al guardar: ${err.response?.data?.message || err.message || 'Intente nuevamente.'}`);
       setSaving(false);
-      
     }
   };
 
-  // Componentes UI
   const Category = ({ id, title, children, isOpen }) => (
     <div className={`${styles.layout.category.background} ${styles.layout.category.shadow} ${styles.layout.category.borderRadius} overflow-hidden ${styles.animations.fadeIn.className} ${styles.layout.category.hoverShadow}`}>
       <button
@@ -640,8 +573,7 @@ const ConfiguracionPage = () => {
     </div>
   );
 
-  // --- Renderizado ---
-  if (contextLoading) {
+  if (loading || !originalConfig) {
     return (
       <DashboardLayout>
         <div className={`${styles.general.minHeight} ${styles.general.background} flex items-center justify-center`}>
@@ -651,13 +583,13 @@ const ConfiguracionPage = () => {
     );
   }
 
-  if (contextError) {
+  if (error) {
     return (
       <DashboardLayout>
         <div className={`${styles.general.minHeight} ${styles.general.background} flex items-center justify-center`}>
           <div className="text-red-600 text-center">
-            <p>{contextError}</p>
-            <button onClick={() => window.location.reload()} className="text-sm underline mt-2">
+            <p>{error}</p>
+            <button onClick={reloadConfig} className="text-sm underline mt-2">
               Reintentar
             </button>
           </div>
@@ -674,7 +606,6 @@ const ConfiguracionPage = () => {
           .animate-fadeIn { animation: fadeIn ${styles.animations.fadeIn.duration} ${styles.animations.fadeIn.timingFunction}; }
         `}</style>
 
-        {/* Botón de guardar */}
         <div className="flex justify-start mb-6">
           {isDirty && <span className="text-orange-600 text-sm mr-4">✏️ Cambios sin guardar</span>}
           <button
@@ -688,10 +619,8 @@ const ConfiguracionPage = () => {
         </div>
 
         <div className={styles.layout.categories.spacing}>
-          {/* Sección: Company and User */}
           <Category id="company-user" title="Company and User" isOpen={openCategories['company-user']}>
             <Subcategory id="accesos" title="1. Accesos" isOpen={openSubcategories['accesos']}>
-              {/* MODO ENTIDAD */}
               <div className={`flex justify-between items-center ${styles.layout.item.padding} ${styles.layout.item.borderBottom} ${styles.layout.item.background}`}>
                 <span className={`${styles.typography.itemLabel.className} ${styles.typography.itemLabel.textColor}`}>a) MODO ENTIDAD: permite crear empresas solo con RUC de</span>
                 <div className="flex items-center gap-4">
@@ -725,7 +654,6 @@ const ConfiguracionPage = () => {
                 </div>
               </div>
 
-              {/* GESTIÓN GRUPO */}
               <div className={`flex justify-between items-center ${styles.layout.item.padding} ${styles.layout.item.borderBottom} ${styles.layout.item.background}`}>
                 <span className={`${styles.typography.itemLabel.className} ${styles.typography.itemLabel.textColor}`}>b) GESTIÓN GRUPO: Contabiliza como ente Individual o Grupo</span>
                 <div className="flex items-center gap-4">
@@ -761,7 +689,6 @@ const ConfiguracionPage = () => {
                 </div>
               </div>
 
-              {/* Mostrar nombre comercial */}
               <div className={`flex justify-between items-center ${styles.layout.item.padding} ${styles.layout.item.borderBottom} ${styles.layout.item.background}`}>
                 <span className={`${styles.typography.itemLabel.className} ${styles.typography.itemLabel.textColor}`}>c) Mostrar NOMBRE COMERCIAL en Login</span>
                 <div className="flex items-center gap-2">
@@ -791,7 +718,6 @@ const ConfiguracionPage = () => {
                 </div>
               </div>
 
-              {/* Mostrar logo */}
               <div className={`flex justify-between items-center ${styles.layout.item.padding} ${styles.layout.item.borderBottom} ${styles.layout.item.background}`}>
                 <span className={`${styles.typography.itemLabel.className} ${styles.typography.itemLabel.textColor}`}>d) Mostrar Logo en Fondo de Login</span>
                 <div className="flex items-center gap-2">
@@ -810,7 +736,6 @@ const ConfiguracionPage = () => {
                 </div>
               </div>
 
-              {/* Acceso Manager */}
               <div className={`flex justify-between items-center ${styles.layout.item.padding} ${styles.layout.item.borderBottom} ${styles.layout.item.background}`}>
                 <span className={`${styles.typography.itemLabel.className} ${styles.typography.itemLabel.textColor}`}>e) Permitir acceso a Manager System a otro Usuario</span>
                 <div className="flex items-center gap-2">
@@ -837,7 +762,6 @@ const ConfiguracionPage = () => {
                 </div>
               </div>
 
-              {/* Sesión inactiva */}
               <div className={`flex justify-between items-center ${styles.layout.item.padding} ${styles.layout.item.borderBottom} ${styles.layout.item.background}`}>
                 <span className={`${styles.typography.itemLabel.className} ${styles.typography.itemLabel.textColor}`}>f) Cerrado automático de SESIÓN inactiva (20 a 30 min)</span>
                 <div className="flex items-center gap-4">
@@ -855,14 +779,13 @@ const ConfiguracionPage = () => {
                       value={editableConfig.valorSesionInactiva}
                       onChange={handleNumericChange('valorSesionInactiva', 20, 30)}
                       className={`${styles.forms.input.width} ${styles.forms.input.padding} ${styles.forms.input.border} ${styles.forms.input.rounded} ${styles.forms.input.fontSize} ${styles.forms.input.focusOutline}`}
-                      disabled={!editableConfig.sesionInactiva && styles.conditionalStyles.checkboxDependentInput.disabledWhenUnchecked}
+                      disabled={!editableConfig.sesionInactiva}
                       style={{backgroundColor: !editableConfig.sesionInactiva ? styles.conditionalStyles.disabledInput : 'white'}}
                     />
                   )}
                 </div>
               </div>
 
-              {/* Justificar pausa */}
               <div className={`flex justify-between items-center ${styles.layout.item.padding} ${styles.layout.item.borderBottom} ${styles.layout.item.background}`}>
                 <span className={`${styles.typography.itemLabel.className} ${styles.typography.itemLabel.textColor}`}>g) Opción justificar SESIÓN PAUSADA (10 a 15 min)</span>
                 <div className="flex items-center gap-4">
@@ -880,14 +803,13 @@ const ConfiguracionPage = () => {
                       value={editableConfig.valorJustificarPausa}
                       onChange={handleNumericChange('valorJustificarPausa', 10, 15)}
                       className={`${styles.forms.input.width} ${styles.forms.input.padding} ${styles.forms.input.border} ${styles.forms.input.rounded} ${styles.forms.input.fontSize} ${styles.forms.input.focusOutline}`}
-                      disabled={!editableConfig.justificarPausa && styles.conditionalStyles.checkboxDependentInput.disabledWhenUnchecked}
+                      disabled={!editableConfig.justificarPausa}
                       style={{backgroundColor: !editableConfig.justificarPausa ? styles.conditionalStyles.disabledInput : 'white'}}
                     />
                   )}
                 </div>
               </div>
 
-              {/* h) OPCIÓN REPORTAR TAREAS DURANTE PAUSA (60, 120 o 240 min) */}
               <div className={`flex justify-between items-center ${styles.layout.item.padding} ${styles.layout.item.borderBottom} ${styles.layout.item.background}`}>
                 <span className={`${styles.typography.itemLabel.className} ${styles.typography.itemLabel.textColor}`}>h) Opción reportar tareas durante pausa (60, 120 o 240 min)</span>
                 <div className="flex items-center gap-4">
@@ -912,7 +834,6 @@ const ConfiguracionPage = () => {
                 </div>
               </div>
 
-              {/* i) OPCIÓN REPORTAR PROYECTO/TAREAS DESPUÉS DE PAUSA (120 o 240 min) */}
               <div className={`flex justify-between items-center ${styles.layout.item.padding} ${styles.layout.item.borderBottom} ${styles.layout.item.background}`}>
                 <span className={`${styles.typography.itemLabel.className} ${styles.typography.itemLabel.textColor}`}>i) Opción reportar proyecto/tareas después de pausa (120 o 240 min)</span>
                 <div className="flex items-center gap-4">
@@ -937,7 +858,6 @@ const ConfiguracionPage = () => {
               </div>
             </Subcategory>
 
-            {/* Configuraciones */}
             <Subcategory id="configuraciones" title="2. Configuraciones" isOpen={openSubcategories['configuraciones']}>
               <div className={`flex justify-between items-center ${styles.misc.tableHeader.padding} ${styles.misc.tableHeader.borderBottom} ${styles.misc.tableHeader.background} ${styles.misc.tableHeader.fontWeight} ${styles.misc.tableHeader.textColor} text-sm`}>
                 <span className="flex-1">Opción</span>
@@ -991,7 +911,6 @@ const ConfiguracionPage = () => {
             </Subcategory>
           </Category>
 
-          {/* Staff */}
           <Category id="staff" title="Staff" isOpen={openCategories['staff']}>
             <Subcategory id="usuarios-externos" title="3. Usuarios Externos" isOpen={openSubcategories['usuarios-externos']}>
               <ConfigItem label="a) Gestión de usuarios externos" values={['CONFIGURAR']} />
@@ -1005,7 +924,6 @@ const ConfiguracionPage = () => {
             </Subcategory>
           </Category>
 
-          {/* Manager */}
           <Category id="manager" title="Manager" isOpen={openCategories['manager']}>
             <Subcategory id="contabilidad" title="5. Contabilidad" isOpen={openSubcategories['contabilidad']}>
               <ConfigItem label="a) Periodo Contable predeterminado (Vigente)" values={['2025']} />
@@ -1024,7 +942,6 @@ const ConfiguracionPage = () => {
             </Subcategory>
           </Category>
 
-          {/* Investments and Contract */}
           <Category id="investments" title="Investments and Contract" isOpen={openCategories['investments']}>
             <Subcategory id="financiamiento" title="7.1 Financiamiento" isOpen={openSubcategories['financiamiento']}>
               <ConfigItem label="a) Gestión de financiamiento" values={['CONFIGURAR']} />

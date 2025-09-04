@@ -14,9 +14,7 @@ export const ConfigProvider = ({ children }) => {
       setLoading(true);
       const data = await getConfig();
       if (data && data.config && Array.isArray(data.config) && data.config.length > 0) {
-        // Map the backend config to the frontend state structure
         const backendConfig = data.config[0];
-        // Assuming a direct mapping for now, adjust as needed based on your backend response
         setConfig(backendConfig);
       } else {
         setConfig(null);
@@ -28,6 +26,10 @@ export const ConfigProvider = ({ children }) => {
     }
   }, []);
 
+  const updateConfig = useCallback((newConfig) => {
+    setConfig(newConfig);
+  }, []);
+
   const clearConfig = useCallback(() => {
     setConfig(null);
   }, []);
@@ -37,7 +39,7 @@ export const ConfigProvider = ({ children }) => {
   }, [reloadConfig]);
 
   return (
-    <ConfigContext.Provider value={{ config, loading, error, reloadConfig, clearConfig }}>
+    <ConfigContext.Provider value={{ config, loading, error, reloadConfig, updateConfig, clearConfig }}>
       {children}
     </ConfigContext.Provider>
   );
