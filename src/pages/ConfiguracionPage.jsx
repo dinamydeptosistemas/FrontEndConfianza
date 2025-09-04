@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { getEmpresas } from '../services/company/CompanyService';
 import { getUsers } from '../services/user/UserService';
-import { saveConfig, uploadLogo as uploadLogoService, getConfig } from '../services/config/ConfigService';
+import { saveConfig, uploadLogo as uploadLogoService } from '../services/config/ConfigService';
 import { useConfig } from '../contexts/ConfigContext';
 
 const styles = {
@@ -487,34 +487,35 @@ const ConfiguracionPage = () => {
     setSaving(true);
     try {
       const payload = {
-        modoEntidad: modoEntidad,
-        nombreModoEntidad: tipoEntidad,
-        gestionGrupoMatriz: gestionGrupo,
-        nombreGestionGrupo: tipoGestion,
-        mostrarNombreComercialLogin: editableConfig.mostrarNombreComercial,
-        nombreComercialLogin: selectedEmpresa,
-        mostrarImagenLogoLogin: editableConfig.mostrarImagenLogo,
-        archivoLogo: logoPath,
-        permitirAccesoManagerSystem: editableConfig.permitirAccesoManager,
-        nombreUsuarioManagerSystem: selectedUsuario,
-        cerradoSesionInactiva: editableConfig.sesionInactiva,
-        minutosCerrarSesion: Number(editableConfig.valorSesionInactiva),
-        opcionJustificarSesionPausada: editableConfig.justificarPausa,
-        minutosJustificarSesion: Number(editableConfig.valorJustificarPausa),
-        opcionReportarTareasDespues: editableConfig.reportarTareasPausa,
-        minutosReportarTareas: Number(editableConfig.valorReportarTareasPausa),
-        opcionReportarProyectoTareasDespues: editableConfig.reportarProyectoTareas,
-        minutosReportarProyectoTareas: Number(editableConfig.valorReportarProyectoTareas),
-        periodoVigente: Number(editableConfig.periodoVigente),
-        periodoAnteriorHabilitado: editableConfig.periodoAnteriorHabilitado,
-        fechaInicioPeriodoVigente: new Date(editableConfig.fechaInicioPeriodo).toISOString(),
-        fechaFinalPeriodoVigente: new Date(editableConfig.fechaFinPeriodo).toISOString(),
+        modorentidad: modoEntidad,
+        nombremodorentidad: tipoEntidad,
+        gestiongrupomatriz: gestionGrupo,
+        nombregestiongrupo: tipoGestion,
+        mostrarnombrecomerciallogin: editableConfig.mostrarNombreComercial,
+        nombrecomerciallogin: selectedEmpresa,
+        mostrarimagenlogologin: editableConfig.mostrarImagenLogo,
+        archivologo: logoPath,
+        permitiraccesomanagersystem: editableConfig.permitirAccesoManager,
+        nombreusuariomanagersystem: selectedUsuario,
+        cerradosesioninactiva: editableConfig.sesionInactiva,
+        minutoscerrarsesion: Number(editableConfig.valorSesionInactiva),
+        opcionjustificarsesionpausada: editableConfig.justificarPausa,
+        minutosjustificarsesion: Number(editableConfig.valorJustificarPausa),
+        opcionreportartareasdespues: editableConfig.reportarTareasPausa,
+        minutosreportartareas: Number(editableConfig.valorReportarTareasPausa),
+        opcionreportarproyectotareasdespues: editableConfig.reportarProyectoTareas,
+        minutosreportarproyectotareas: Number(editableConfig.valorReportarProyectoTareas),
+        periodovigente: Number(editableConfig.periodoVigente),
+        periodoanteriorhabilitado: editableConfig.periodoAnteriorHabilitado,
+        fechaInicioPeriodoVigente: editableConfig.fechaInicioPeriodo ? new Date(editableConfig.fechaInicioPeriodo).toISOString() : null,
+        fechaFinalPeriodoVigente: editableConfig.fechaFinPeriodo ? new Date(editableConfig.fechaFinPeriodo).toISOString() : null,
         bloqueoModificacionAsientosAnteriores: editableConfig.bloqueoAsientosAnteriores,
         permitirNuevosAsientosAnterior: editableConfig.permitirNuevosAsientosAnterior,
         permitirCrearNuevosLibros: editableConfig.permitirCrearNuevosLibros,
         permitirCrearNuevasCuentas: editableConfig.permitirCrearNuevasCuentas,
-        ambienteTrabajoHabilitado: configuraciones.ambienteTrabajo.checked,
-        ambienteTrabajoModo: configuraciones.ambienteTrabajo.checked ? 'PRUEBAS' : 'PRODUCCION',
+        ambiente_creacion_prueba_habilitado: configuraciones.ambienteTrabajo.checked,
+        ambiente_creacion_prueba_modo: configuraciones.ambienteTrabajo.aplicacion,
+        eliminar_prueba_habilitado: configuraciones.eliminarRegistros.checked,
       };
 
       await saveConfig(payload);
@@ -871,6 +872,7 @@ const ConfiguracionPage = () => {
                   <span>Habilitado</span>
                   <span>Aplicación</span>
                   <span>Ambiente</span>
+                
                 </div>
               </div>
 
@@ -894,7 +896,7 @@ const ConfiguracionPage = () => {
                     <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value="MODULO">MÓDULO</option>
                   </select>
                   <span className={`${styles.badges.statusBadge.padding} ${styles.badges.statusBadge.fontSize} ${styles.badges.statusBadge.fontWeight} ${styles.badges.statusBadge.textColor} ${styles.badges.statusBadge.rounded}`} style={{ backgroundColor: styles.badges.statusBadge.background }}>
-                    {configuraciones.ambienteTrabajo.checked ? 'PRUEBAS' : 'PRODUCCIÓN'}
+                    {configuraciones.ambienteTrabajo.checked ? 'PRUEBA' : 'PRODUCCION'}
                   </span>
                 </div>
               </div>
