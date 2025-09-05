@@ -226,7 +226,7 @@ const ConfiguracionPage = () => {
   const [originalConfig, setOriginalConfig] = useState(null);
   const [editableConfig, setEditableConfig] = useState({
     mostrarNombreComercial: true,
-    valorNombreComercial: '',
+    nombrecomerciallogin: '',
     mostrarImagenLogo: true,
     valorImagenLogo: '',
     permitirAccesoManager: true,
@@ -261,7 +261,6 @@ const ConfiguracionPage = () => {
   const [loadingUsuarios, setLoadingUsuarios] = useState(false);
 
   // Selecciones
-  const [selectedEmpresa, setSelectedEmpresa] = useState('');
   const [selectedUsuario, setSelectedUsuario] = useState('');
   const [logoPath, setLogoPath] = useState('');
 
@@ -288,7 +287,7 @@ const ConfiguracionPage = () => {
 
         const newEditableConfig = {
             mostrarNombreComercial: config.mostrarnombrecomerciallogin,
-            valorNombreComercial: config.nombrecomerciallogin,
+            nombrecomerciallogin: config.nombrecomerciallogin || '',
             mostrarImagenLogo: config.mostrarimagenlogologin,
             valorImagenLogo: config.archivologo,
             permitirAccesoManager: config.permitiraccesomanagersystem,
@@ -316,7 +315,6 @@ const ConfiguracionPage = () => {
         setTipoEntidad(config.nombremodorentidad || 'AMBOS');
         setGestionGrupo(!!config.gestiongrupomatriz);
         setTipoGestion(config.nombregestiongrupo || 'INDIVIDUAL');
-        setSelectedEmpresa(config.nombrecomerciallogin || '');
         setSelectedUsuario(config.nombreusuariomanagersystem || '');
         setLogoPath(config.archivologo || '');
 
@@ -421,8 +419,7 @@ const ConfiguracionPage = () => {
 
   const handleEmpresaChange = (e) => {
     const value = e.target.value;
-    setSelectedEmpresa(value);
-    handleConfigChange('valorNombreComercial', value);
+    handleConfigChange('nombrecomerciallogin', value);
   };
 
   const handleUsuarioChange = (e) => {
@@ -492,7 +489,7 @@ const ConfiguracionPage = () => {
         gestiongrupomatriz: gestionGrupo,
         nombregestiongrupo: tipoGestion,
         mostrarnombrecomerciallogin: editableConfig.mostrarNombreComercial,
-        nombrecomerciallogin: selectedEmpresa,
+        nombrecomerciallogin: editableConfig.nombrecomerciallogin,
         mostrarimagenlogologin: editableConfig.mostrarImagenLogo,
         archivologo: logoPath,
         permitiraccesomanagersystem: editableConfig.permitirAccesoManager,
@@ -513,7 +510,7 @@ const ConfiguracionPage = () => {
         permitirNuevosAsientosAnterior: editableConfig.permitirNuevosAsientosAnterior,
         permitirCrearNuevosLibros: editableConfig.permitirCrearNuevosLibros,
         permitirCrearNuevasCuentas: editableConfig.permitirCrearNuevasCuentas,
-        ambiente_creacion_prueba_habilitado: configuraciones.ambienteTrabajo.checked,
+        ambienteTrabajoModo: configuraciones.ambienteTrabajo.checked ? 'PRUEBA' : 'PRODUCCION',
         ambiente_creacion_prueba_modo: configuraciones.ambienteTrabajo.aplicacion,
         eliminar_prueba_habilitado: configuraciones.eliminarRegistros.checked,
       };
@@ -707,13 +704,13 @@ const ConfiguracionPage = () => {
                   />
                   {editableConfig.mostrarNombreComercial && (
                     <select
-                      value={selectedEmpresa}
+                      value={editableConfig.nombrecomerciallogin}
                       onChange={handleEmpresaChange}
                       className={`${styles.forms.select.padding} ${styles.forms.select.fontSize} ${styles.forms.select.fontWeight} ${styles.forms.select.textColor} ${styles.forms.select.border} ${styles.forms.select.rounded}`}
                       style={{ backgroundColor: styles.forms.select.background }}
                     >
-                      {selectedEmpresa && !empresas.some(e => e.commercialName === selectedEmpresa) && (
-                        <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value={selectedEmpresa}>{selectedEmpresa}</option>
+                      {editableConfig.nombrecomerciallogin && !empresas.some(e => e.commercialName === editableConfig.nombrecomerciallogin) && (
+                        <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value={editableConfig.nombrecomerciallogin}>{editableConfig.nombrecomerciallogin}</option>
                       )}
                       {empresas.map(emp => (
                         <option key={emp.codeCompany} style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value={emp.commercialName}>
@@ -886,8 +883,8 @@ const ConfiguracionPage = () => {
                     className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
                   />
                   <select
-                    value={configuraciones.ambienteTrabajo.aplicacion}
-                    onChange={(e) => handleConfiguracionChange('ambienteTrabajo', 'aplicacion', e.target.value)}
+                    value={configuraciones.ambienteTrabajo.modo}
+                    onChange={(e) => handleConfiguracionChange('ambienteTrabajo', 'modo', e.target.value)}
                     disabled={!configuraciones.ambienteTrabajo.checked}
                     className={`${styles.forms.select.padding} ${styles.forms.select.fontSize} ${styles.forms.select.fontWeight} ${styles.forms.select.textColor} ${styles.forms.select.border} ${styles.forms.select.rounded}`}
                     style={{ backgroundColor: configuraciones.ambienteTrabajo.checked ? styles.forms.select.background : styles.forms.select.disabledBackground }}
