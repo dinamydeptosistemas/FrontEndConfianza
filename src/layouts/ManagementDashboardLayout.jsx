@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useConfig } from '../contexts/ConfigContext';
-
+import MensajeHead from '../components/forms/MensajeHead';
 /**
  * Layout especializado para las páginas de gestión (empresa, usuario, perfil, permisos).
  * Incluye cabecera, barra de usuario, y espacio para el contenido principal.
@@ -11,34 +11,12 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
   const navigate = useNavigate();
   const { config } = useConfig();
 
-  const renderEnvironmentBanner = () => {
-    if (!config || !config.ambienteTrabajoModo) {
-      return null;
-    }
-
-    const isTest = config.ambienteTrabajoModo.toLowerCase() === 'pruebas';
-    const isProd = config.ambienteTrabajoModo.toLowerCase() === 'produccion';
-
-    if (!isTest && !isProd) {
-      return null;
-    }
-
-    const bannerClass = isTest 
-      ? "bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4"
-      : "bg-green-100 border-l-4 border-green-500 text-green-700 p-4";
-    
-    const environmentText = isTest ? 'Pruebas' : 'Producción';
-
-    return (
-      <div className={`${bannerClass} w-full mb-4`} role="alert">
-        <p className="font-bold">Ambiente de Trabajo: {environmentText}</p>
-      </div>
-    );
-  };
-
   return (
     <div className="w-full h-full flex flex-col bg-gray-100 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
-      {renderEnvironmentBanner()}
+            <MensajeHead 
+                mensaje={config?.ambienteTrabajoHabilitado ? 'AMBIENTE DE PRUEBA' : ''}
+                color={'#FBACC5'}
+            />
       <div className="w-full">
         {/* Header superior */}
         <div className="bg-[#e9e9e9] py-2 px-1.5 md:px-1 lg:px-2 xl:px-4 2xl:px-4 flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[#ccc] text-sm w-full">
