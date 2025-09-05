@@ -3,9 +3,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import useInactivityLogout from '../hooks/useInactivityLogout';
 import WorkJustificationModal from '../components/modals/WorkJustificationModal';
+import { useConfig } from '../contexts/ConfigContext';
+import MensajeHead from '../components/forms/MensajeHead';
 
 const DashboardLayout = ({ children }) => {
-    const { user, negocio, logout, loading, error } = useAuth();
+    const { user, negocio, logout, loading: authLoading, error: authError } = useAuth();
+    const { config, loading: configLoading, error: configError } = useConfig();
     const [isJustificationModalOpen, setJustificationModalOpen] = useState(false);
     const [lastActivity, setLastActivity] = useState(null);
     const [minutesInactive, setMinutesInactive] = useState(0);
@@ -48,7 +51,7 @@ const DashboardLayout = ({ children }) => {
     const location = useLocation();
 
     // Mostrar loading state
-    if (loading) {
+    if (authLoading || configLoading) {
         return (
             <div className="flex justify-center items-center h-screen">
                 <div className="loader">Loading...</div>
@@ -57,7 +60,7 @@ const DashboardLayout = ({ children }) => {
     }
 
     // Mostrar error
-    if (error) {
+    if (authError || configError) {
         return (
             <div className="flex flex-col justify-center items-center h-screen">
                 <p className="text-red-500 mb-4">Error al cargar datos.</p>
@@ -100,7 +103,10 @@ const DashboardLayout = ({ children }) => {
 
     return (
                <div className="h-screen w-[95%] flex flex-col">
-
+            <MensajeHead 
+                mensaje={config?.ambienteTrabajoHabilitado ? 'AMBIENTE DE PRUEBA' : ''}
+                color={'#FBACC5'}
+            />
       
             {/* Header superior */}
             <div className="bg-[#e9e9e9] py-3 flex justify-between items-center px-8 text-xs border-b border-[#dadada] w-full">

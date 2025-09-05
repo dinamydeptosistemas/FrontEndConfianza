@@ -4,6 +4,7 @@ import { getEmpresas } from '../services/company/CompanyService';
 import { getUsers } from '../services/user/UserService';
 import { saveConfig, uploadLogo as uploadLogoService } from '../services/config/ConfigService';
 import { useConfig } from '../contexts/ConfigContext';
+import MensajeHead from '../components/forms/MensajeHead';
 
 const styles = {
   "general": {
@@ -605,6 +606,10 @@ const ConfiguracionPage = () => {
 
   return (
     <DashboardLayout>
+      <MensajeHead 
+          mensaje={configuraciones.ambienteTrabajo.checked ? 'AMBIENTE DE PRUEBA' : ''}
+          color={'red'}
+        />
       <div className={`${styles.general.minHeight} ${styles.general.background} ${styles.layout.container.padding} ${styles.spacing.margin.leftMain}`}>
         <style jsx>{`
           @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
