@@ -220,7 +220,7 @@ const styles = {
 };
 
 const ConfiguracionPage = () => {
-  const { config, loading, error, reloadConfig } = useConfig();
+  const { config, loading, error, reloadConfig, updateConfig } = useConfig();
 
   // Estados principales
   const [originalConfig, setOriginalConfig] = useState(null);
@@ -274,7 +274,7 @@ const ConfiguracionPage = () => {
   const [configuraciones, setConfiguraciones] = useState({
     ambienteTrabajo: {
       checked: true,
-      aplicacion: 'TODO_SISTEMA',
+      modo: 'TODO_SISTEMA',
     },
     eliminarRegistros: {
       checked: true,
@@ -322,8 +322,8 @@ const ConfiguracionPage = () => {
           ...prev,
           ambienteTrabajo: {
             ...prev.ambienteTrabajo,
-            checked: !!config.ambiente_creacion_prueba_habilitado,
-            aplicacion: config.ambiente_creacion_prueba_modo || 'TODO_SISTEMA',
+            checked: typeof config.ambienteTrabajoHabilitado === 'boolean' ? config.ambienteTrabajoHabilitado : (config.ambienteTrabajoModo ? config.ambienteTrabajoModo === 'PRUEBA' : !!config.ambiente_creacion_prueba_habilitado),
+            modo: config.ambiente_creacion_prueba_modo || 'TODO_SISTEMA',
           },
           eliminarRegistros: {
             ...prev.eliminarRegistros,
@@ -510,20 +510,21 @@ const ConfiguracionPage = () => {
         permitirNuevosAsientosAnterior: editableConfig.permitirNuevosAsientosAnterior,
         permitirCrearNuevosLibros: editableConfig.permitirCrearNuevosLibros,
         permitirCrearNuevasCuentas: editableConfig.permitirCrearNuevasCuentas,
+        ambienteTrabajoHabilitado: configuraciones.ambienteTrabajo.checked,
         ambienteTrabajoModo: configuraciones.ambienteTrabajo.checked ? 'PRUEBA' : 'PRODUCCION',
-        ambiente_creacion_prueba_modo: configuraciones.ambienteTrabajo.aplicacion,
+        ambiente_creacion_prueba_modo: configuraciones.ambienteTrabajo.modo,
         eliminar_prueba_habilitado: configuraciones.eliminarRegistros.checked,
       };
 
       await saveConfig(payload);
       
-      alert('Configuración guardada con éxito. La página se refrescará para aplicar los cambios.');
+      alert('Configuración guardada con éxito.');
       
-      setTimeout(() => {
-        reloadConfig();
-        setIsDirty(false);
-        setSaving(false);
-      }, 1000);
+      const newConfig = { ...config, ...payload };
+      updateConfig(newConfig);
+      setOriginalConfig(newConfig);
+      setIsDirty(false);
+      setSaving(false);
 
     } catch (err) {
       console.error('Error al guardar:', err);
