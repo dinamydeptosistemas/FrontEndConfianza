@@ -608,7 +608,8 @@ const ConfiguracionPage = () => {
     <DashboardLayout>
       <MensajeHead 
           mensaje={configuraciones.ambienteTrabajo.checked ? 'AMBIENTE DE PRUEBA' : ''}
-          color={'red'}
+          style={{ boxShadow: 'none', backgroundColor: '#FEE2E2' }}
+          textStyle={{ color: '#8ba4cb', fontWeight:'400', fontSize: '0.9rem' }}
         />
       <div className={`${styles.general.minHeight} ${styles.general.background} ${styles.layout.container.padding} ${styles.spacing.margin.leftMain}`}>
         <style jsx>{`
@@ -880,7 +881,7 @@ const ConfiguracionPage = () => {
               </div>
 
               <div className={`flex justify-between items-center ${styles.layout.item.padding} ${styles.layout.item.borderBottom} ${styles.layout.item.background}`}>
-                <span className={`${styles.typography.itemLabel.className} ${styles.typography.itemLabel.textColor} flex-1`}>a) AMBIENTE DE TRABAJO: habilitar registros de Prueba</span>
+                <span className={`${styles.typography.itemLabel.className} ${styles.typography.itemLabel.textColor} flex-1`}>a) AMBIENTE DE TRABAJO PRUEBA: habilitar registros de Prueba</span>
                 <div className="flex w-1/2 justify-around">
                   <input
                     type="checkbox"

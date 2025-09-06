@@ -379,7 +379,7 @@ export default function BitacoraDashboard() {
             }
           </span>
         </>
-      )} user={user} negocio={negocio}>
+      )} >
       <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
         {/* Botón para abrir modal de filtros */}
     

@@ -7,12 +7,12 @@ import ConfirmEliminarModal from '../../components/common/ConfirmEliminarModal';
 import SearchBar from '../../components/common/SearchBar';
 import EmpresaUpdateModal from '../../components/empresa/EmpresaUpdateModal';
 import EmpresaCreateModal from '../../components/empresa/EmpresaCreateModal';
-import { useAuth } from '../../contexts/AuthContext';
+
 import { useNotification } from '../../context/NotificationContext';
 import Paginador from '../../components/common/Paginador';
 
 export default function EmpresasDashboard() {
-  const { user, negocio } = useAuth();
+  
   const { showSuccessMessage, showErrorMessage, showWarningMessage } = useNotification();
   const [empresasOriginales, setEmpresasOriginales] = useState([]);
   const [empresas, setEmpresas] = useState([]);
@@ -390,8 +390,6 @@ export default function EmpresasDashboard() {
          
         </>
       )}
-      user={user} 
-      negocio={negocio}
     >
 
         <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
@@ -553,7 +551,7 @@ export default function EmpresasDashboard() {
             onDelete={handleDeleteClick}
             rowClassName={(row) => {
               const enviroment = (row.enviroment || row.environment || '').toUpperCase();
-              if (enviroment === 'PRUEBAS') {
+              if (enviroment === 'PRUEBA') {
                 return 'bg-red-100';
               }
               return '';

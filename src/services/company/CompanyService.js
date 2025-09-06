@@ -207,7 +207,6 @@ export const putEmpresa = async (empresa) => {
     console.error('Error: El objeto empresa es null o undefined');
     throw new Error('El objeto empresa es inválido');
   }
-  empresaDTO.Enviroment = 'PRODUCCION';
   console.log('Enviando datos de empresa:', empresaDTO);
   try {
     const response = await axiosInstance.post(`${API_BASE}/Companies/Process`, empresaDTO);

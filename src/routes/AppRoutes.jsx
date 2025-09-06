@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useConfig } from '../contexts/ConfigContext';
 import LoginGeneral from '../pages/LoginGeneral';
 import DashboardLayout from '../layouts/DashboardLayout';
 import DashboardLayoutLight from '../layouts/DashboardLayoutLight';
@@ -28,6 +29,7 @@ import EmptyPage from '../pages/EmptyPage';
 
 export const AppRoutes = () => {
     const { user, loading, isInitialized } = useAuth();
+    const { loading: configLoading } = useConfig();
 
     // Verificación robusta del estado de autenticación
     const isAuthenticated = user && (
@@ -68,7 +70,7 @@ export const AppRoutes = () => {
     }
 
     // Mostrar loading solo si estamos inicializados pero aún cargando
-    if (loading) {
+    if (loading || configLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>

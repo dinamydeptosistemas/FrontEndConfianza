@@ -407,7 +407,7 @@ const { negocio, setNegocio, user, setUser } = useAuth();
   };
 
   return (
-    <ManagementDashboardLayout title="REPORTE DE USUARIOS ACTIVOS" user={user} negocio={negocio}>
+    <ManagementDashboardLayout title="REPORTE DE USUARIOS ACTIVOS">
   <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4 min-h-screen flex flex-col">
         {/* Cabecera de contexto de empresa, periodo y usuario */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">

@@ -105,11 +105,13 @@ const DashboardLayout = ({ children }) => {
                <div className="h-screen w-[95%] flex flex-col">
             <MensajeHead 
                 mensaje={config?.ambienteTrabajoHabilitado ? 'AMBIENTE DE PRUEBA' : ''}
-                color={'#FBACC5'}
+                style={{ boxShadow: 'none', backgroundColor: '#FEE2E2' }}
+                textStyle={{ color: '#8ba4cb', fontWeight: '400', fontSize: '0.9rem' }}
             />
+                
       
             {/* Header superior */}
-            <div className="bg-[#e9e9e9] py-3 flex justify-between items-center px-8 text-xs border-b border-[#dadada] w-full">
+            <div className="bg-[#e9e9e9] py-3 flex justify-between items-center px-8 text-xs w-full">
                 <div className="flex items-center px-[186px]">
                     <span className="font-bold text-[#7a7a7a] text-[14px]">NEGOCIO:</span>
                     <span className="text-[#444444] text-[14px] ml-2">{getNegocioDisplay()}</span>

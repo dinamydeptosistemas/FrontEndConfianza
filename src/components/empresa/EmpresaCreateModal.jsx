@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import { provincias, ciudadesPorProvincia } from '../../data/ecuadorLocations';
 import { putEmpresa } from '../../services/company/CompanyService';
 import ActionButtons, { LoadingOverlay } from '../common/Buttons';
+import {useConfig} from '../../contexts/ConfigContext';
 /**
  * Modal para crear empresa.
  * @param {function} onClose - Cierra el modal
@@ -14,7 +15,7 @@ function EmpresaCreateModal({ onClose, onSave, onSuccess }) {
   // Estados para touched y validaciones visuales
   const [rucTouched, setRucTouched] = useState(false);
   const [businessNameTouched, setBusinessNameTouched] = useState(false);
-
+  const { config, loading: configLoading, error: configError } = useConfig();
   const [emailTouched, setEmailTouched] = useState(false);
 
   // Inicialización de formData antes de cualquier uso
@@ -36,7 +37,8 @@ function EmpresaCreateModal({ onClose, onSave, onSuccess }) {
     keepsAccounting: false,
     retentionAgent: false,
     nameGroup: '',
-    state: 0 // 0 = INACTIVO, 1 = ACTIVO
+    state: 0, // 0 = INACTIVO, 1 = ACTIVO
+    enviroment: config.ambienteTrabajoModo,
   });
 
   function handleRucBlur() { setRucTouched(true); }
@@ -65,9 +67,19 @@ function EmpresaCreateModal({ onClose, onSave, onSuccess }) {
 const [loading, setLoading] = useState(false);
 
 
-  useEffect(() => {
+    useEffect(() => {
     setProvinciaSeleccionada(formData.province);
   }, [formData.province]);
+
+  useEffect(() => {
+    if (config) {
+      console.log('Config en EmpresaCreateModal:', config);
+      setFormData(prev => ({
+        ...prev,
+        enviroment: config.ambienteTrabajoHabilitado ? 'PRUEBA' : 'PRODUCCION'
+      }));
+    }
+  }, [config]);
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
@@ -117,7 +129,7 @@ const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!formData.businessName || formData.businessName.trim() === '') {
+    if (!formData.businessName || formData.businessName.trim() === '' || configLoading) {
       handleBusinessNameBlur();
      handleEmailBlur(); 
       return;
@@ -145,7 +157,7 @@ const [loading, setLoading] = useState(false);
       setLoading(false);
       let errorMsg = 'Error al crear la empresa';
       if (error?.message) {
-        errorMsg += `: ${error.message}`;
+        errorMsg += `: ${error.message + configError}`;
       }
       alert(errorMsg);
     }

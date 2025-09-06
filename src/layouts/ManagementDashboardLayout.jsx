@@ -2,20 +2,39 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useConfig } from '../contexts/ConfigContext';
 import MensajeHead from '../components/forms/MensajeHead';
-/**
- * Layout especializado para las páginas de gestión (empresa, usuario, perfil, permisos).
- * Incluye cabecera, barra de usuario, y espacio para el contenido principal.
- */
-function ManagementDashboardLayout({ title, user, negocio, children }) {
+import { useAuth } from '../contexts/AuthContext';
+
+function ManagementDashboardLayout({ title, children }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { config } = useConfig();
+  const { user, negocio, loading: authLoading, error: authError } = useAuth();
+  const { config, loading: configLoading, error: configError } = useConfig();
+
+  if (authLoading || configLoading) {
+    return (
+        <div className="flex justify-center items-center h-screen">
+            <div className="loader">Loading...</div>
+        </div>
+    );
+  }
+
+  if (authError || configError) {
+      return (
+          <div className="flex flex-col justify-center items-center h-screen">
+              <p className="text-red-500 mb-4">Error al cargar datos.</p>
+              <button onClick={() => window.location.reload()} className="bg-blue-500 text-white px-4 py-2 rounded">
+                  Reintentar
+              </button>
+          </div>
+      );
+  }
 
   return (
     <div className="w-full h-full flex flex-col bg-gray-100 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
             <MensajeHead 
                 mensaje={config?.ambienteTrabajoHabilitado ? 'AMBIENTE DE PRUEBA' : ''}
-                color={'#FBACC5'}
+                style={{ boxShadow: 'none', backgroundColor: '#FEE2E2' }}
+                textStyle={{ color: '#8ba4cb', fontWeight: '400', fontSize: '0.9rem' }}
             />
       <div className="w-full">
         {/* Header superior */}
