@@ -360,6 +360,18 @@ export const AuthProvider = ({ children }) => {
     });
   }, [updateState]);
 
+  const setNegocio = useCallback((negocioData) => {
+    if (negocioData) {
+      updateState({ negocio: negocioData });
+      storageUtils.setItem(STORAGE_KEYS.NEGOCIO, negocioData);
+      try {
+        sessionStorage.setItem(STORAGE_KEYS.NEGOCIO, JSON.stringify(negocioData));
+      } catch (error) {
+        console.error('Error guardando en sessionStorage:', error);
+      }
+    }
+  }, [updateState]);
+
   // Función de login
   const login = useCallback(async (credentials) => {
     try {
@@ -605,6 +617,7 @@ export const AuthProvider = ({ children }) => {
     confirmLogout,
     cleanupAndRedirect,
     fetchCurrentUser,
+    setNegocio,
     showTimeoutModal: handleShowTimeoutModal,
     handleContinueTimeout,
     handleLogoutTimeout,
@@ -622,6 +635,7 @@ export const AuthProvider = ({ children }) => {
     confirmLogout,
     cleanupAndRedirect,
     fetchCurrentUser,
+    setNegocio,
     handleShowTimeoutModal,
     handleContinueTimeout,
     handleLogoutTimeout

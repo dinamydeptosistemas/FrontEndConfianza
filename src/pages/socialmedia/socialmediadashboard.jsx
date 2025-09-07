@@ -372,13 +372,21 @@ export default function SocialMediaDashboard() {
                   key: 'medioActivo', 
                   label: 'Estado', 
                   render: (row) => row.medioActivo ? 'Activo' : 'Inactivo' 
-                }
+                },
+             
               ]}
               data={datosTabla}
               rowKey="idMedio"
               actions={true}
               onEdit={handleEditClick}
               onDelete={handleDeleteClick}
+               rowClassName={(row) => {
+              const enviroment = (row.enviroment || row.environment || '').toUpperCase();
+              if (enviroment === 'PRUEBA') {
+                return 'bg-red-100';
+              }
+              return '';
+            }}
             />
           )}
         </div>

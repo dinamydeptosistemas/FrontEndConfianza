@@ -1,17 +1,35 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import useInactivityLogout from '../hooks/useInactivityLogout';
 import WorkJustificationModal from '../components/modals/WorkJustificationModal';
 import { useConfig } from '../contexts/ConfigContext';
 import MensajeHead from '../components/forms/MensajeHead';
+import { getEmpresas } from '../services/company/CompanyService';
 
 const DashboardLayout = ({ children }) => {
-    const { user, negocio, logout, loading: authLoading, error: authError } = useAuth();
+    const { user, negocio, logout, setNegocio, loading: authLoading, error: authError } = useAuth();
     const { config, loading: configLoading, error: configError } = useConfig();
     const [isJustificationModalOpen, setJustificationModalOpen] = useState(false);
     const [lastActivity, setLastActivity] = useState(null);
     const [minutesInactive, setMinutesInactive] = useState(0);
+    const [empresas, setEmpresas] = useState([]);
+    const [showDropdown, setShowDropdown] = useState(false);
+
+    useEffect(() => {
+        const fetchEmpresas = async () => {
+            try {
+                const response = await getEmpresas({ getAll: true }); // Fetch all companies
+                const companiesList = response.companies || [];
+                if (Array.isArray(companiesList)) {
+                    setEmpresas(companiesList);
+                }
+            } catch (error) {
+                console.error('Error al cargar empresas:', error);
+            }
+        };
+        fetchEmpresas();
+    }, []);
 
     const handleInactivity = useCallback((data) => {
         console.log('[DashboardLayout] Inactivity detected', data);
@@ -33,7 +51,6 @@ const DashboardLayout = ({ children }) => {
 
     const handleRRHHJustification = (motivo) => {
         console.log('Justificación para RRHH:', motivo);
-        // Aquí se podría enviar la justificación al backend
         setJustificationModalOpen(false);
         resetTimer();
     };
@@ -43,14 +60,24 @@ const DashboardLayout = ({ children }) => {
         logout();
     };
 
+    const handleNegocioChange = (e) => {
+        const selectedCode = e.target.value;
+        const selectedEmpresa = empresas.find(emp => (emp.codeEntity || emp.CodeEntity) === selectedCode);
+        if (selectedEmpresa) {
+            const negocioData = {
+                nombre: selectedEmpresa.businessName || selectedEmpresa.BusinessName,
+                codigo: selectedEmpresa.codeEntity || selectedEmpresa.CodeEntity,
+            };
+            setNegocio(negocioData);
+        }
+        setShowDropdown(false);
+    };
 
-    // Lógica de roles basada solo en el contexto
     const isAdmin = user?.CodeFunction === 2;
     const isManagerSystem = user?.UserFunction === 'MANAGER SYSTEM';
 
     const location = useLocation();
 
-    // Mostrar loading state
     if (authLoading || configLoading) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -59,7 +86,6 @@ const DashboardLayout = ({ children }) => {
         );
     }
 
-    // Mostrar error
     if (authError || configError) {
         return (
             <div className="flex flex-col justify-center items-center h-screen">
@@ -71,14 +97,12 @@ const DashboardLayout = ({ children }) => {
         );
     }
 
-    // Título del módulo
     const getModuleTitle = () => {
         if (isAdmin) return 'ADMINISTRADOR';
         if (isManagerSystem) return 'MANAGER SYSTEM';
         return 'USUARIO';
     };
 
-    // Mostrar función del usuario
     const getUserFunctionDisplay = () => {
         if (location.pathname === '/configuracion') return 'CONFIGURACION GENERAL:' 
         if (isAdmin) return 'ADMINISTRADOR:';
@@ -88,13 +112,11 @@ const DashboardLayout = ({ children }) => {
     };
 
     const getNegocioDisplay = () => {
-           if (negocio?.nombre) return negocio.nombre;
+        if (negocio?.nombre) return negocio.nombre;
         if (user?.NameEntity) return user.NameEntity;
         return 'NA';
-
     };
 
-    // Redirección si no hay usuario
     if (!user) {
         return <Navigate to="/login" replace />;
     }
@@ -102,19 +124,38 @@ const DashboardLayout = ({ children }) => {
     const functionBarColorClass = location.pathname === '/configuracion' ? 'bg-orange-400' : 'bg-[#1e4e9c]';
 
     return (
-               <div className="h-screen w-[95%] flex flex-col">
+        <div className="h-screen w-[95%] flex flex-col">
             <MensajeHead 
                 mensaje={config?.ambienteTrabajoHabilitado ? 'AMBIENTE DE PRUEBA' : ''}
                 style={{ boxShadow: 'none', backgroundColor: '#FEE2E2' }}
                 textStyle={{ color: '#8ba4cb', fontWeight: '400', fontSize: '0.9rem' }}
             />
                 
-      
-            {/* Header superior */}
             <div className="bg-[#e9e9e9] py-3 flex justify-between items-center px-8 text-xs w-full">
                 <div className="flex items-center px-[186px]">
                     <span className="font-bold text-[#7a7a7a] text-[14px]">NEGOCIO:</span>
-                    <span className="text-[#444444] text-[14px] ml-2">{getNegocioDisplay()}</span>
+                    <div className="relative inline-block ml-2">
+                        <button onClick={() => setShowDropdown(!showDropdown)} className="text-[#444444] text-[14px] cursor-pointer">
+                            {getNegocioDisplay()}
+                        </button>
+                        {showDropdown && (
+                            <select
+                                onChange={handleNegocioChange}
+                                onBlur={() => setShowDropdown(false)}
+                                className="absolute top-full left-0 z-10 bg-white  border rounded shadow-lg"
+                                defaultValue={negocio?.codigo}
+                                autoFocus
+                                size={empresas.length > 10 ? 10 : empresas.length + 1}
+                            >
+                                <option value="" disabled>Seleccione una empresa</option>
+                                {empresas.map(empresa => (
+                                    <option key={empresa.codeEntity || empresa.CodeEntity} value={empresa.codeEntity || empresa.CodeEntity}>
+                                        {empresa.businessName || empresa.BusinessName}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
                 </div>
                 <div className="flex items-center">
                     <span className="font-bold text-[#7a7a7a] text-[14px]">PERIODO:</span>
@@ -122,9 +163,7 @@ const DashboardLayout = ({ children }) => {
                 </div>
             </div>
 
-            {/* Contenido principal con sidebar */}
             <div className="flex flex-1 overflow-hidden">
-                {/* Sidebar izquierdo */}
                 <div className="w-[180px] bg-[#1e4e9c] flex flex-col flex-shrink-0">
                     <div className="text-white text-center py-4">
                         <h1 className="text-[15px] px-2 font-bold">CONFIANZA <br></br> SCGC</h1> 
@@ -164,9 +203,7 @@ const DashboardLayout = ({ children }) => {
                     </button>
                 </div>
 
-                {/* Contenido dinámico */}
                 <main className="flex-1 flex flex-col w-full no-scrollbar" style={{ overflowY: 'auto' }}>
-                    {/* User bar */}
                     <div className="flex bg-white mx-auto w-[95%]">
                         <div className="w-full py-2 px-2 flex justify-between text-xs">
                             <div className="flex ">
@@ -182,7 +219,6 @@ const DashboardLayout = ({ children }) => {
                         </div>
                     </div>
 
-                    {/* Manager System bar */}
                     <div className={`flex justify-between ${functionBarColorClass}  ml-8 mr-auto w-full `}>
                         <div className="w-full py-1 px-4 h-[50px] flex items-center">
                             <h2 className="text-lg font-bold text-white">

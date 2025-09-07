@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { getEmpresas } from '../../services/company/CompanyService';
 import { useNotification } from '../../context/NotificationContext';
 import ActionButtons, { LoadingOverlay } from '../common/Buttons';
+import { useConfig } from '../../contexts/ConfigContext';
+
 
 function generarUsername({ apellidosUser, nombreUser, celularUsuario }) {
   const [primerApellido = '', segundoApellido = ''] = (apellidosUser || '').trim().split(' ');
@@ -25,11 +27,9 @@ const UsuarioModal = ({
   const [showPassword, setShowPassword] = useState(false);
   const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
-  
-  // Usar el contexto de notificaciones global
+  const { config } = useConfig();
   const { showSuccessMessage } = useNotification();
 
-  // Estado inicial del formulario
   const [formData, setFormData] = useState({
     nombreUser: '',
     apellidosUser: '',
@@ -45,7 +45,8 @@ const UsuarioModal = ({
     whatsap: false,
     tipoUser: '',
     relacionUsuario: '',
-    codeEntity: ''
+    codeEntity: '',
+    environment: null,
   });
 
   // Estados para empresas
@@ -57,8 +58,12 @@ const UsuarioModal = ({
 
   // Efecto para inicializar datos cuando se recibe el usuario
   useEffect(() => {
+    console.log('Config object in useEffect:', config);
+    const initialEnv = config ? config.ambienteTrabajoModo : null;
+    console.log('Initial environment:', initialEnv);
+
     if (isEditing && usuario) {
-      setFormData({
+      const newFormData = {
         idUser: usuario.idUser || usuario.IdUser,
         nombreUser: usuario.nombreUser || usuario.NombreUser || '',
         apellidosUser: usuario.apellidosUser || usuario.ApellidosUser || '',
@@ -75,10 +80,13 @@ const UsuarioModal = ({
         password: '',
         passnumber: '',
         confirmPassword: '',
-      });
+        environment: initialEnv,
+      };
+      setFormData(newFormData);
+      console.log('Form data set for editing:', newFormData);
     } else {
       // Reset form for creation
-      setFormData({
+      const newFormData = {
         nombreUser: '',
         apellidosUser: '',
         identificacion: '',
@@ -93,10 +101,13 @@ const UsuarioModal = ({
         whatsap: false,
         tipoUser: '',
         relacionUsuario: '',
-        codeEntity: ''
-      });
+        codeEntity: '',
+        environment: initialEnv
+      };
+      setFormData(newFormData);
+      console.log('Form data set for creation:', newFormData);
     }
-  }, [usuario, isEditing]);
+  }, [usuario, isEditing, config]);
 
   // Efecto para cargar empresas cuando se abre el modal
   useEffect(() => {
@@ -121,7 +132,6 @@ const UsuarioModal = ({
           }
         } while (page <= totalPages);
         
-        // Si estamos editando y la empresa actual no está en la lista, agrégala
         if (isEditing && usuario) {
           const userCodeEntity = usuario.codeEntity || usuario.CodeEntity;
           if (userCodeEntity) {
@@ -158,7 +168,6 @@ const UsuarioModal = ({
         [name]: type === 'checkbox' ? checked : value
       };
       
-      // Solo autogenerar username si NO es edición
       if (!isEditing && (name === 'nombreUser' || name === 'apellidosUser' || name === 'celularUsuario')) {
         newData.username = generarUsername({
           apellidosUser: newData.apellidosUser,
@@ -178,31 +187,26 @@ const UsuarioModal = ({
     setLoading(true);
     
     try {
-      // Validación de PIN solo al crear
       if (!isEditing && !/^\d{4}$/.test(formData.passnumber)) {
         setError('El PIN debe tener exactamente 4 dígitos numéricos.');
         setLoading(false);
         return;
       }
       
-      // Validación de password solo si tiene valor
       if (formData.password && formData.password.length < 4) {
         setError('La contraseña debe tener al menos 4 caracteres.');
         setLoading(false);
         return;
       }
       
-      // Validación de confirmación solo si password tiene valor
       if (formData.password && formData.password !== formData.confirmPassword) {
         setError('Las contraseñas no coinciden.');
         setLoading(false);
         return;
       }
       
-      // Preparar datos para envío
       let dataToSend = { ...formData };
       
-      // El backend espera 'passNumber' en lugar de 'passnumber'
       if (dataToSend.passnumber !== undefined) {
         if (dataToSend.passnumber && dataToSend.passnumber.trim() !== '') {
           dataToSend.passNumber = dataToSend.passnumber;
@@ -210,7 +214,6 @@ const UsuarioModal = ({
         delete dataToSend.passnumber;
       }
       
-      // Eliminar confirmPassword del payload
       delete dataToSend.confirmPassword;
       
       console.log('Datos a guardar:', dataToSend);
@@ -219,10 +222,8 @@ const UsuarioModal = ({
       
       setLoading(false);
       
-      // Mostrar mensaje de éxito usando el contexto global
       showSuccessMessage(isEditing ? '¡Usuario actualizado exitosamente!' : '¡Usuario creado exitosamente!');
       
-      // Cerrar modal
       if (onClose) {
         onClose();
       }
@@ -239,12 +240,8 @@ const UsuarioModal = ({
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
       <div className="bg-white py-6 px-10 rounded-lg shadow-lg w-[750px] max-h-[90vh] overflow-y-auto relative">
-        {/* Overlay de carga */}
         {loading && <LoadingOverlay isLoading={true} message={isEditing ? "Actualizando usuario..." : "Creando usuario..."} />}
         
-      
-
-        {/* Header con título y botones */}
         <div className="grid grid-cols-2 items-center">
           <h2 className="text-2xl font-bold text-gray-800 pt-4">
             {isEditing ? 'Editar Usuario' : 'Crear Usuario'}
@@ -261,7 +258,6 @@ const UsuarioModal = ({
         </div>
         <hr className="col-span-2 border-blue-500 mr-6 m-0 p-0" />
 
-        {/* Mostrar errores */}
         {error && (
           <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
             {error}
@@ -270,7 +266,6 @@ const UsuarioModal = ({
 
         <form onSubmit={handleSubmit} className="grid mt-5 grid-cols-2 gap-x-4 gap-y-3 relative">
           
-          {/* Row 1: Estado activo + Indicador visual */}
           <div className="flex items-center h-10">
           <div className={`inline-flex px-4 py-2 text-[1rem] rounded-full text-xs font-medium ${formData.usuarioActivo ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}> 
               {formData.usuarioActivo ? 'ACTIVO' : 'INACTIVO'}
@@ -289,7 +284,6 @@ const UsuarioModal = ({
           </div>
 
           
-          {/* Row 3: Identificación + Username */}
           <div>
           <label className="block text-sm font-medium text-gray-700">Username</label>
             <input
@@ -317,7 +311,6 @@ const UsuarioModal = ({
           </div>
 
 
-          {/* Row 2: Nombre + Apellidos */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Nombre</label>
             <input
@@ -341,7 +334,6 @@ const UsuarioModal = ({
             />
           </div>
 
-          {/* Row 4: Email + Celular */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Email</label>
             <input
@@ -364,7 +356,6 @@ const UsuarioModal = ({
             />
           </div>
 
-          {/* Row 5: Código de Empresa + Tipo de Usuario */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Código de Empresa</label>
             <select
@@ -401,7 +392,6 @@ const UsuarioModal = ({
             </select>
           </div>
 
-          {/* Row 6: Relación Usuario + Contraseña */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Relación Usuario</label>
             <select
@@ -456,7 +446,6 @@ const UsuarioModal = ({
             )}
           </div>
 
-          {/* Row 7: PIN + Confirmar Contraseña */}
           <div>
             <label className="block text-sm font-medium text-gray-700">PIN (4 dígitos)</label>
             <div className="relative">
@@ -500,7 +489,6 @@ const UsuarioModal = ({
             />
           </div>
 
-          {/* Row final: Checkboxes en 2 columnas */}
           <div className="col-span-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center h-10">

@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import SuccessModal from '../common/SuccessModal';
 import ActionButtons, { LoadingOverlay } from '../common/Buttons';
-import {useConfig} from '../../contexts/ConfigContext'
-
-
+import { useConfig } from '../../contexts/ConfigContext'
 function PerfilAccesoCreateModal({ onClose, onSave }) {
+  const { config } = useConfig();
   const [formData, setFormData] = useState({
     functionName: '',
     grantPermissions: false,
@@ -26,7 +25,8 @@ function PerfilAccesoCreateModal({ onClose, onSave }) {
     cashRegister002: false,
     cashRegister003: false,
     cashRegister004: false,
-    externalModules: false
+    externalModules: false,
+    environment: config.ambienteTrabajoModo,
   });
 
   // Si recibes props para duplicar/editar, inicializa fixedAsset correctamente
@@ -45,13 +45,11 @@ function PerfilAccesoCreateModal({ onClose, onSave }) {
   // }, [props.perfil]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { config } = useConfig();
 
   const handleChange = (e) => {
     const { name, type, checked, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      enviroment : config.ambienteTrabajoHabilitado ? 'PRUEBA' : 'PRODUCCION',
       [name]: type === 'checkbox' ? checked : value
     }));
   };

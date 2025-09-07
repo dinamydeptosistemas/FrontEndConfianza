@@ -375,11 +375,21 @@ export default function PermisosDashboard() {
             showActions={{
               edit: true,
               delete: true,
-              updatePermissions: false // Ocultar el botón de actualizar permisos
+              updatePermissions: false 
+              
+            }}
+             rowClassName={(row) => {
+              const enviroment = (row.enviroment || row.environment || '').toUpperCase();
+              if (enviroment === 'PRUEBA') {
+                return 'bg-red-100';
+              }
+              return '';
             }}
             onEdit={handleEditClick}
             onDelete={handleDeleteClick}
             onUpdatePermissions={null} // Asegurarse de que no hay función de actualización de permisos
+          
+          
           />
         </div>
         {mostrarModalEdicion && permisoAEditar && (

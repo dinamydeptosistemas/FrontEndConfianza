@@ -11,6 +11,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import Paginador from '../../components/common/Paginador';
 import { useNotification } from '../../context/NotificationContext';
 
+
+
 export default function PerfilAccesoDashboard() {
   const { user, negocio } = useAuth();
   const { showSuccessMessage, showErrorMessage } = useNotification();
@@ -581,12 +583,21 @@ export default function PerfilAccesoDashboard() {
                   </span>
                 )
               } 
+              ,
+             
             ]}
             data={perfiles}
             rowKey="idFunction"
             actions={true}
             onEdit={handleEditClick}
             onDelete={handleDeleteClick}
+             rowClassName={(row) => {
+              const enviroment = (row.enviroment || row.environment || '').toUpperCase();
+              if (enviroment === 'PRUEBA') {
+                return 'bg-red-100';
+              }
+              return '';
+            }}
           />
         </div>
       <ConfirmEliminarModal

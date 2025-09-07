@@ -544,6 +544,13 @@ export default function UsuarioDashboard() {
                         actions={true}
                         onEdit={handleEditar}
                         onDelete={handleEliminar}
+                         rowClassName={(row) => {
+              const enviroment = (row.enviroment || row.environment || '').toUpperCase();
+              if (enviroment === 'PRUEBA') {
+                return 'bg-red-100';
+              }
+              return '';
+            }}
                     />
                 </div>
 
