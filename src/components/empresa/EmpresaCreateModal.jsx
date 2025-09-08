@@ -37,7 +37,7 @@ function EmpresaCreateModal({ onClose, onSave, onSuccess }) {
     keepsAccounting: false,
     retentionAgent: false,
     nameGroup: '',
-    state: 0, // 0 = INACTIVO, 1 = ACTIVO
+    state: 0,
     enviroment: config.ambienteTrabajoModo,
   });
 
@@ -255,9 +255,21 @@ const [loading, setLoading] = useState(false);
               required
             >
               <option value="">Seleccione tipo</option>
-              <option value="Empresa">Empresa</option>
-              <option value="Negocio">Negocio</option>
-              <option value="Persona Natural">Persona Natural</option>
+              {config.nombremodorentidad === 'EMPRESA' && (
+                <option value="Empresa">Empresa</option>
+              )}
+              {config.nombremodorentidad === 'PERSONA NATURAL' && (
+                <option value="Persona Natural">Persona Natural</option>
+              )}
+              {config.nombremodorentidad === 'AMBOS' && (
+                <>
+                  <option value="Empresa">Empresa</option>
+                  <option value="Persona Natural">Persona Natural</option>
+                </>
+              )}
+              
+          
+              
             </select>
           </div>
             <div>
@@ -405,62 +417,66 @@ const [loading, setLoading] = useState(false);
 
           </div>
 
-          {/* Row 8: Nombre Grupo + Es Matriz */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Nombre Grupo</label>
-            <div className="flex gap-2">
-              <select
-                name="nameGroup"
-                value={formData.nameGroup}
-                onChange={handleChange}
-                className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
-              >
-                <option value="">Seleccione un grupo</option>
-                {grupos.map((grupo) => (
-                  <option key={grupo} value={grupo}>{grupo}</option>
-                ))}
-              </select>
-              <button
-                type="button"
-                className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                onClick={() => setMostrarInputGrupo(true)}
-              >
-                Nuevo
-              </button>
-            </div>
-            {mostrarInputGrupo && (
-              <div className="flex mt-2 gap-2">
-                <input
-                  type="text"
-                  value={nuevoGrupo}
-                  onChange={handleNuevoGrupoChange}
-                  className="block w-full rounded-md border border-gray-200 px-2 py-1"
-                />
+          {/* Row 8: Nombre Grupo */}
+          {config.gestionGrupoMatriz === true && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Nombre Grupo</label>
+              <div className="flex gap-2">
+                <select
+                  name="nameGroup"
+                  value={formData.nameGroup}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
+                >
+                  <option value="">Seleccione un grupo</option>
+                  {grupos.map((grupo) => (
+                    <option key={grupo} value={grupo}>{grupo}</option>
+                  ))}
+                </select>
                 <button
                   type="button"
-                  className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
-                  onClick={handleAddGrupo}
+                  className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                  onClick={() => setMostrarInputGrupo(true)}
                 >
-                  Agregar
+                  Nuevo
                 </button>
               </div>
-            )}
-          </div>
+              {mostrarInputGrupo && (
+                <div className="flex mt-2 gap-2">
+                  <input
+                    type="text"
+                    value={nuevoGrupo}
+                    onChange={handleNuevoGrupoChange}
+                    className="block w-full rounded-md border border-gray-200 px-2 py-1"
+                  />
+                  <button
+                    type="button"
+                    className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
+                    onClick={handleAddGrupo}
+                  >
+                    Agregar
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Row final: Checkboxes, en 3 columnas */}
           <div className="col-span-2">
             <div className="grid grid-cols-3 gap-4">
-              <div className="flex items-center h-10">
-                <input
-                  id="matrix"
-                  type="checkbox"
-                  name="matrix"
-                  checked={formData.matrix}
-                  onChange={handleChange}
-                  className="h-4 w-4 rounded border-gray-200 text-blue-600 focus:ring-blue-500 outline-none"
-                />
-                <label htmlFor="matrix" className="ml-2 block text-sm text-gray-700">Es Matriz</label>
-              </div>
+              {config.gestionGrupoMatriz === true && (
+                <div className="flex items-center h-10">
+                  <input
+                    id="matrix"
+                    type="checkbox"
+                    name="matrix"
+                    checked={formData.matrix}
+                    onChange={handleChange}
+                    className="h-4 w-4 rounded border-gray-200 text-blue-600 focus:ring-blue-500 outline-none"
+                  />
+                  <label htmlFor="matrix" className="ml-2 block text-sm text-gray-700">Es Matriz</label>
+                </div>
+              )}
               <div className="flex items-center h-10">
                 <input
                   id="keepsAccounting"

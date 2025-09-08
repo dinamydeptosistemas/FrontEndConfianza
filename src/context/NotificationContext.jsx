@@ -16,14 +16,14 @@ export const NotificationProvider = ({ children }) => {
   const [errorMsg, setErrorMsg] = useState('');
 
   // Función para mostrar mensaje de éxito
-  const showSuccessMessage = (message, duration = 3000) => {
+  const showSuccessMessage = (message, duration = 5000) => {
     setSuccessMsg(message);
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), duration);
   };
 
   // Función para mostrar mensaje de error
-  const showErrorMessage = (message, duration = 3000) => {
+  const showErrorMessage = (message, duration = 4000) => {
     setErrorMsg(message);
     setShowError(true);
     setTimeout(() => setShowError(false), duration);

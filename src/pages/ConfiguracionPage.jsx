@@ -5,6 +5,8 @@ import { getUsers } from '../services/user/UserService';
 import { saveConfig, uploadLogo as uploadLogoService } from '../services/config/ConfigService';
 import { useConfig } from '../contexts/ConfigContext';
 import MensajeHead from '../components/forms/MensajeHead';
+import SuccessModal from '../components/common/SuccessModal'
+
 
 const styles = {
   "general": {
@@ -310,8 +312,8 @@ const ConfiguracionPage = () => {
             permitirCrearNuevosLibros: config.permitircrearnuevoslibros,
             permitirCrearNuevasCuentas: config.permitircrearnuevascuentas,
         };
-        setEditableConfig(newEditableConfig);
 
+        setEditableConfig(newEditableConfig);
         setModoEntidad(!!config.modorentidad);
         setTipoEntidad(config.nombremodorentidad || 'AMBOS');
         setGestionGrupo(!!config.gestiongrupomatriz);
@@ -337,6 +339,12 @@ const ConfiguracionPage = () => {
   useEffect(() => {
     if (!modoEntidad) {
       setTipoEntidad('AMBOS');
+    }
+    else {
+      // If modoEntidad becomes true, and current tipoEntidad is 'AMBOS', change it
+      if (tipoEntidad === 'AMBOS') {
+        setTipoEntidad('NEGOCIO');
+      }
     }
   }, [modoEntidad]);
 
@@ -519,7 +527,10 @@ const ConfiguracionPage = () => {
 
       await saveConfig(payload);
       
-      alert('Configuración guardada con éxito.');
+      <SuccessModal 
+      mensaje="Configuración guardada exitosamente.">
+
+      </SuccessModal>
       
       const newConfig = { ...config, ...payload };
       updateConfig(newConfig);
@@ -654,9 +665,14 @@ const ConfiguracionPage = () => {
                     className={`${styles.forms.select.padding} ${styles.forms.select.fontSize} ${styles.forms.select.fontWeight} ${styles.forms.select.textColor} ${styles.forms.select.border} ${styles.forms.select.rounded}`}
                     style={{ backgroundColor: modoEntidad ? styles.forms.select.background : styles.forms.select.disabledBackground }}
                   >
-                    <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value="AMBOS">AMBOS</option>
-                    <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value="NEGOCIO">NEGOCIO</option>
-                    <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value="EMPRESA">EMPRESA</option>
+                    {modoEntidad ? (
+                      <>
+                        <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value="NEGOCIO">NEGOCIO</option>
+                        <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value="EMPRESA">EMPRESA</option>
+                      </>
+                    ) : (
+                      <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value="AMBOS">AMBOS</option>
+                    )}
                   </select>
                   <span className={`${styles.typography.itemLabel.className} ${styles.typography.textSecondary}`}>
                     {tipoEntidad === 'AMBOS' ? 'Sociedades / Personas Naturales' :
@@ -706,7 +722,13 @@ const ConfiguracionPage = () => {
                   <input
                     type="checkbox"
                     checked={editableConfig.mostrarNombreComercial}
-                    onChange={() => handleConfigChange('mostrarNombreComercial', !editableConfig.mostrarNombreComercial)}
+                    onChange={() => {
+                      const newValue = !editableConfig.mostrarNombreComercial;
+                      handleConfigChange('mostrarNombreComercial', newValue);
+                      if (!newValue) {
+                        handleConfigChange('nombrecomerciallogin', 'CONFIANZA SCGC');
+                      }
+                    }}
                     className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
                   />
                   {editableConfig.mostrarNombreComercial && (
@@ -721,7 +743,7 @@ const ConfiguracionPage = () => {
                       )}
                       {empresas.map(emp => (
                         <option key={emp.codeCompany} style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value={emp.commercialName}>
-                          {emp.commercialName}
+                          {emp.commercialName || 'CONFIANZA SCGC'}
                         </option>
                       ))}
                     </select>
