@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { getEmpresas } from '../services/company/CompanyService';
 import { getUsers } from '../services/user/UserService';
@@ -227,35 +227,12 @@ const ConfiguracionPage = () => {
 
   // Estados principales
   const [originalConfig, setOriginalConfig] = useState(null);
-  const [editableConfig, setEditableConfig] = useState({
-    mostrarNombreComercial: true,
-    nombrecomerciallogin: '',
-    mostrarImagenLogo: true,
-    valorImagenLogo: '',
-    permitirAccesoManager: true,
-    valorAccesoManager: '',
-    sesionInactiva: true,
-    valorSesionInactiva: 20,
-    justificarPausa: true,
-    valorJustificarPausa: 10,
-    reportarTareasPausa: true,
-    valorReportarTareasPausa: 60,
-    reportarProyectoTareas: true,
-    valorReportarProyectoTareas: 120,
-    periodoVigente: 2025,
-    periodoAnteriorHabilitado: false,
-    fechaInicioPeriodo: '2025-01-01T00:00:00',
-    fechaFinPeriodo: '2025-12-31T23:59:59',
-    bloqueoAsientosAnteriores: false,
-    permitirNuevosAsientosAnterior: false,
-    permitirCrearNuevosLibros: false,
-    permitirCrearNuevasCuentas: false,
-  });
+  const [editableConfig, setEditableConfig] = useState(null);
 
-  const [modoEntidad, setModoEntidad] = useState(false);
-  const [tipoEntidad, setTipoEntidad] = useState('AMBOS');
-  const [gestionGrupo, setGestionGrupo] = useState(false);
-  const [tipoGestion, setTipoGestion] = useState('INDIVIDUAL');
+  const [modoEntidad, setModoEntidad] = useState(null);
+  const [tipoEntidad, setTipoEntidad] = useState(null);
+  const [gestionGrupo, setGestionGrupo] = useState(null);
+  const [tipoGestion, setTipoGestion] = useState(null);
 
   // Datos auxiliares
   const [empresas, setEmpresas] = useState([]);
@@ -272,21 +249,18 @@ const ConfiguracionPage = () => {
   const [openSubcategories, setOpenSubcategories] = useState({});
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+
 
   // Configuraciones adicionales
-  const [configuraciones, setConfiguraciones] = useState({
-    ambienteTrabajo: {
-      checked: true,
-      modo: 'TODO_SISTEMA',
-    },
-    eliminarRegistros: {
-      checked: true,
-    },
-  });
+  const [configuraciones, setConfiguraciones] = useState(null);
+
+  const isInitialMountGestionGrupo = useRef(true);
+  const isInitialMountTipoGestion = useRef(true);
 
   useEffect(() => {
     if (config) {
-        setOriginalConfig(config);
+        setOriginalConfig(JSON.parse(JSON.stringify(config)));
 
         const newEditableConfig = {
             mostrarNombreComercial: config.mostrarnombrecomerciallogin,
@@ -311,6 +285,7 @@ const ConfiguracionPage = () => {
             permitirNuevosAsientosAnterior: config.permitirnuevosasientosanterior,
             permitirCrearNuevosLibros: config.permitircrearnuevoslibros,
             permitirCrearNuevasCuentas: config.permitircrearnuevascuentas,
+            eliminarPruebaHabilitado: config.eliminarpruebahabilitado
         };
 
         setEditableConfig(newEditableConfig);
@@ -321,22 +296,21 @@ const ConfiguracionPage = () => {
         setSelectedUsuario(config.nombreusuariomanagersystem || '');
         setLogoPath(config.archivologo || '');
 
-        setConfiguraciones(prev => ({
-          ...prev,
+        setConfiguraciones({
           ambienteTrabajo: {
-            ...prev.ambienteTrabajo,
-            checked: typeof config.ambienteTrabajoHabilitado === 'boolean' ? config.ambienteTrabajoHabilitado : (config.ambienteTrabajoModo ? config.ambienteTrabajoModo === 'PRUEBA' : !!config.ambiente_creacion_prueba_habilitado),
+            checked: config.ambienteTrabajoModo === 'PRUEBA',
             modo: config.ambiente_creacion_prueba_modo || 'TODO_SISTEMA',
           },
           eliminarRegistros: {
-            ...prev.eliminarRegistros,
-            checked: !!config.eliminar_prueba_habilitado,
+            checked: !!config.eliminarPruebaHabilitado,
           }
-        }));
+        });
+        setIsInitializing(false);
     }
   }, [config]);
 
   useEffect(() => {
+    if (isInitializing) return;
     if (!modoEntidad) {
       setTipoEntidad('AMBOS');
     }
@@ -349,18 +323,40 @@ const ConfiguracionPage = () => {
   }, [modoEntidad]);
 
   useEffect(() => {
-    if (gestionGrupo) {
-      if (tipoGestion === 'INDIVIDUAL') {
-        setTipoGestion('MULTINEGOCIO');
-        setIsDirty(true);
-      }
+    if (isInitializing) return;
+    if (isInitialMountGestionGrupo.current) {
+      isInitialMountGestionGrupo.current = false;
     } else {
-      if (tipoGestion !== 'INDIVIDUAL') {
-        setTipoGestion('INDIVIDUAL');
-        setIsDirty(true);
+      if (gestionGrupo) {
+        if (tipoGestion === 'INDIVIDUAL') {
+          setTipoGestion('MULTINEGOCIO');
+          setIsDirty(true);
+        }
+      } else {
+        if (tipoGestion !== 'INDIVIDUAL') {
+          setTipoGestion('INDIVIDUAL');
+          setIsDirty(true);
+        }
       }
     }
   }, [gestionGrupo]);
+
+  useEffect(() => {
+    if (isInitializing) return;
+    if (isInitialMountTipoGestion.current) {
+      isInitialMountTipoGestion.current = false;
+    } else {
+      if (tipoGestion === 'MULTINEGOCIO') {
+        setModoEntidad(true);
+        setTipoEntidad('NEGOCIO');
+        setIsDirty(true);
+      } else if (tipoGestion === 'MULTIEMPRESA') {
+        setModoEntidad(true);
+        setTipoEntidad('EMPRESA');
+        setIsDirty(true);
+      }
+    }
+  }, [tipoGestion]);
 
   useEffect(() => {
     const fetchEmpresas = async () => {
@@ -522,7 +518,7 @@ const ConfiguracionPage = () => {
         ambienteTrabajoHabilitado: configuraciones.ambienteTrabajo.checked,
         ambienteTrabajoModo: configuraciones.ambienteTrabajo.checked ? 'PRUEBA' : 'PRODUCCION',
         ambiente_creacion_prueba_modo: configuraciones.ambienteTrabajo.modo,
-        eliminar_prueba_habilitado: configuraciones.eliminarRegistros.checked,
+        eliminarPruebaHabilitado: configuraciones.eliminarRegistros.checked,
       };
 
       await saveConfig(payload);
@@ -590,7 +586,7 @@ const ConfiguracionPage = () => {
     </div>
   );
 
-  if (loading || !originalConfig) {
+  if (loading || !originalConfig || !editableConfig || !configuraciones) {
     return (
       <DashboardLayout>
         <div className={`${styles.general.minHeight} ${styles.general.background} flex items-center justify-center`}>
@@ -667,11 +663,19 @@ const ConfiguracionPage = () => {
                   >
                     {modoEntidad ? (
                       <>
+                        {tipoEntidad && !['NEGOCIO', 'EMPRESA'].includes(tipoEntidad) &&
+                          <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value={tipoEntidad}>{tipoEntidad}</option>
+                        }
                         <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value="NEGOCIO">NEGOCIO</option>
                         <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value="EMPRESA">EMPRESA</option>
                       </>
                     ) : (
-                      <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value="AMBOS">AMBOS</option>
+                      <>
+                        {tipoEntidad && tipoEntidad !== 'AMBOS' &&
+                          <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value={tipoEntidad}>{tipoEntidad}</option>
+                        }
+                        <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value="AMBOS">AMBOS</option>
+                      </>
                     )}
                   </select>
                   <span className={`${styles.typography.itemLabel.className} ${styles.typography.textSecondary}`}>
@@ -894,52 +898,61 @@ const ConfiguracionPage = () => {
             <Subcategory id="configuraciones" title="2. Configuraciones" isOpen={openSubcategories['configuraciones']}>
               <div className={`flex justify-between items-center ${styles.misc.tableHeader.padding} ${styles.misc.tableHeader.borderBottom} ${styles.misc.tableHeader.background} ${styles.misc.tableHeader.fontWeight} ${styles.misc.tableHeader.textColor} text-sm`}>
                 <span className="flex-1">Opción</span>
-                <div className="flex w-1/2 justify-around">
-                  <span>Habilitado</span>
-                  <span>Aplicación</span>
-                  <span>Ambiente</span>
-                
+                <div className="grid grid-cols-3 w-1/2">
+                  <span className="text-center">Habilitado</span>
+                  <span className="text-center"></span>
+                  <span className="text-center">Estado</span>
                 </div>
               </div>
 
               <div className={`flex justify-between items-center ${styles.layout.item.padding} ${styles.layout.item.borderBottom} ${styles.layout.item.background}`}>
                 <span className={`${styles.typography.itemLabel.className} ${styles.typography.itemLabel.textColor} flex-1`}>a) AMBIENTE DE TRABAJO PRUEBA: habilitar registros de Prueba</span>
-                <div className="flex w-1/2 justify-around">
-                  <input
-                    type="checkbox"
-                    checked={configuraciones.ambienteTrabajo.checked}
-                    onChange={(e) => handleConfiguracionChange('ambienteTrabajo', 'checked', e.target.checked)}
-                    className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
-                  />
-                  <select
-                    value={configuraciones.ambienteTrabajo.modo}
-                    onChange={(e) => handleConfiguracionChange('ambienteTrabajo', 'modo', e.target.value)}
-                    disabled={!configuraciones.ambienteTrabajo.checked}
-                    className={`${styles.forms.select.padding} ${styles.forms.select.fontSize} ${styles.forms.select.fontWeight} ${styles.forms.select.textColor} ${styles.forms.select.border} ${styles.forms.select.rounded}`}
-                    style={{ backgroundColor: configuraciones.ambienteTrabajo.checked ? styles.forms.select.background : styles.forms.select.disabledBackground }}
-                  >
-                    <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value="TODO_SISTEMA">TODO SISTEMA</option>
-                    <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value="MODULO">MÓDULO</option>
-                  </select>
-                  <span className={`${styles.badges.statusBadge.padding} ${styles.badges.statusBadge.fontSize} ${styles.badges.statusBadge.fontWeight} ${styles.badges.statusBadge.textColor} ${styles.badges.statusBadge.rounded}`} style={{ backgroundColor: styles.badges.statusBadge.background }}>
-                    {configuraciones.ambienteTrabajo.checked ? 'PRUEBA' : 'PRODUCCION'}
-                  </span>
+                <div className="grid grid-cols-3 w-1/2 items-center">
+                  <div className="flex justify-center">
+                    <input
+                      type="checkbox"
+                      checked={configuraciones.ambienteTrabajo.checked}
+                      onChange={(e) => handleConfiguracionChange('ambienteTrabajo', 'checked', e.target.checked)}
+                      className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
+                    />
+                  </div>
+                  <div className="flex justify-center">
+                    <select
+                      value={configuraciones.ambienteTrabajo.modo}
+                      onChange={(e) => handleConfiguracionChange('ambienteTrabajo', 'modo', e.target.value)}
+                      disabled={!configuraciones.ambienteTrabajo.checked}
+                      className={`${styles.forms.select.padding} ${styles.forms.select.fontSize} ${styles.forms.select.fontWeight} ${styles.forms.select.textColor} ${styles.forms.select.border} ${styles.forms.select.rounded}`}
+                      style={{ backgroundColor: configuraciones.ambienteTrabajo.checked ? styles.forms.select.background : styles.forms.select.disabledBackground }}
+                    >
+                      <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value="TODO_SISTEMA">TODO SISTEMA</option>
+                      <option style={{ color: styles.forms.select.optionTextColor, backgroundColor: styles.forms.select.optionBgColor }} value="MODULO">MÓDULO</option>
+                    </select>
+                  </div>
+                  <div className="flex justify-center">
+                    <span className={`${styles.typography.itemLabel.className} ${styles.typography.textSecondary}`}>
+                      {configuraciones.ambienteTrabajo.checked ? 'PRUEBA' : 'PRODUCCION'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
               <div className={`flex justify-between items-center ${styles.layout.item.padding} ${styles.layout.item.borderBottom} ${styles.layout.item.background}`}>
                 <span className={`${styles.typography.itemLabel.className} ${styles.typography.itemLabel.textColor} flex-1`}>b) ELIMINAR REGISTROS DE PRUEBA</span>
-                <div className="flex w-1/2 justify-around">
-                  <input
-                    type="checkbox"
-                    checked={configuraciones.eliminarRegistros.checked}
-                    onChange={(e) => handleConfiguracionChange('eliminarRegistros', 'checked', e.target.checked)}
-                    className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
-                  />
-                  <span className={`${styles.badges.statusBadge.padding} ${styles.badges.statusBadge.fontSize} ${styles.badges.statusBadge.fontWeight} ${styles.badges.statusBadge.textColor} ${styles.badges.statusBadge.rounded}`} style={{ backgroundColor: styles.badges.statusBadge.background }}>
-                    {configuraciones.eliminarRegistros.checked ? 'Puede eliminar' : 'No puede'}
-                  </span>
-                  <span></span>
+                <div className="grid grid-cols-3 w-1/2 items-center">
+                  <div className="flex justify-center">
+                    <input
+                      type="checkbox"
+                      checked={configuraciones.eliminarRegistros.checked}
+                      onChange={(e) => handleConfiguracionChange('eliminarRegistros', 'checked', e.target.checked)}
+                      className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
+                    />
+                  </div>
+                  <div />
+                  <div className="flex justify-center">
+                    <span className={`${styles.typography.itemLabel.className} ${styles.typography.textSecondary}`}>
+                      {configuraciones.eliminarRegistros.checked ? 'Puede eliminar' : 'No puede'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </Subcategory>

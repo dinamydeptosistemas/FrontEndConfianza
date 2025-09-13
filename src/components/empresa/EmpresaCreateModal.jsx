@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { provincias, ciudadesPorProvincia } from '../../data/ecuadorLocations';
@@ -25,6 +24,7 @@ function EmpresaCreateModal({ onClose, onSave, onSuccess }) {
     ruc: '',
     businessName: '',
     commercialName: '',
+    legalRepresentative: '',
     province: '',
     city: '',
     address: '',
@@ -93,10 +93,19 @@ const [loading, setLoading] = useState(false);
     } else {
       newValue = value;
     }
-    setFormData(prev => ({
-      ...prev,
-      [name]: newValue
-    }));
+
+    if (name === 'businessName' && formData.typeEntity === 'Sociedad') {
+      setFormData(prev => ({
+        ...prev,
+        businessName: newValue,
+        commercialName: newValue
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: newValue
+      }));
+    }
   }
 
   function handleProvinciaChange(e) {
@@ -211,7 +220,34 @@ const [loading, setLoading] = useState(false);
             />
           </div>
 
-          {/* Row 2: RUC + Razon Social */}
+          {/* Row 2: Tipo Entidad + RUC */}
+            <div>
+            <label className="block text-sm font-medium text-gray-700">Tipo Entidad</label>
+            <select
+              name="typeEntity"
+              value={formData.typeEntity}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
+              required
+            >
+              <option value="">Seleccione tipo</option>
+              {config.nombremodorentidad === 'EMPRESA' && (
+                <option value="Sociedad">Sociedad</option>
+              )}
+              {config.nombremodorentidad === 'NEGOCIO' && (
+                <option value="Persona Natural">Persona Natural</option>
+              )}
+              {config.nombremodorentidad === 'AMBOS' && (
+                <>
+                  <option value="Sociedad">Sociedad</option>
+                  <option value="Persona Natural">Persona Natural</option>
+                </>
+              )}
+              
+          
+              
+            </select>
+          </div>
           <div>
             <label htmlFor="ruc" className="block text-sm font-medium text-gray-700">RUC</label>
             <input
@@ -228,7 +264,11 @@ const [loading, setLoading] = useState(false);
               <span className="block text-xs text-red-600 mt-1">El RUC es obligatorio.</span>
             )}
           </div>
-         <div>
+         
+
+          {/* Row 3: Razón Social + nombre Comercial */}
+        
+          <div>
             <label className="block text-sm font-medium text-gray-700">Razón Social</label>
             <input
               type="text"
@@ -243,35 +283,6 @@ const [loading, setLoading] = useState(false);
               <span className="block text-xs text-red-600 mt-1">La Razón Social es obligatoria.</span>
             )}
           </div>
-
-          {/* Row 3: Tipo Entidad + nombre Comercial */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Tipo Entidad</label>
-            <select
-              name="typeEntity"
-              value={formData.typeEntity}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
-              required
-            >
-              <option value="">Seleccione tipo</option>
-              {config.nombremodorentidad === 'EMPRESA' && (
-                <option value="Empresa">Empresa</option>
-              )}
-              {config.nombremodorentidad === 'PERSONA NATURAL' && (
-                <option value="Persona Natural">Persona Natural</option>
-              )}
-              {config.nombremodorentidad === 'AMBOS' && (
-                <>
-                  <option value="Empresa">Empresa</option>
-                  <option value="Persona Natural">Persona Natural</option>
-                </>
-              )}
-              
-          
-              
-            </select>
-          </div>
             <div>
             <label className="block text-sm font-medium text-gray-700">Nombre Comercial</label>
             <input
@@ -281,6 +292,45 @@ const [loading, setLoading] = useState(false);
               onChange={handleChange}
         className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none focus:bg-yellow-100 focus:font-bold"
             />
+          </div>
+
+          {formData.typeEntity === 'Sociedad' && (
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700">Representante Legal</label>
+              <input
+                type="text"
+                name="legalRepresentative"
+                value={formData.legalRepresentative}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none focus:bg-yellow-100 focus:font-bold"
+              />
+            </div>
+          )}
+
+          {/* Row 5: Teléfono + Email */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Teléfono</label>
+            <input
+              type="text"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              onBlur={handleEmailBlur}
+        className={`mt-1 block w-full rounded-md border shadow-sm px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none ${emailTouched && !isEmailValid ? 'border-red-500' : 'border-gray-200'} focus:border-[#285398] focus:ring-0 focus:bg-yellow-100 focus:font-bold`}
+            />
+            {emailTouched && !isEmailValid && (
+              <span className="text-xs text-red-600">Ingrese un correo electrónico válido.</span>
+            )}
           </div>
 
           {/* Row 4: Provincia/Ciudad + Dirección */}
@@ -332,31 +382,6 @@ const [loading, setLoading] = useState(false);
             />
           </div>
 
-          {/* Row 5: Teléfono + Email */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Teléfono</label>
-            <input
-              type="text"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              onBlur={handleEmailBlur}
-        className={`mt-1 block w-full rounded-md border shadow-sm px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none ${emailTouched && !isEmailValid ? 'border-red-500' : 'border-gray-200'} focus:border-[#285398] focus:ring-0 focus:bg-yellow-100 focus:font-bold`}
-            />
-            {emailTouched && !isEmailValid && (
-              <span className="text-xs text-red-600">Ingrese un correo electrónico válido.</span>
-            )}
-          </div>
           {/* Row 6: Actividad Económica + Comprobante de Venta */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Actividad Económica</label>
@@ -413,10 +438,7 @@ const [loading, setLoading] = useState(false);
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
             />
-
-
           </div>
-
           {/* Row 8: Nombre Grupo */}
           {config.gestionGrupoMatriz === true && (
             <div>

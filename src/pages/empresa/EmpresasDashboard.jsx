@@ -26,6 +26,8 @@ export default function EmpresasDashboard() {
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
+  const [registrosproduccion, setregistrosproduccion] = useState(2);
+  const [registrosprueba, setRegistrosPrueba] = useState(3);
   const [isLoading, setIsLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [showPlantillaMenu, setShowPlantillaMenu] = useState(false);
@@ -384,12 +386,13 @@ export default function EmpresasDashboard() {
   return (
            <ManagementDashboardLayout 
       title={(
-        <>
-          <span className="font-bold">EMPRESAS:</span>
-          <span className="font-light ml-5 text-[16px]">{`${totalRecords} Total`}</span>
-         
-        </>
+   <>
+            <span className="font-bold">EMPRESAS</span>
+            <span className="font-light text-[16px] ml-2 mr-10">{`${totalRecords} Total`}</span>
+          <span className="text-gray-500  text-white ml-[750px]">{`${registrosprueba} Registros de Prueba`}</span>
+    </>
       )}
+      className="bg-white border-[#1e4e9c] border px-8 py-1 font-bold hover:text-white hover:bg-[#1e4e9c] w-full sm:w-auto"
     >
 
         <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">

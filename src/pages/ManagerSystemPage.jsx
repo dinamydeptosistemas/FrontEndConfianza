@@ -5,6 +5,9 @@ import { useMenuStatistics } from '../hooks/useMenuStatistics';
 import { countTestData } from '../services/DataCleanup/DataCleanupService';
 import { useConfirmarEliminacion } from '../components/common/ConfirmEliminarModal';
 import DataManagementModal from '../components/DataManagementModal';
+import { useConfig } from '../contexts/ConfigContext';
+
+
 
 const ManagerSystemPage = () => {
     const { user } = useAuth();
@@ -12,7 +15,7 @@ const ManagerSystemPage = () => {
     const [testDataCount, setTestDataCount] = useState(0);
     const { ConfirmDialog } = useConfirmarEliminacion();
     const [isModalOpen, setIsModalOpen] = useState(false);
-
+    const { config } = useConfig();
     const fetchTestDataCount = useCallback(async () => {
         if (user?.codeFunction === 1 || user?.codeFunction === "1") {
             try {
@@ -23,7 +26,7 @@ const ManagerSystemPage = () => {
                 setTestDataCount(0);
             }
         }
-    }, [user]);
+    }, [user ]);
 
     useEffect(() => {
         fetchTestDataCount();
@@ -124,7 +127,7 @@ const ManagerSystemPage = () => {
                             </div>
                             <button
                               onClick={openModal}
-                              disabled={testDataCount === 0}
+                              disabled={testDataCount === 0 || !config.eliminarPruebaHabilitado}
                               className="w-10 h-4 bg-gray-200 hover:bg-gray-200  flex items-center justify-center transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed text-xs"
                             >
                               <span className="text-xs font-semibold text-gray-700">...</span>
