@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useBlocker } from 'react-router-dom';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { getEmpresas } from '../services/company/CompanyService';
 import { getUsers } from '../services/user/UserService';
@@ -223,7 +224,7 @@ const styles = {
 };
 
 const ConfiguracionPage = () => {
-  const { config, loading, error, reloadConfig, updateConfig } = useConfig();
+  const { config, loading, error, reloadConfig, updateConfig  } = useConfig();
 
   // Estados principales
   const [originalConfig, setOriginalConfig] = useState(null);
@@ -237,7 +238,6 @@ const ConfiguracionPage = () => {
   // Datos auxiliares
   const [empresas, setEmpresas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
-  const [loadingEmpresas, setLoadingEmpresas] = useState(false);
   const [loadingUsuarios, setLoadingUsuarios] = useState(false);
 
   // Selecciones
@@ -250,13 +250,30 @@ const ConfiguracionPage = () => {
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
-
+  const [showModal, setShowModal] = useState(false);
+  const [modalContent, setModalContent] = useState({ title: '', message: '' });
+  const [showNavBlockerModal, setShowNavBlockerModal] = useState(false);
 
   // Configuraciones adicionales
   const [configuraciones, setConfiguraciones] = useState(null);
 
   const isInitialMountGestionGrupo = useRef(true);
   const isInitialMountTipoGestion = useRef(true);
+
+  const blocker = useBlocker(() => isDirty);
+
+  useEffect(() => {
+    if (blocker && blocker.state === 'blocked') {
+        setShowNavBlockerModal(true);
+    }
+  }, [blocker]);
+
+  const showSaveModal = () => {
+    setTimeout(() => {
+        setModalContent({ title: 'Guardar Cambios', message: 'Ha realizado cambios. ¿Desea guardarlos?' });
+        setShowModal(true);
+    }, 0);
+  }
 
   useEffect(() => {
     if (config) {
@@ -307,7 +324,7 @@ const ConfiguracionPage = () => {
         });
         setIsInitializing(false);
     }
-  }, [config]);
+  }, [config ]);
 
   useEffect(() => {
     if (isInitializing) return;
@@ -320,7 +337,7 @@ const ConfiguracionPage = () => {
         setTipoEntidad('NEGOCIO');
       }
     }
-  }, [modoEntidad]);
+  }, [modoEntidad, isInitializing, tipoEntidad]);
 
   useEffect(() => {
     if (isInitializing) return;
@@ -339,7 +356,7 @@ const ConfiguracionPage = () => {
         }
       }
     }
-  }, [gestionGrupo]);
+  }, [gestionGrupo, tipoGestion , isInitializing]);
 
   useEffect(() => {
     if (isInitializing) return;
@@ -356,18 +373,18 @@ const ConfiguracionPage = () => {
         setIsDirty(true);
       }
     }
-  }, [tipoGestion]);
+  }, [tipoGestion  , isInitializing]);
 
   useEffect(() => {
     const fetchEmpresas = async () => {
-      setLoadingEmpresas(true);
+   
       try {
         const response = await getEmpresas({ getAll: true });
         setEmpresas(response?.companies || []);
       } catch (err) {
         console.error('Error al cargar empresas:', err);
       } finally {
-        setLoadingEmpresas(false);
+       
       }
     };
     fetchEmpresas();
@@ -414,7 +431,22 @@ const ConfiguracionPage = () => {
     };
 
     fetchUsers();
-  }, []);
+  }, [ isInitializing ]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isDirty]);
 
   // Manejo de cambios
   const handleConfigChange = (key, value) => {
@@ -425,12 +457,14 @@ const ConfiguracionPage = () => {
   const handleEmpresaChange = (e) => {
     const value = e.target.value;
     handleConfigChange('nombrecomerciallogin', value);
+    showSaveModal();
   };
 
   const handleUsuarioChange = (e) => {
     const value = e.target.value;
     setSelectedUsuario(value);
     handleConfigChange('valorAccesoManager', value);
+    showSaveModal();
   };
 
   const handleLogoChange = async (e) => {
@@ -443,6 +477,7 @@ const ConfiguracionPage = () => {
       if (path) {
         setLogoPath(path);
         handleConfigChange('valorImagenLogo', path);
+        showSaveModal();
       }
     } catch (err) {
       alert('Error al subir el logo.');
@@ -470,6 +505,7 @@ const ConfiguracionPage = () => {
       [key]: { ...prev[key], [field]: value }
     }));
     setIsDirty(true);
+    showSaveModal();
   };
 
   const handleSave = async () => {
@@ -482,9 +518,6 @@ const ConfiguracionPage = () => {
       alert('La configuración original no se ha cargado. Por favor, recargue la página.');
       return;
     }
-
-    const confirm = window.confirm('¿Guardar los cambios realizados?');
-    if (!confirm) return;
 
     setSaving(true);
     try {
@@ -523,10 +556,7 @@ const ConfiguracionPage = () => {
 
       await saveConfig(payload);
       
-      <SuccessModal 
-      mensaje="Configuración guardada exitosamente.">
-
-      </SuccessModal>
+      setShowModal(false);
       
       const newConfig = { ...config, ...payload };
       updateConfig(newConfig);
@@ -536,7 +566,7 @@ const ConfiguracionPage = () => {
 
     } catch (err) {
       console.error('Error al guardar:', err);
-      alert(`Error al guardar: ${err.response?.data?.message || err.message || 'Intente nuevamente.'}`);
+      setModalContent({ title: 'Error', message: `Error al guardar: ${err.response?.data?.message || err.message || 'Intente nuevamente.'}` });
       setSaving(false);
     }
   };
@@ -648,6 +678,7 @@ const ConfiguracionPage = () => {
                     onChange={(e) => {
                       setModoEntidad(e.target.checked);
                       setIsDirty(true);
+                      showSaveModal();
                     }}
                     className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
                   />
@@ -656,6 +687,7 @@ const ConfiguracionPage = () => {
                     onChange={(e) => {
                       setTipoEntidad(e.target.value);
                       setIsDirty(true);
+                      showSaveModal();
                     }}
                     disabled={!modoEntidad}
                     className={`${styles.forms.select.padding} ${styles.forms.select.fontSize} ${styles.forms.select.fontWeight} ${styles.forms.select.textColor} ${styles.forms.select.border} ${styles.forms.select.rounded}`}
@@ -694,6 +726,7 @@ const ConfiguracionPage = () => {
                     onChange={(e) => {
                       setGestionGrupo(e.target.checked);
                       setIsDirty(true);
+                      showSaveModal();
                     }}
                     className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
                   />
@@ -702,6 +735,7 @@ const ConfiguracionPage = () => {
                     onChange={(e) => {
                       setTipoGestion(e.target.value);
                       setIsDirty(true);
+                      showSaveModal();
                     }}
                     disabled={!gestionGrupo}
                     className={`${styles.forms.select.padding} ${styles.forms.select.fontSize} ${styles.forms.select.fontWeight} ${styles.forms.select.textColor} ${styles.forms.select.border} ${styles.forms.select.rounded}`}
@@ -732,6 +766,7 @@ const ConfiguracionPage = () => {
                       if (!newValue) {
                         handleConfigChange('nombrecomerciallogin', 'CONFIANZA SCGC');
                       }
+                      showSaveModal();
                     }}
                     className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
                   />
@@ -761,7 +796,7 @@ const ConfiguracionPage = () => {
                   <input
                     type="checkbox"
                     checked={editableConfig.mostrarImagenLogo}
-                    onChange={() => handleConfigChange('mostrarImagenLogo', !editableConfig.mostrarImagenLogo)}
+                    onChange={() => { handleConfigChange('mostrarImagenLogo', !editableConfig.mostrarImagenLogo); showSaveModal(); }}
                     className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
                   />
                   {editableConfig.mostrarImagenLogo && (
@@ -779,7 +814,7 @@ const ConfiguracionPage = () => {
                   <input
                     type="checkbox"
                     checked={editableConfig.permitirAccesoManager}
-                    onChange={() => handleConfigChange('permitirAccesoManager', !editableConfig.permitirAccesoManager)}
+                    onChange={() => { handleConfigChange('permitirAccesoManager', !editableConfig.permitirAccesoManager); showSaveModal(); }}
                     className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
                   />
                   {editableConfig.permitirAccesoManager && (
@@ -805,7 +840,7 @@ const ConfiguracionPage = () => {
                   <input
                     type="checkbox"
                     checked={editableConfig.sesionInactiva}
-                    onChange={(e) => handleConfigChange('sesionInactiva', e.target.checked)}
+                    onChange={(e) => { handleConfigChange('sesionInactiva', e.target.checked); showSaveModal(); }}
                     className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
                   />
                   {editableConfig.sesionInactiva && (
@@ -815,6 +850,7 @@ const ConfiguracionPage = () => {
                       max={30}
                       value={editableConfig.valorSesionInactiva}
                       onChange={handleNumericChange('valorSesionInactiva', 20, 30)}
+                      onBlur={showSaveModal}
                       className={`${styles.forms.input.width} ${styles.forms.input.padding} ${styles.forms.input.border} ${styles.forms.input.rounded} ${styles.forms.input.fontSize} ${styles.forms.input.focusOutline}`}
                       disabled={!editableConfig.sesionInactiva}
                       style={{backgroundColor: !editableConfig.sesionInactiva ? styles.conditionalStyles.disabledInput : 'white'}}
@@ -829,7 +865,7 @@ const ConfiguracionPage = () => {
                   <input
                     type="checkbox"
                     checked={editableConfig.justificarPausa}
-                    onChange={(e) => handleConfigChange('justificarPausa', e.target.checked)}
+                    onChange={(e) => { handleConfigChange('justificarPausa', e.target.checked); showSaveModal(); }}
                     className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
                   />
                   {editableConfig.justificarPausa && (
@@ -839,6 +875,7 @@ const ConfiguracionPage = () => {
                       max={15}
                       value={editableConfig.valorJustificarPausa}
                       onChange={handleNumericChange('valorJustificarPausa', 10, 15)}
+                      onBlur={showSaveModal}
                       className={`${styles.forms.input.width} ${styles.forms.input.padding} ${styles.forms.input.border} ${styles.forms.input.rounded} ${styles.forms.input.fontSize} ${styles.forms.input.focusOutline}`}
                       disabled={!editableConfig.justificarPausa}
                       style={{backgroundColor: !editableConfig.justificarPausa ? styles.conditionalStyles.disabledInput : 'white'}}
@@ -853,13 +890,13 @@ const ConfiguracionPage = () => {
                   <input
                     type="checkbox"
                     checked={editableConfig.reportarTareasPausa}
-                    onChange={(e) => handleConfigChange('reportarTareasPausa', e.target.checked)}
+                    onChange={(e) => { handleConfigChange('reportarTareasPausa', e.target.checked); showSaveModal(); }}
                     className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
                   />
                   {editableConfig.reportarTareasPausa && (
                     <select
                       value={editableConfig.valorReportarTareasPausa || 60}
-                      onChange={(e) => handleConfigChange('valorReportarTareasPausa', Number(e.target.value))}
+                      onChange={(e) => { handleConfigChange('valorReportarTareasPausa', Number(e.target.value)); showSaveModal(); }}
                       className="text-xs px-2 py-1 rounded border border-gray-300"
                       style={{backgroundColor: 'white', color: 'black'}}
                     >
@@ -877,13 +914,13 @@ const ConfiguracionPage = () => {
                   <input
                     type="checkbox"
                     checked={editableConfig.reportarProyectoTareas}
-                    onChange={(e) => handleConfigChange('reportarProyectoTareas', e.target.checked)}
+                    onChange={(e) => { handleConfigChange('reportarProyectoTareas', e.target.checked); setIsDirty(true); showSaveModal(); }}
                     className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
                   />
-                  {editableConfig.reportarProyectoTareas && (
+                  {editableConfig?.reportarProyectoTareas && (
                     <select
-                      value={editableConfig.valorReportarProyectoTareas || 120}
-                      onChange={(e) => handleConfigChange('valorReportarProyectoTareas', Number(e.target.value))}
+                      value={editableConfig?.valorReportarProyectoTareas ?? 120}
+                      onChange={(e) => { handleConfigChange('valorReportarProyectoTareas', Number(e.target.value)); setIsDirty(true); showSaveModal(); }}
                       className="text-xs px-2 py-1 rounded border border-gray-300"
                       style={{backgroundColor: 'white', color: 'black'}}
                     >
@@ -912,14 +949,14 @@ const ConfiguracionPage = () => {
                     <input
                       type="checkbox"
                       checked={configuraciones.ambienteTrabajo.checked}
-                      onChange={(e) => handleConfiguracionChange('ambienteTrabajo', 'checked', e.target.checked)}
+                      onChange={(e) => { handleConfiguracionChange('ambienteTrabajo', 'checked', e.target.checked); }}
                       className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
                     />
                   </div>
                   <div className="flex justify-center">
                     <select
                       value={configuraciones.ambienteTrabajo.modo}
-                      onChange={(e) => handleConfiguracionChange('ambienteTrabajo', 'modo', e.target.value)}
+                      onChange={(e) => { handleConfiguracionChange('ambienteTrabajo', 'modo', e.target.value); }}
                       disabled={!configuraciones.ambienteTrabajo.checked}
                       className={`${styles.forms.select.padding} ${styles.forms.select.fontSize} ${styles.forms.select.fontWeight} ${styles.forms.select.textColor} ${styles.forms.select.border} ${styles.forms.select.rounded}`}
                       style={{ backgroundColor: configuraciones.ambienteTrabajo.checked ? styles.forms.select.background : styles.forms.select.disabledBackground }}
@@ -1003,6 +1040,61 @@ const ConfiguracionPage = () => {
           </Category>
         </div>
       </div>
+
+      {/* Modal for unsaved changes warning */}
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-lg">
+            <h2 className="text-lg font-semibold mb-4">{modalContent.title}</h2>
+            <p className="mb-6">{modalContent.message}</p>
+            <div className="flex justify-end gap-4">
+              <button
+                className="px-4 py-2 bg-gray-300 text-black rounded hover:bg-gray-400"
+                onClick={() => setShowModal(false)}
+              >
+                Cerrar
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNavBlockerModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-lg">
+            <h2 className="text-lg font-semibold mb-4">Salir sin guardar</h2>
+            <p className="mb-6">Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?</p>
+            <div className="flex justify-end gap-4">
+              <button
+                className="px-4 py-2 bg-gray-300 text-black rounded hover:bg-gray-400"
+                onClick={() => {
+                  setShowNavBlockerModal(false);
+                  if (blocker) blocker.reset();
+                }}
+              >
+                No, quedarse
+              </button>
+              <button
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                onClick={() => {
+                  setShowNavBlockerModal(false);
+                  if (blocker) blocker.proceed();
+                }}
+              >
+                Sí, salir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </DashboardLayout>
   );
 };

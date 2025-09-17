@@ -32,6 +32,7 @@ export default function UsuarioDashboard() {
     const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
     const [paginaActual, setPaginaActual] = useState(1);
     const [totalPaginas, setTotalPaginas] = useState(1);
+    const [totalprueba , settotalprueba] = useState(0);
     const [mostrarModalFiltros, setMostrarModalFiltros] = useState(false);
     const [mostrarModalSubirPlantilla, setMostrarModalSubirPlantilla] = useState(false);
     const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
@@ -226,6 +227,7 @@ export default function UsuarioDashboard() {
             setUsuarios(data.users || []);
             setPaginaActual(pagina);
             setTotalPaginas(data.totalPages || 1);
+            settotalprueba(data.totalPrueba || 0);
         } catch (error) {
             console.error('Error al cargar usuarios:', error);
             alert('Error al cargar usuarios');
@@ -314,6 +316,7 @@ export default function UsuarioDashboard() {
     return (
         <ManagementDashboardLayout title={(
         <>
+         <div>
           <span className="font-bold">USUARIOS:</span>
           {filtros.tipoUserFiltro === 'INTERNO' ? (
             <span className="font-light ml-5 text-[16px]">{`${totalInternos} Internos`}</span>
@@ -321,6 +324,13 @@ export default function UsuarioDashboard() {
             <span className="font-light ml-5 text-[16px]">{`${totalExternos} Externos`}</span>
           ) : (
             <span className="font-light ml-5 text-[16px]">{`${totalRegistros} Totales`}</span>
+          )}
+          </div>
+           <span></span>
+           {totalprueba > 0 && (
+            <span className="text-white flex justify-end">
+              <p className='rounded-lg bg-red-400 w-8 px-2 py-1 text-center'>{`${totalprueba}`}</p>
+            </span>
           )}
         </>
       )} user={user} negocio={negocio}>

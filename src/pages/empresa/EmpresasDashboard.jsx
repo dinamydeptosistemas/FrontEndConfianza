@@ -26,8 +26,8 @@ export default function EmpresasDashboard() {
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
-  const [registrosproduccion, setregistrosproduccion] = useState(2);
-  const [registrosprueba, setRegistrosPrueba] = useState(3);
+  // const [registrosproduccion, setregistrosproduccion] = useState(2); // Eliminado porque no se usa
+  const [registrosprueba, setRegistrosPrueba] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [showPlantillaMenu, setShowPlantillaMenu] = useState(false);
@@ -43,24 +43,28 @@ export default function EmpresasDashboard() {
   const cargarEmpresas = useCallback(async (pagina = 1, filtroBusqueda = '') => {
     setIsLoading(true);
     try {
-      const params = { 
+      const params = {
         page: pagina,
         pageSize: 10, // Tamaño de página fijo
         ...(filtroBusqueda && { searchTerm: filtroBusqueda })
       };
 
-      // Obtener solo la página solicitada
       const response = await getEmpresas(params);
       console.log('Respuesta del servidor:', response);
-      
+      console.log('testRecords en respuesta:', response.testRecords);
+      console.dir(response, { depth: null });
+
       // Manejar diferentes formatos de respuesta
       let listaEmpresas = [];
       let totalDePaginas = 1;
       let totalDeRecords = 0;
       let paginaActualRespuesta = pagina;
+      let registrospruebaLocal = 0;
+     
 
       if (Array.isArray(response)) {
         listaEmpresas = response;
+        registrospruebaLocal = response.testRecords || 0;
       } else if (response && typeof response === 'object') {
         // Si la respuesta es un objeto, buscar el array de empresas en diferentes propiedades
         if (Array.isArray(response.companies)) {
@@ -68,20 +72,26 @@ export default function EmpresasDashboard() {
           totalDePaginas = response.totalPages || 1;
           totalDeRecords = response.totalRecords || 0;
           paginaActualRespuesta = response.currentPage || pagina;
+          registrospruebaLocal = response.testRecords || 0; // la linea que vale
+
         } else if (Array.isArray(response.Companies)) {
           listaEmpresas = response.Companies;
           totalDePaginas = response.TotalPages || 1;
           totalDeRecords = response.TotalRecords || 0;
           paginaActualRespuesta = response.Page || pagina;
+          registrospruebaLocal = response.testRecords || 0;
         } else if (Array.isArray(response.data)) {
           listaEmpresas = response.data;
           totalDePaginas = response.last_page || response.totalPages || 1;
           totalDeRecords = response.total || 0;
+          registrospruebaLocal = response.testRecords || 0;
           paginaActualRespuesta = response.current_page || response.page || pagina;
         } else if (Array.isArray(response)) {
           listaEmpresas = response;
+          registrospruebaLocal = response.testRecords || 0;
         }
       }
+      setRegistrosPrueba(registrospruebaLocal);
 
       // Asegurarse de que siempre tengamos un array
       if (!Array.isArray(listaEmpresas)) {
@@ -178,6 +188,7 @@ export default function EmpresasDashboard() {
     
     setFiltro('');
     setFiltroActivo('');
+    // setRegistrosPrueba(response.registrosPrueba); // This line was causing an error because 'response' is not defined here.
     
     // Si hay empresas originales, restaurarlas
     if (empresasOriginales.length > 0) {
@@ -386,13 +397,20 @@ export default function EmpresasDashboard() {
   return (
            <ManagementDashboardLayout 
       title={(
-   <>
-            <span className="font-bold">EMPRESAS</span>
-            <span className="font-light text-[16px] ml-2 mr-10">{`${totalRecords} Total`}</span>
-          <span className="text-gray-500  text-white ml-[750px]">{`${registrosprueba} Registros de Prueba`}</span>
-    </>
+      <>
+          <div>
+            <span className="font-bold">EMPRESAS:</span>
+            <span className="font-light w-100 text-[16px]">{` ${totalRecords} Total`}</span>
+          </div> 
+          <div className=""></div>
+          {registrosprueba > 0 && (
+            <span className="text-white flex justify-end">
+              <p className='rounded-lg bg-red-400 w-8 px-2 py-1 text-center'>{`${registrosprueba}`}</p>
+            </span>
+          )}
+        </>
       )}
-      className="bg-white border-[#1e4e9c] border px-8 py-1 font-bold hover:text-white hover:bg-[#1e4e9c] w-full sm:w-auto"
+      
     >
 
         <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">

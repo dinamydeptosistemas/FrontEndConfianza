@@ -16,6 +16,7 @@ export default function PaperworksDashboard() {
   const [filtro, setFiltro] = useState('');
   const [filtroActivo, setFiltroActivo] = useState('');
   const [paperworkAEliminar, setPaperworkAEliminar] = useState(null);
+  const [tramiteprueba , setTramiteprueba] = useState(0);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [paperworkAEditar, setPaperworkAEditar] = useState(null);
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
@@ -161,14 +162,15 @@ export default function PaperworksDashboard() {
         CurrentPage: response?.CurrentPage,
         currentpage: response?.currentpage,
         current_page: response?.current_page,
-        pagina: response?.pagina
+        pagina: response?.pagina,
+        CountPrueba : response?.CountPrueba
       }
     });
     
     // Actualizar estados de paginación
     setPaginaActual(paginaActualResponse);
     setTotalPaginas(totalDePaginas);
-    
+    setTramiteprueba(response?.CountPrueba || 0);
     // Forzar la actualización del estado para asegurar que el componente se re-renderice
     if (totalDePaginas > 1) {
       console.log(`Forzando actualización de totalPaginas a ${totalDePaginas}`);
@@ -439,7 +441,23 @@ export default function PaperworksDashboard() {
  
 
   return (
-    <ManagementDashboardLayout title="TRAMITES:" user={user} negocio={negocio}>
+    <ManagementDashboardLayout  title={(
+
+       <>
+          <div>
+            <span className="font-bold">TRAMITES:</span>
+            <span className="font-light w-100 text-[16px] ml-2">{`${ paperworks.length } Total`}</span>
+          </div>
+          <span></span>
+           {tramiteprueba > 0 && (
+            <span className="text-white flex justify-end">
+              <p className='rounded-lg bg-red-400 w-8 px-2 py-1 text-center'>{`${tramiteprueba}`}</p>
+            </span>
+          )}
+       
+        </>
+      
+      )} user={user} negocio={negocio}>
       <div className="w-full bg-white border-b border-l border-r border-gray-300 rounded-b py-4">
         {/* Grid de 3 columnas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4 px-4">

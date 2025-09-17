@@ -22,7 +22,7 @@ export const getEmpresas = async (params = {}) => {
     let hasMorePages = true;
     let totalPages = 1;
     let totalRecords = 0;
-
+    let testRecords  =  0;
     // Asegurarnos de que process esté incluido
     const processName = 'getCompanies';
 
@@ -69,14 +69,17 @@ export const getEmpresas = async (params = {}) => {
         companies = response.data.Companies;
         totalPages = response.data.TotalPages || 1;
         totalRecords = response.data.TotalRecords || 0;
+        testRecords = response.data.TestRecords || 0;
       } else if (response.data?.companies && Array.isArray(response.data.companies)) {
         companies = response.data.companies;
         totalPages = response.data.totalPages || 1;
         totalRecords = response.data.totalRecords || 0;
+        testRecords = response.data.testRecords || 0;
       } else if (response.data?.data && Array.isArray(response.data.data)) {
         companies = response.data.data;
         totalPages = response.data.last_page || 1;
         totalRecords = response.data.total || 0;
+        testRecords = response.data.test_records || 0;
       }
 
       return {
@@ -84,7 +87,8 @@ export const getEmpresas = async (params = {}) => {
         totalRecords: totalRecords || companies.length,
         totalPages,
         currentPage,
-        pageSize
+        pageSize,
+        testRecords: testRecords || 0
       };
     }
 
@@ -105,14 +109,17 @@ export const getEmpresas = async (params = {}) => {
       } else if (response.data?.Companies && Array.isArray(response.data.Companies)) {
         companies = response.data.Companies;
         totalPages = response.data.TotalPages || 1;
+        testRecords = response.data.TestRecords || 0;
         if (currentPage === 1) totalRecords = response.data.TotalRecords || 0;
       } else if (response.data?.companies && Array.isArray(response.data.companies)) {
         companies = response.data.companies;
         totalPages = response.data.totalPages || 1;
+        testRecords = response.data.test_records || 0;
         if (currentPage === 1) totalRecords = response.data.totalRecords || 0;
       } else if (response.data?.data && Array.isArray(response.data.data)) {
         companies = response.data.data;
         totalPages = response.data.last_page || 1;
+        testRecords = response.data.test_records || 0;
         if (currentPage === 1) totalRecords = response.data.total || 0;
       }
       
@@ -134,7 +141,8 @@ export const getEmpresas = async (params = {}) => {
       totalRecords: totalRecords || allCompanies.length,
       totalPages,
       currentPage: getAll ? totalPages : currentPage,
-      pageSize
+      pageSize,
+      testRecords: testRecords || 0
     };
   } catch (error) {
     console.error('Error en getEmpresas:', error);

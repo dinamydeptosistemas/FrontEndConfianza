@@ -46,7 +46,7 @@ const UsuarioModal = ({
     tipoUser: '',
     relacionUsuario: '',
     codeEntity: '',
-    environment: null,
+    enviroment: null,
   });
 
   // Estados para empresas
@@ -80,7 +80,7 @@ const UsuarioModal = ({
         password: '',
         passnumber: '',
         confirmPassword: '',
-        environment: initialEnv,
+        enviroment: initialEnv,
       };
       setFormData(newFormData);
       console.log('Form data set for editing:', newFormData);
@@ -102,7 +102,7 @@ const UsuarioModal = ({
         tipoUser: '',
         relacionUsuario: '',
         codeEntity: '',
-        environment: initialEnv
+        enviroment: initialEnv
       };
       setFormData(newFormData);
       console.log('Form data set for creation:', newFormData);

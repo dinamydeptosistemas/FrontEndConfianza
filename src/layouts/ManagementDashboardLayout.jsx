@@ -12,7 +12,7 @@ function ManagementDashboardLayout({ title, children }) {
 
   if (authLoading || configLoading) {
     return (
-        <div className="flex justify-center items-center h-screen">
+        <div className="grid  grid-cols-3 justify-center   items-center h-screen">
             <div className="loader">Loading...</div>
         </div>
     );
@@ -140,11 +140,11 @@ function ManagementDashboardLayout({ title, children }) {
 
           {/* Área de contenido */}
           <div className="flex-1 flex flex-col items-center bg-[#f8f9fb] pt-5 h-full">
-            <div className="w-full px-2 sm:px-3 md:px-4 lg:px-6 xl:px-8 h-full" >
-              <div className="flex justify-between bg-[#1e4e9c] w-full">
-                <div className="w-full py-1 px-4 h-[50px] flex items-center">
-                  <h2 className="text-lg font-bold text-white"> 
-                    <span className="text-base ml-2 text-[1.2rem]">
+            <div className="w-full px-2 sm:px-3 md:px-4 lg:px-6 xl:px-8 h-full " >
+              <div className="flex justify-between bg-[#1e4e9c] w-full ">
+                <div className="  py-1 px-4 h-[50px] grid w-full items-center ">
+                  <h2 className="text-lg font-bold text-white " > 
+                    <span className="grid w-full grid-cols-3 items-center gap-4 text-base text-white">
                       {title}
                     </span>
                   </h2>

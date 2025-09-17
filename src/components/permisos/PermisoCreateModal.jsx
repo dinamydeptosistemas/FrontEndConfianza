@@ -4,6 +4,7 @@ import { getUsers } from '../../services/user/UserService';
 import { getPerfilesAcceso } from '../../services/accessProfile/AccessProfileService';
 import { useAuth } from '../../contexts/AuthContext';
 import ActionButtons, { LoadingOverlay } from '../common/Buttons';
+import {useConfig  } from '../../contexts/ConfigContext';
 
 /**
  * Modal para crear permisos.
@@ -13,6 +14,8 @@ import ActionButtons, { LoadingOverlay } from '../common/Buttons';
  */
 export default function PermisoCreateModal({ onClose, onSave }) {
   const { user } = useAuth();
+  const { config } = useConfig();
+  const initialEnv = config ? config.ambienteTrabajoModo : null;
   const [formData, setFormData] = useState({
     idUser: '',
     idFunction: '',
@@ -25,7 +28,8 @@ export default function PermisoCreateModal({ onClose, onSave }) {
     userioResponsable: user?.userName || 'XAVIER',
     fechaInicioPermiso: new Date().toISOString().split('T')[0],
     fechaFinalPermiso: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
-    selectedEmpresa: null
+    selectedEmpresa: null,
+    enviroment: initialEnv
   });
 
   useEffect(() => {
@@ -35,6 +39,7 @@ export default function PermisoCreateModal({ onClose, onSave }) {
         ...prev,
         userioResponsable: user.userName || '',
         codigoEntidad: user.codigoEmpresa || ''
+        
       }));
     }
   }, [user]);
@@ -43,6 +48,7 @@ export default function PermisoCreateModal({ onClose, onSave }) {
   const [usuarios, setUsuarios] = useState([]);
   const [funciones, setFunciones] = useState([]);
   const [loading, setLoading] = useState(true);
+  
   const [error, setError] = useState('');
   const [loadingData, setLoadingData] = useState(false);
 
@@ -220,12 +226,13 @@ export default function PermisoCreateModal({ onClose, onSave }) {
         bloqueoSesionMaxima: formData.bloqueoSesionMaxima ? 1 : 0,
         userioResponsable: user?.userName || 'XAVIER',
         fechaInicioPermiso: formData.fechaInicioPermiso,
-        fechaFinalPermiso: formData.fechaFinalPermiso
+        fechaFinalPermiso: formData.fechaFinalPermiso,
+        enviroment: formData.enviroment
       };
 
       // Llamar a la función onSave proporcionada por el componente padre
       const response = await onSave(permisoData);
-      
+
       // Mostrar mensaje de éxito
       if (response && response.status === 'SUCCESS') {
         // Cerrar el modal después de un breve retraso para mostrar el mensaje

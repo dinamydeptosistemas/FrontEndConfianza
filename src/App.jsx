@@ -1,31 +1,34 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import RegisterUserInternal from './pages/registrer/RegisterUserInternal';
-import { AppRoutes } from './routes/AppRoutes';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ConfigProvider } from './contexts/ConfigContext';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import { AppRoutes } from './routes/AppRoutes';
+
+const AppContainer = () => {
+  return (
+    <ErrorBoundary>
+      <ConfigProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <AppRoutes />
+          </NotificationProvider>
+        </AuthProvider>
+      </ConfigProvider>
+    </ErrorBoundary>
+  );
+};
+
+const router = createBrowserRouter([
+  {
+    path: "/*",
+    element: <AppContainer />,
+  }
+]);
 
 const App = () => {
-    return (
-        <ErrorBoundary>
-            <BrowserRouter>
-                <ConfigProvider>
-                    <AuthProvider>
-                        <NotificationProvider>
-                            <Routes>
-                                {/* Ruta pública realmente fuera del AuthProvider */}
-                                <Route path="/registrar-usuario-interno" element={<RegisterUserInternal />} />
-                                {/* Todas las demás rutas, incluyendo /login, dentro del AuthProvider */}
-                                <Route path="/*" element={<AppRoutes />} />
-                            </Routes>
-                        </NotificationProvider>
-                    </AuthProvider>
-                </ConfigProvider>
-            </BrowserRouter>
-        </ErrorBoundary>
-    );
+  return <RouterProvider router={router} />;
 };
 
 export default App;

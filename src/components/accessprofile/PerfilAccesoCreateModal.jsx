@@ -26,7 +26,7 @@ function PerfilAccesoCreateModal({ onClose, onSave }) {
     cashRegister003: false,
     cashRegister004: false,
     externalModules: false,
-    environment: config.ambienteTrabajoModo,
+    enviroment: config.ambienteTrabajoModo,
   });
 
   // Si recibes props para duplicar/editar, inicializa fixedAsset correctamente

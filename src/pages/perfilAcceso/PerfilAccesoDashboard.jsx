@@ -26,6 +26,7 @@ export default function PerfilAccesoDashboard() {
   const [perfilAEditar, setPerfilAEditar] = useState(null);
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
+  const [registrosprueba, setRegistrosprueba] = useState(7);
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalRegistros, setTotalRegistros] = useState(0);
@@ -143,6 +144,7 @@ export default function PerfilAccesoDashboard() {
     setPaginaActual(pagina);
     setTotalPaginas(data.totalPages || 1);
     setTotalRegistros(data.totalRecords || 0);
+    setRegistrosprueba(data.profilesInPrueba || 0)
   }, []);
 
   useEffect(() => {
@@ -273,10 +275,21 @@ export default function PerfilAccesoDashboard() {
   return (
     <ManagementDashboardLayout 
     title={(
-        <>
-          <span className="font-bold">PERFILES DE ACCESOS:</span>
-          <span className="font-light ml-5 text-[16px]">{`${totalRegistros} Total`}</span>
+
+       <>
+          <div>
+            <span className="font-bold">PERFILES DE ACCESOS:</span>
+            <span className="font-light w-100 text-[16px] ml-2">{`${totalRegistros} Total`}</span>
+          </div>
+          <span></span>
+       
+           {registrosprueba > 0 && (
+            <span className="text-white flex justify-end">
+              <p className='rounded-lg bg-red-400 w-8 px-2 py-1 text-center'>{`${registrosprueba}`}</p>
+            </span>
+          )}
         </>
+      
       )} user={user} negocio={negocio}>
       <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
 

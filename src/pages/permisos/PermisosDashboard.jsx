@@ -29,6 +29,7 @@ export default function PermisosDashboard() {
   const [permisoAEditar, setPermisoAEditar] = useState(null);
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
+  const [registrosPrueba, setRegistrosPrueba] = useState(0);
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [showConfirmEliminar, setShowConfirmEliminar] = useState(false);
@@ -66,6 +67,7 @@ export default function PermisosDashboard() {
     setPermisos(data.permissions || []);
     setPaginaActual(pagina);
     setTotalPaginas(data.totalPages || 1);
+    setRegistrosPrueba(data.permisosPrueba || 0);
     setTotalRecords(data.totalRecords || (data.permissions ? data.permissions.length : 0));
   }, []);
 
@@ -98,14 +100,14 @@ export default function PermisosDashboard() {
 
   const confirmarEliminacion = async () => {
     if (!permisoAEliminar) return;
-    
+
     setEliminando(true);
     setErrorEliminacion('');
-    
+
     try {
       await deletePermiso(permisoAEliminar.regPermiso);
-      // Recargar los permisos después de eliminar
-      await cargarPermisos(paginaActual, filtro);
+      // Recargar los permisos después de eliminar (volver a la primera página)
+      await cargarPermisos(1, filtro);
       showSuccessMessage(`Permiso de ${permisoAEliminar.userName || 'usuario'} eliminado correctamente`);
       setShowConfirmEliminar(false);
     } catch (error) {
@@ -193,9 +195,18 @@ export default function PermisosDashboard() {
 
   return (
     <ManagementDashboardLayout title={(
-        <>
-          <span className="font-bold">PERMISOS:</span>
-          <span className="font-light ml-5 text-[16px]">{`${totalRecords} Total`}</span>
+ <>
+          <div>
+            <span className="font-bold">PERMISOS:</span>
+            <span className="font-light w-100 text-[16px] ml-2">{`${totalRecords} Total`}</span>
+          </div>
+          <span></span>
+         {registrosPrueba > 0 && (
+            <span className="text-white flex justify-end">
+              <p className='rounded-lg bg-red-400 w-8 px-2 py-1 text-center'>{`${registrosPrueba}`}</p>
+            </span>
+          )}
+       
         </>
       )}  user={user} negocio={negocio}>
       <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
@@ -379,7 +390,7 @@ export default function PermisosDashboard() {
               
             }}
              rowClassName={(row) => {
-              const enviroment = (row.enviroment || row.environment || '').toUpperCase();
+              const enviroment = (row.ambiente);
               if (enviroment === 'PRUEBA') {
                 return 'bg-red-100';
               }
@@ -387,7 +398,7 @@ export default function PermisosDashboard() {
             }}
             onEdit={handleEditClick}
             onDelete={handleDeleteClick}
-            onUpdatePermissions={null} // Asegurarse de que no hay función de actualización de permisos
+            onUpdatePermissions={null}
           
           
           />

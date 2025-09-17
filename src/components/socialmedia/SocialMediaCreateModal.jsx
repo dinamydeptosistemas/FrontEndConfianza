@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import ActionButtons, { LoadingOverlay } from '../common/Buttons';
+import { useConfig } from '../../contexts/ConfigContext';
+
 
 const SocialMediaCreateModal = ({ isOpen, onClose, onSave, redesSociales, onSuccess }) => {
+  const { config } = useConfig();
+
+ const initialEnv = config ? config.ambienteTrabajoModo : null;
   const [formData, setFormData] = useState({
     redSocial: '',
     nombreCuenta: '',
@@ -12,10 +17,12 @@ const SocialMediaCreateModal = ({ isOpen, onClose, onSave, redesSociales, onSucc
     responsable: '',
     departamento: '',
     tipoProceso: 'EXTERNO',
-    notaDeUso: ''
+    notaDeUso: '',
+    enviroment: initialEnv,
   });
   
   const [loading, setLoading] = useState(false);
+
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
