@@ -234,6 +234,9 @@ const ConfiguracionPage = () => {
   const [gestionGrupo, setGestionGrupo] = useState(null);
   const [tipoGestion, setTipoGestion] = useState(null);
 
+  const TEMA_COLORS = [ '#2c5282','#1e4e9c', '#217346', '#7a7a7a', '#f39c12','#82c7f6'];
+  const [colorTema, setColorTema] = useState(TEMA_COLORS[0]);
+
   // Datos auxiliares
   const [empresas, setEmpresas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
@@ -298,6 +301,7 @@ const ConfiguracionPage = () => {
     setTipoGestion(originalConfig.nombregestiongrupo || 'INDIVIDUAL');
     setSelectedUsuario(originalConfig.nombreusuariomanagersystem || '');
     setLogoPath(originalConfig.archivologo || '');
+    setColorTema(originalConfig.colorTema || TEMA_COLORS[0]);
     setConfiguraciones({
       ambienteTrabajo: {
         checked: originalConfig.ambienteTrabajoModo === 'PRUEBA',
@@ -551,6 +555,7 @@ const ConfiguracionPage = () => {
         ambienteTrabajoModo: configuraciones.ambienteTrabajo.checked ? 'PRUEBA' : 'PRODUCCION',
         ambiente_creacion_prueba_modo: configuraciones.ambienteTrabajo.modo,
         eliminarPruebaHabilitado: configuraciones.eliminarRegistros.checked,
+        colorTema: colorTema,
       };
 
       await saveConfig(payload);
@@ -948,6 +953,28 @@ const ConfiguracionPage = () => {
                   )}
                 </div>
               </div>
+                  
+                <div className={`flex justify-between items-center ${styles.layout.item.padding} ${styles.layout.item.borderBottom} ${styles.layout.item.background}`}>
+               
+                <span className={`${styles.typography.itemLabel.className} ${styles.typography.itemLabel.textColor}`}>j) Paleta de colores del sistema</span>
+                <div className="flex items-center gap-2">
+                    {TEMA_COLORS.map(color => (
+                        <button
+                            key={color}
+                            type="button"
+                            onClick={() => {
+                                setColorTema(color);
+                                setIsDirty(true);
+                                showSaveModal();
+                            }}
+                            className={`w-8 h-8 rounded-full transition-transform transform hover:scale-110 ${colorTema === color ? 'ring-2 ring-offset-2 ring-blue-500' : 'ring-1 ring-gray-300'}`}
+                            style={{ backgroundColor: color }}
+                            title={color}
+                        />
+                    ))}
+                </div>
+              </div>
+
             </Subcategory>
 
             <Subcategory id="configuraciones" title="2. Configuraciones" isOpen={openSubcategories['configuraciones']}>
