@@ -6,8 +6,7 @@ import { getUsers } from '../services/user/UserService';
 import { saveConfig, uploadLogo as uploadLogoService } from '../services/config/ConfigService';
 import { useConfig } from '../contexts/ConfigContext';
 import MensajeHead from '../components/forms/MensajeHead';
-import SuccessModal from '../components/common/SuccessModal'
-
+import SuccessModal from '../components/common/SuccessModal';
 
 const styles = {
   "general": {
@@ -224,7 +223,7 @@ const styles = {
 };
 
 const ConfiguracionPage = () => {
-  const { config, loading, error, reloadConfig, updateConfig  } = useConfig();
+  const { config, loading, error, reloadConfig, updateConfig } = useConfig();
 
   // Estados principales
   const [originalConfig, setOriginalConfig] = useState(null);
@@ -253,6 +252,7 @@ const ConfiguracionPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalContent, setModalContent] = useState({ title: '', message: '' });
   const [showNavBlockerModal, setShowNavBlockerModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Configuraciones adicionales
   const [configuraciones, setConfiguraciones] = useState(null);
@@ -262,82 +262,78 @@ const ConfiguracionPage = () => {
 
   const blocker = useBlocker(() => isDirty);
 
-  useEffect(() => {
-    if (blocker && blocker.state === 'blocked') {
-        setShowNavBlockerModal(true);
-    }
-  }, [blocker]);
+  const resetToOriginalConfig = () => {
+    if (!originalConfig) return;
+
+    const newEditableConfig = {
+        mostrarNombreComercial: originalConfig.mostrarnombrecomerciallogin,
+        nombrecomerciallogin: originalConfig.nombrecomerciallogin || '',
+        mostrarImagenLogo: originalConfig.mostrarimagenlogologin,
+        valorImagenLogo: originalConfig.archivologo,
+        permitirAccesoManager: originalConfig.permitiraccesomanagersystem,
+        valorAccesoManager: originalConfig.nombreusuariomanagersystem,
+        sesionInactiva: originalConfig.cerradosesioninactiva,
+        valorSesionInactiva: originalConfig.minutoscerrarsesion,
+        justificarPausa: originalConfig.opcionjustificarsesionpausada,
+        valorJustificarPausa: originalConfig.minutosjustificarsesion,
+        reportarTareasPausa: originalConfig.opcionreportartareasdespues,
+        valorReportarTareasPausa: originalConfig.minutosreportartareas,
+        reportarProyectoTareas: originalConfig.opcionreportarproyectotareasdespues,
+        valorReportarProyectoTareas: originalConfig.minutosreportarproyectotareas,
+        periodoVigente: originalConfig.periodovigente,
+        periodoAnteriorHabilitado: !!originalConfig.periodoanteriorhabilitado,
+        fechaInicioPeriodo: originalConfig.fechainicioperiodovigente,
+        fechaFinPeriodo: originalConfig.fechafinalperiodovigente,
+        bloqueoAsientosAnteriores: originalConfig.bloqueomodificacionasientosanteriores,
+        permitirNuevosAsientosAnterior: originalConfig.permitirnuevosasientosanterior,
+        permitirCrearNuevosLibros: originalConfig.permitircrearnuevoslibros,
+        permitirCrearNuevasCuentas: originalConfig.permitircrearnuevascuentas,
+        eliminarPruebaHabilitado: originalConfig.eliminarpruebahabilitado
+    };
+    setEditableConfig(newEditableConfig);
+
+    setModoEntidad(!!originalConfig.modorentidad);
+    setTipoEntidad(originalConfig.nombremodorentidad || 'AMBOS');
+    setGestionGrupo(!!originalConfig.gestiongrupomatriz);
+    setTipoGestion(originalConfig.nombregestiongrupo || 'INDIVIDUAL');
+    setSelectedUsuario(originalConfig.nombreusuariomanagersystem || '');
+    setLogoPath(originalConfig.archivologo || '');
+    setConfiguraciones({
+      ambienteTrabajo: {
+        checked: originalConfig.ambienteTrabajoModo === 'PRUEBA',
+        modo: originalConfig.ambiente_creacion_prueba_modo || 'TODO_SISTEMA',
+      },
+      eliminarRegistros: {
+        checked: !!originalConfig.eliminarPruebaHabilitado,
+      }
+    });
+    setIsDirty(false);
+  };
 
   const showSaveModal = () => {
-    setTimeout(() => {
-        setModalContent({ title: 'Guardar Cambios', message: 'Ha realizado cambios. ¿Desea guardarlos?' });
-        setShowModal(true);
-    }, 0);
-  }
+    if(saving) return;
+    setModalContent({ title: 'Guardar Cambios', message: 'Ha realizado cambios. ¿Desea guardarlos?' });
+    setShowModal(true);
+  };
 
   useEffect(() => {
     if (config) {
-        setOriginalConfig(JSON.parse(JSON.stringify(config)));
-
-        const newEditableConfig = {
-            mostrarNombreComercial: config.mostrarnombrecomerciallogin,
-            nombrecomerciallogin: config.nombrecomerciallogin || '',
-            mostrarImagenLogo: config.mostrarimagenlogologin,
-            valorImagenLogo: config.archivologo,
-            permitirAccesoManager: config.permitiraccesomanagersystem,
-            valorAccesoManager: config.nombreusuariomanagersystem,
-            sesionInactiva: config.cerradosesioninactiva,
-            valorSesionInactiva: config.minutoscerrarsesion,
-            justificarPausa: config.opcionjustificarsesionpausada,
-            valorJustificarPausa: config.minutosjustificarsesion,
-            reportarTareasPausa: config.opcionreportartareasdespues,
-            valorReportarTareasPausa: config.minutosreportartareas,
-            reportarProyectoTareas: config.opcionreportarproyectotareasdespues,
-            valorReportarProyectoTareas: config.minutosreportarproyectotareas,
-            periodoVigente: config.periodovigente,
-            periodoAnteriorHabilitado: !!config.periodoanteriorhabilitado,
-            fechaInicioPeriodo: config.fechainicioperiodovigente,
-            fechaFinPeriodo: config.fechafinalperiodovigente,
-            bloqueoAsientosAnteriores: config.bloqueomodificacionasientosanteriores,
-            permitirNuevosAsientosAnterior: config.permitirnuevosasientosanterior,
-            permitirCrearNuevosLibros: config.permitircrearnuevoslibros,
-            permitirCrearNuevasCuentas: config.permitircrearnuevascuentas,
-            eliminarPruebaHabilitado: config.eliminarpruebahabilitado
-        };
-
-        setEditableConfig(newEditableConfig);
-        setModoEntidad(!!config.modorentidad);
-        setTipoEntidad(config.nombremodorentidad || 'AMBOS');
-        setGestionGrupo(!!config.gestiongrupomatriz);
-        setTipoGestion(config.nombregestiongrupo || 'INDIVIDUAL');
-        setSelectedUsuario(config.nombreusuariomanagersystem || '');
-        setLogoPath(config.archivologo || '');
-
-        setConfiguraciones({
-          ambienteTrabajo: {
-            checked: config.ambienteTrabajoModo === 'PRUEBA',
-            modo: config.ambiente_creacion_prueba_modo || 'TODO_SISTEMA',
-          },
-          eliminarRegistros: {
-            checked: !!config.eliminarPruebaHabilitado,
-          }
-        });
-        setIsInitializing(false);
+      setOriginalConfig(JSON.parse(JSON.stringify(config)));
+      setIsInitializing(false);
     }
-  }, [config ]);
+  }, [config]);
 
   useEffect(() => {
-    if (isInitializing) return;
-    if (!modoEntidad) {
-      setTipoEntidad('AMBOS');
+    if (!isInitializing && originalConfig) {
+      resetToOriginalConfig();
     }
-    else {
-      // If modoEntidad becomes true, and current tipoEntidad is 'AMBOS', change it
-      if (tipoEntidad === 'AMBOS') {
-        setTipoEntidad('NEGOCIO');
-      }
+  }, [originalConfig, isInitializing]);
+
+  useEffect(() => {
+    if (blocker && blocker.state === 'blocked') {
+      setShowNavBlockerModal(true);
     }
-  }, [modoEntidad, isInitializing, tipoEntidad]);
+  }, [blocker]);
 
   useEffect(() => {
     if (isInitializing) return;
@@ -355,8 +351,9 @@ const ConfiguracionPage = () => {
           setIsDirty(true);
         }
       }
+      if (isDirty) showSaveModal();
     }
-  }, [gestionGrupo, tipoGestion , isInitializing]);
+  }, [gestionGrupo, isInitializing]);
 
   useEffect(() => {
     if (isInitializing) return;
@@ -372,19 +369,17 @@ const ConfiguracionPage = () => {
         setTipoEntidad('EMPRESA');
         setIsDirty(true);
       }
+      if (isDirty) showSaveModal();
     }
-  }, [tipoGestion  , isInitializing]);
+  }, [tipoGestion, isInitializing]);
 
   useEffect(() => {
     const fetchEmpresas = async () => {
-   
       try {
         const response = await getEmpresas({ getAll: true });
         setEmpresas(response?.companies || []);
       } catch (err) {
         console.error('Error al cargar empresas:', err);
-      } finally {
-       
       }
     };
     fetchEmpresas();
@@ -431,7 +426,7 @@ const ConfiguracionPage = () => {
     };
 
     fetchUsers();
-  }, [ isInitializing ]);
+  }, [isInitializing]);
 
   useEffect(() => {
     const handleBeforeUnload = (e) => {
@@ -448,7 +443,6 @@ const ConfiguracionPage = () => {
     };
   }, [isDirty]);
 
-  // Manejo de cambios
   const handleConfigChange = (key, value) => {
     setEditableConfig(prev => ({ ...prev, [key]: value }));
     setIsDirty(true);
@@ -457,14 +451,12 @@ const ConfiguracionPage = () => {
   const handleEmpresaChange = (e) => {
     const value = e.target.value;
     handleConfigChange('nombrecomerciallogin', value);
-    showSaveModal();
   };
 
   const handleUsuarioChange = (e) => {
     const value = e.target.value;
     setSelectedUsuario(value);
     handleConfigChange('valorAccesoManager', value);
-    showSaveModal();
   };
 
   const handleLogoChange = async (e) => {
@@ -480,7 +472,8 @@ const ConfiguracionPage = () => {
         showSaveModal();
       }
     } catch (err) {
-      alert('Error al subir el logo.');
+      setModalContent({ title: 'Error', message: 'Error al subir el logo.' });
+      setShowModal(true);
     }
   };
 
@@ -508,17 +501,23 @@ const ConfiguracionPage = () => {
     showSaveModal();
   };
 
-  const handleSave = async () => {
-    if (saving) return;
+  const handleSave = () => {
     if (!isDirty) {
-      alert('No hay cambios para guardar.');
+      setModalContent({ title: 'Sin cambios', message: 'No hay cambios para guardar.' });
+      setShowModal(true);
       return;
     }
     if (!originalConfig) {
-      alert('La configuración original no se ha cargado. Por favor, recargue la página.');
+      setModalContent({ title: 'Error', message: 'La configuración original no se ha cargado. Por favor, recargue la página.' });
+      setShowModal(true);
       return;
     }
+    showSaveModal();
+  };
 
+  const executeSave = async () => {
+    if (saving) return;
+    setShowModal(false);
     setSaving(true);
     try {
       const payload = {
@@ -555,21 +554,26 @@ const ConfiguracionPage = () => {
       };
 
       await saveConfig(payload);
-      
-      setShowModal(false);
-      
+
       const newConfig = { ...config, ...payload };
       updateConfig(newConfig);
       setOriginalConfig(newConfig);
       setIsDirty(false);
-      setSaving(false);
+      setShowSuccessModal(true);
 
     } catch (err) {
       console.error('Error al guardar:', err);
       setModalContent({ title: 'Error', message: `Error al guardar: ${err.response?.data?.message || err.message || 'Intente nuevamente.'}` });
+      setShowModal(true);
+    } finally {
       setSaving(false);
     }
   };
+
+  const revertChanges = () => {
+    resetToOriginalConfig();
+    setShowModal(false);
+  }
 
   const Category = ({ id, title, children, isOpen }) => (
     <div className={`${styles.layout.category.background} ${styles.layout.category.shadow} ${styles.layout.category.borderRadius} overflow-hidden ${styles.animations.fadeIn.className} ${styles.layout.category.hoverShadow}`}>
@@ -676,9 +680,17 @@ const ConfiguracionPage = () => {
                     type="checkbox"
                     checked={modoEntidad}
                     onChange={(e) => {
-                      setModoEntidad(e.target.checked);
+                      const newModoEntidad = e.target.checked;
+                      setModoEntidad(newModoEntidad);
+                      if (!newModoEntidad) {
+                        setTipoEntidad('AMBOS');
+                      } else {
+                        if (tipoEntidad === 'AMBOS') {
+                          setTipoEntidad('NEGOCIO');
+                        }
+                      }
                       setIsDirty(true);
-                      showSaveModal();
+                      setShowModal(true);
                     }}
                     className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
                   />
@@ -687,8 +699,9 @@ const ConfiguracionPage = () => {
                     onChange={(e) => {
                       setTipoEntidad(e.target.value);
                       setIsDirty(true);
-                      showSaveModal();
+                      setShowModal(true)
                     }}
+                    onBlur={showSaveModal}
                     disabled={!modoEntidad}
                     className={`${styles.forms.select.padding} ${styles.forms.select.fontSize} ${styles.forms.select.fontWeight} ${styles.forms.select.textColor} ${styles.forms.select.border} ${styles.forms.select.rounded}`}
                     style={{ backgroundColor: modoEntidad ? styles.forms.select.background : styles.forms.select.disabledBackground }}
@@ -711,8 +724,8 @@ const ConfiguracionPage = () => {
                     )}
                   </select>
                   <span className={`${styles.typography.itemLabel.className} ${styles.typography.textSecondary}`}>
-                    {tipoEntidad === 'AMBOS' ? 'Sociedades / Personas Naturales' :
-                     tipoEntidad === 'NEGOCIO' ? 'Personas Naturales' : 'Sociedades'}
+                    {tipoEntidad} ({tipoEntidad === 'AMBOS' ? 'Sociedades / Personas Naturales' :
+                     tipoEntidad === 'NEGOCIO' ? 'Personas Naturales' : 'Sociedades'})
                   </span>
                 </div>
               </div>
@@ -726,7 +739,7 @@ const ConfiguracionPage = () => {
                     onChange={(e) => {
                       setGestionGrupo(e.target.checked);
                       setIsDirty(true);
-                      showSaveModal();
+                      setShowModal(true)
                     }}
                     className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
                   />
@@ -735,8 +748,9 @@ const ConfiguracionPage = () => {
                     onChange={(e) => {
                       setTipoGestion(e.target.value);
                       setIsDirty(true);
-                      showSaveModal();
+                      setShowModal(true)
                     }}
+                    onBlur={showSaveModal}
                     disabled={!gestionGrupo}
                     className={`${styles.forms.select.padding} ${styles.forms.select.fontSize} ${styles.forms.select.fontWeight} ${styles.forms.select.textColor} ${styles.forms.select.border} ${styles.forms.select.rounded}`}
                     style={{ backgroundColor: gestionGrupo ? styles.forms.select.background : styles.forms.select.disabledBackground }}
@@ -774,6 +788,7 @@ const ConfiguracionPage = () => {
                     <select
                       value={editableConfig.nombrecomerciallogin}
                       onChange={handleEmpresaChange}
+                      onBlur={showSaveModal}
                       className={`${styles.forms.select.padding} ${styles.forms.select.fontSize} ${styles.forms.select.fontWeight} ${styles.forms.select.textColor} ${styles.forms.select.border} ${styles.forms.select.rounded}`}
                       style={{ backgroundColor: styles.forms.select.background }}
                     >
@@ -821,6 +836,7 @@ const ConfiguracionPage = () => {
                     <select
                       value={selectedUsuario}
                       onChange={handleUsuarioChange}
+                      onBlur={showSaveModal}
                       disabled={loadingUsuarios}
                       className={`${styles.forms.select.padding} ${styles.forms.select.fontSize} ${styles.forms.select.fontWeight} ${styles.forms.select.textColor} ${styles.forms.select.border} ${styles.forms.select.rounded}`}
                       style={{ backgroundColor: styles.forms.select.background }}
@@ -897,6 +913,7 @@ const ConfiguracionPage = () => {
                     <select
                       value={editableConfig.valorReportarTareasPausa || 60}
                       onChange={(e) => { handleConfigChange('valorReportarTareasPausa', Number(e.target.value)); showSaveModal(); }}
+                      onBlur={showSaveModal}
                       className="text-xs px-2 py-1 rounded border border-gray-300"
                       style={{backgroundColor: 'white', color: 'black'}}
                     >
@@ -914,13 +931,14 @@ const ConfiguracionPage = () => {
                   <input
                     type="checkbox"
                     checked={editableConfig.reportarProyectoTareas}
-                    onChange={(e) => { handleConfigChange('reportarProyectoTareas', e.target.checked); setIsDirty(true); showSaveModal(); }}
+                    onChange={(e) => { handleConfigChange('reportarProyectoTareas', e.target.checked); showSaveModal(); }}
                     className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
                   />
                   {editableConfig?.reportarProyectoTareas && (
                     <select
                       value={editableConfig?.valorReportarProyectoTareas ?? 120}
-                      onChange={(e) => { handleConfigChange('valorReportarProyectoTareas', Number(e.target.value)); setIsDirty(true); showSaveModal(); }}
+                      onChange={(e) => { handleConfigChange('valorReportarProyectoTareas', Number(e.target.value)); showSaveModal(); }}
+                      onBlur={showSaveModal}
                       className="text-xs px-2 py-1 rounded border border-gray-300"
                       style={{backgroundColor: 'white', color: 'black'}}
                     >
@@ -949,7 +967,7 @@ const ConfiguracionPage = () => {
                     <input
                       type="checkbox"
                       checked={configuraciones.ambienteTrabajo.checked}
-                      onChange={(e) => { handleConfiguracionChange('ambienteTrabajo', 'checked', e.target.checked); }}
+                      onChange={(e) => { handleConfiguracionChange('ambienteTrabajo', 'checked', e.target.checked); showSaveModal(); }}
                       className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
                     />
                   </div>
@@ -957,6 +975,7 @@ const ConfiguracionPage = () => {
                     <select
                       value={configuraciones.ambienteTrabajo.modo}
                       onChange={(e) => { handleConfiguracionChange('ambienteTrabajo', 'modo', e.target.value); }}
+                      onBlur={showSaveModal}
                       disabled={!configuraciones.ambienteTrabajo.checked}
                       className={`${styles.forms.select.padding} ${styles.forms.select.fontSize} ${styles.forms.select.fontWeight} ${styles.forms.select.textColor} ${styles.forms.select.border} ${styles.forms.select.rounded}`}
                       style={{ backgroundColor: configuraciones.ambienteTrabajo.checked ? styles.forms.select.background : styles.forms.select.disabledBackground }}
@@ -980,7 +999,7 @@ const ConfiguracionPage = () => {
                     <input
                       type="checkbox"
                       checked={configuraciones.eliminarRegistros.checked}
-                      onChange={(e) => handleConfiguracionChange('eliminarRegistros', 'checked', e.target.checked)}
+                      onChange={(e) => { handleConfiguracionChange('eliminarRegistros', 'checked', e.target.checked); showSaveModal(); }}
                       className={`${styles.forms.checkbox.size} ${styles.forms.checkbox.color} ${styles.forms.checkbox.background} ${styles.forms.checkbox.border} ${styles.forms.checkbox.rounded} ${styles.forms.checkbox.focusRing}`}
                     />
                   </div>
@@ -1041,7 +1060,7 @@ const ConfiguracionPage = () => {
         </div>
       </div>
 
-      {/* Modal for unsaved changes warning */}
+      {/* Modales */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-lg">
@@ -1052,11 +1071,11 @@ const ConfiguracionPage = () => {
                 className="px-4 py-2 bg-gray-300 text-black rounded hover:bg-gray-400"
                 onClick={() => setShowModal(false)}
               >
-                Cerrar
+                Rechazar
               </button>
               <button
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                onClick={handleSave}
+                onClick={executeSave}
                 disabled={saving}
               >
                 {saving ? 'Guardando...' : 'Guardar'}
@@ -1064,6 +1083,13 @@ const ConfiguracionPage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {showSuccessModal && (
+        <SuccessModal 
+          message="Cambios guardados con éxito"
+          onClose={() => setShowSuccessModal(false)}
+        />
       )}
 
       {showNavBlockerModal && (
