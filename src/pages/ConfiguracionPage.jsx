@@ -291,7 +291,8 @@ const ConfiguracionPage = () => {
         permitirNuevosAsientosAnterior: originalConfig.permitirnuevosasientosanterior,
         permitirCrearNuevosLibros: originalConfig.permitircrearnuevoslibros,
         permitirCrearNuevasCuentas: originalConfig.permitircrearnuevascuentas,
-        eliminarPruebaHabilitado: originalConfig.eliminarpruebahabilitado
+        eliminarPruebaHabilitado: originalConfig.eliminarpruebahabilitado,
+        colorLogin: originalConfig.colorlogin,
     };
     setEditableConfig(newEditableConfig);
 
@@ -301,7 +302,7 @@ const ConfiguracionPage = () => {
     setTipoGestion(originalConfig.nombregestiongrupo || 'INDIVIDUAL');
     setSelectedUsuario(originalConfig.nombreusuariomanagersystem || '');
     setLogoPath(originalConfig.archivologo || '');
-    setColorTema(originalConfig.colorTema || TEMA_COLORS[0]);
+    setColorTema(originalConfig.colorLogin || TEMA_COLORS[0]);
     setConfiguraciones({
       ambienteTrabajo: {
         checked: originalConfig.ambienteTrabajoModo === 'PRUEBA',
@@ -555,7 +556,7 @@ const ConfiguracionPage = () => {
         ambienteTrabajoModo: configuraciones.ambienteTrabajo.checked ? 'PRUEBA' : 'PRODUCCION',
         ambiente_creacion_prueba_modo: configuraciones.ambienteTrabajo.modo,
         eliminarPruebaHabilitado: configuraciones.eliminarRegistros.checked,
-        colorTema: colorTema,
+        colorLogin: colorTema,
       };
 
       await saveConfig(payload);
@@ -822,7 +823,11 @@ const ConfiguracionPage = () => {
                   {editableConfig.mostrarImagenLogo && (
                     <>
                       <input type="file" accept="image/*" onChange={handleLogoChange} className={`${styles.forms.fileInput.fontSize} ${styles.forms.fileInput.textColor}`} />
-                      {logoPath && <img src={logoPath} alt="Logo" className={`${styles.misc.logoImage.maxHeight} ${styles.misc.logoImage.objectFit} ${styles.misc.logoImage.marginTop}`} />}
+                      <img 
+                        src={logoPath ? `${process.env.REACT_APP_API_URL || 'http://localhost:5201'}${logoPath}` : 'http://localhost:5201/uploads/fondo.jpg'} 
+                        alt="Logo" 
+                        className={`${styles.misc.logoImage.maxHeight} ${styles.misc.logoImage.objectFit} ${styles.misc.logoImage.marginTop}`} 
+                      />
                     </>
                   )}
                 </div>

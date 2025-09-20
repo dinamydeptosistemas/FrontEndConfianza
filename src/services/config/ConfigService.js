@@ -10,8 +10,8 @@ const API_BASE = '/api';
 export const uploadLogo = async (file) => {
   try {
     const formData = new FormData();
-    formData.append('logo', file);
-    const response = await axiosInstance.post(`${API_BASE}/config/upload-logo`, formData, {
+    formData.append('file', file);
+    const response = await axiosInstance.post(`${API_BASE}/config/UploadLogo`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;
@@ -52,6 +52,20 @@ export const saveConfig = async (configData, process = 'putConfig') => {
   
   } catch (error) {
     console.error('Error saving config:', error);
+    throw error;
+  }
+};
+
+/**
+ * Gets the login configuration
+ * @returns {Promise<Object>} - Login configuration data
+ */
+export const getLoginConfig = async () => {
+  try {
+    const response = await axiosInstance.get(`${API_BASE}/config/login`);
+    return response.data;
+  } catch (error) {
+    console.error('Error getting login config:', error);
     throw error;
   }
 };

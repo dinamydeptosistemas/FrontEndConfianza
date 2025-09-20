@@ -1,16 +1,24 @@
 import React from 'react';
+import { BrowserRouter, useLocation } from 'react-router-dom';
 import useInactivityLogout from '../hooks/useInactivityLogout';
 import WorkJustificationModal from '../components/modals/WorkJustificationModal';
-import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../contexts/AuthContext';
 
-export const AppProviders = ({ children }) => {
-    // Estado global para el modal RRHH
+const InactivityManager = ({ children }) => {
+    const location = useLocation();
+    const excludedPaths = ['/login', '/registrar-usuario-interno', '/registrar-usuario-externo'];
+    const isEnabled = !excludedPaths.includes(location.pathname);
+
     const [showModal, setShowModal] = React.useState(false);
     const [lastActivity, setLastActivity] = React.useState(null);
     const [minutesInactive, setMinutesInactive] = React.useState(0);
     const [secondsRemaining, setSecondsRemaining] = React.useState(10 * 60);
 
+    React.useEffect(() => {
+        if (!isEnabled) {
+            setShowModal(false);
+        }
+    }, [isEnabled]);
 
     React.useEffect(() => {
         let intervalId;
@@ -33,34 +41,46 @@ export const AppProviders = ({ children }) => {
             setLastActivity(lastActivity);
             setMinutesInactive(minutesInactive);
         },
-        enabled: true
+        enabled: isEnabled,
     });
 
     const handleContinue = () => {
         setShowModal(false);
     };
+
     const handleRRHHJustification = motivo => {
         setShowModal(false);
     };
+
     const handleLogout = () => {
         setShowModal(false);
         window.location.href = '/login';
     };
 
     return (
+        <>
+            <WorkJustificationModal
+                open={showModal}
+                onContinue={handleContinue}
+                onRRHHJustification={handleRRHHJustification}
+                onLogout={handleLogout}
+                minutesSinceLastActivity={minutesInactive}
+                lastActivity={lastActivity}
+                secondsRemaining={secondsRemaining}
+            />
+            {children}
+        </>
+    );
+};
+
+export const AppProviders = ({ children }) => {
+    return (
         <BrowserRouter>
             <AuthProvider>
-                <WorkJustificationModal
-                    open={showModal}
-                    onContinue={handleContinue}
-                    onRRHHJustification={handleRRHHJustification}
-                    onLogout={handleLogout}
-                    minutesSinceLastActivity={minutesInactive}
-                    lastActivity={lastActivity}
-                    secondsRemaining={secondsRemaining}
-                />
-                {children}
+                <InactivityManager>
+                    {children}
+                </InactivityManager>
             </AuthProvider>
         </BrowserRouter>
     );
-}; 
+};
