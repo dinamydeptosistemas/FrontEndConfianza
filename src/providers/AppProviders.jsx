@@ -35,7 +35,7 @@ const InactivityManager = ({ children }) => {
     }, [showModal]);
 
     useInactivityLogout({
-        inactivityThreshold: 10 * 60 * 1000, // 10 minutos
+        inactivityThreshold: 1 * 60 * 1000, // 10 minutos
         onInactivity: ({ lastActivity, minutesInactive }) => {
             setShowModal(true);
             setLastActivity(lastActivity);
