@@ -396,12 +396,16 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
   }, [isOpen, userId, cargarPerfiles, cargarEmpresas, cargarPermiso, cargarUsuario]);
 
   
+  
+
+
+  
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : (type === 'number' ? Number(value) : value)
     }));
     
   };
@@ -479,8 +483,8 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
         estadoPermisoActivado: Boolean(formData.estadoPermisoActivado),
         permitirTodasEmpresas: Boolean(formData.permitirTodasEmpresas),
         permitirMasDeUnaSesion: Boolean(formData.permitirMasDeUnaSesion),
-        cierreSesionJornada: Boolean(formData.cierreSesionJornada),
-        bloqueoSesionMaxima: Boolean(formData.bloqueoSesionMaxima),
+        cierreSesionJornada: formData.cierreSesionJornada, // Use numeric value directly
+        bloqueoSesionMaxima: formData.bloqueoSesionMaxima, // Use numeric value directly
         userioResponsable: userioResponsable,
         fechaInicioPermiso: formatDateForServer(formData.fechaInicioPermiso) || null,
         fechaFinalPermiso: formatDateForServer(formData.fechaFinalPermiso) || null
@@ -495,8 +499,8 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
         estadoPermisoActivado: Boolean(permisoData.estadoPermisoActivado),
         permitirTodasEmpresas: Boolean(permisoData.permitirTodasEmpresas),
         permitirMasDeUnaSesion: Boolean(permisoData.permitirMasDeUnaSesion),
-        cierreSesionJornada: permisoData.cierreSesionJornada ? 1 : 0,
-        bloqueoSesionMaxima: permisoData.bloqueoSesionMaxima ? 1 : 0,
+        cierreSesionJornada: permisoData.cierreSesionJornada, // Use numeric value directly
+        bloqueoSesionMaxima: permisoData.bloqueoSesionMaxima, // Use numeric value directly
         userioResponsable: userioResponsable,
         fechaInicioPermiso: formatDateForServer(permisoData.fechaInicioPermiso) || null,
         fechaFinalPermiso: formatDateForServer(permisoData.fechaFinalPermiso) || null
@@ -816,13 +820,13 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
                       <td className="px-6 py-1 whitespace-nowrap">
                         <div className="flex items-center h-full">
                           <input
-                            type="checkbox"
+                            type="number"
                             id="cierreSesionJornada"
                             name="cierreSesionJornada"
-                            checked={formData.cierreSesionJornada || false}
+                            value={formData.cierreSesionJornada}
                             onChange={handleChange}
                             disabled={saving}
-                            className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${saving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                            className={`w-24 border p-1 rounded text-sm ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
                           />
                         </div>
                       </td>
@@ -837,13 +841,13 @@ const PermisosModal = ({ isOpen, onClose, userId, onUpdate  }) => {
                       <td className="px-6 py-1 whitespace-nowrap">
                         <div className="flex items-center h-full">
                           <input
-                            type="checkbox"
+                            type="number"
                             id="bloqueoSesionMaxima"
                             name="bloqueoSesionMaxima"
-                            checked={formData.bloqueoSesionMaxima || false}
+                            value={formData.bloqueoSesionMaxima}
                             onChange={handleChange}
                             disabled={saving}
-                            className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${saving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                            className={`w-24 border p-1 rounded text-sm ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
                           />
                         </div>
                       </td>

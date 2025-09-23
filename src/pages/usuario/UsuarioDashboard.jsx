@@ -6,6 +6,7 @@ import {
   uploadTemplate,
   downloadTemplate
 } from '../../services/user/UserService';
+
 import ManagementDashboardLayout from '../../layouts/ManagementDashboardLayout';
 import { useAuth } from '../../contexts/AuthContext';
 import ButtonGroup from '../../components/common/ButtonGroup';
@@ -70,44 +71,27 @@ export default function UsuarioDashboard() {
         a.remove();
     };
 
-
-    const downloadExcel = async () => {
+    const handleExportExcel = async () => {
         try {
-            console.log('Iniciando descarga de Excel con filtros:', filtros);
+            console.log('Iniciando exportación de usuarios con filtros:', filtros);
             const blob = await downloadTemplate({
                 process: 'getUsers',
-                page: 0, // Para obtener todos los registros
                 ...filtros
             });
-            
-            // Verificar si el blob es válido
+
             if (!blob || !(blob instanceof Blob)) {
                 throw new Error('El archivo recibido no es válido');
             }
-            
-            // Verificar el tamaño del blob
+
             if (blob.size === 0) {
-                throw new Error('El archivo recibido está vacío');
+                throw new Error('No hay datos para exportar');
             }
-            
-            descargarArchivo(blob, `usuarios_exportacion_${new Date().toISOString().split('T')[0]}.xlsx`);
-            showSuccessMessage('Archivo Excel generado exitosamente');
+
+            descargarArchivo(blob, `usuarios_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+            showSuccessMessage('Exportación completada exitosamente');
         } catch (error) {
-            console.error('Error al generar Excel:', {
-                message: error.message,
-                name: error.name,
-                stack: error.stack,
-                originalError: error.originalError || null
-            });
-            
-            // Mostrar mensaje de error más descriptivo
-            const errorMessage = error.message.includes('No autorizado')
-                ? 'Su sesión ha expirado. Por favor, inicie sesión nuevamente.'
-                : error.message.includes('conectar con el servidor')
-                    ? 'No se pudo conectar con el servidor. Verifique su conexión a internet.'
-                    : `Error al generar el archivo Excel: ${error.message}`;
-            
-            showErrorMessage(errorMessage);
+            console.error('Error al exportar usuarios:', error);
+            showErrorMessage(error.message || 'Error al exportar los datos');
         }
     };
 
@@ -360,31 +344,7 @@ export default function UsuarioDashboard() {
                 </span>
               )}
             </button>
-            <button
-              onClick={() => {
-                // Usar los datos ya filtrados del estado
-                const columnMappings = {
-                  'idUser': 'ID',
-                  'nombreUser': 'Nombre',
-                  'apellidosUser': 'Apellidos',
-                  'username': 'Username',
-                  'emailUsuario': 'Email',
-                  'identificacion': 'Identificación',
-                  'tipoUser': 'Tipo de Usuario',
-                  'relacionUsuario': 'Relación',
-                  'fechaRegistro': 'Fecha de Registro',
-                  'usuarioActivo': 'Estado'
-                };
-                // Usar directamente los usuarios filtrados del estado
-                console.log("Usuarios enviados a Excel:", usuarios);
-                if (usuarios.length > 0) {
-                  console.log("Primer usuario:", usuarios[0]);
-                }
-                downloadExcel(usuarios, columnMappings, 'Usuarios', 'usuarios');
-              }}
-              className="flex items-center gap-1 bg-white font-bold hover:text-white hover:bg-[#1e4e9c] rounded"
-            >
-              <div className="relative" ref={plantillaMenuRef}>
+            <div className="relative" ref={plantillaMenuRef}>
                 <button
                   type="button"
                   onClick={(e) => {
@@ -455,25 +415,13 @@ export default function UsuarioDashboard() {
                       
                       {/* Botón para exportar datos */}
                       <button
-                        onClick={async (e) => {
+                        onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          try {
-                            const blob = await downloadTemplate({
-                              process: 'export',
-                              ...filtros
-                            });
-                            if (blob) {
-                              descargarArchivo(blob, `usuarios_exportacion_${new Date().toISOString().split('T')[0]}.xlsx`);
-                              showSuccessMessage('Exportación completada exitosamente');
-                            }
-                          } catch (error) {
-                            console.error('Error al exportar datos:', error);
-                            showErrorMessage('Error al exportar los datos');
-                          }
+                          handleExportExcel();
                           setShowPlantillaMenu(false);
                         }}
-                        className="block w-full  text-sm text-left px-4 py-2  text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                       >
                         Actualizar Plantilla (descargar)
                       </button>
@@ -481,7 +429,6 @@ export default function UsuarioDashboard() {
                   </div>
                 )}
               </div>
-            </button>
           </div>
           <div className="flex justify-center">
             <Paginador
@@ -800,7 +747,7 @@ export default function UsuarioDashboard() {
                             </button>
                             {mostrarModalSubirPlantilla && (
                               <>
-                                <button
+                                <button 
                                     type="button"
                                     onClick={() => confirmarSubirPlantilla(false)}
                                     className="px-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 flex-1 sm:flex-none w-[100px]"

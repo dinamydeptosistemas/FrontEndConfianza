@@ -560,7 +560,8 @@ export default function BitacoraDashboard() {
             <SearchBar 
               value={filtro} 
               className="w-[300px]" 
-              onChange={e => handleBuscar(e.target.value)} 
+              onChange={setFiltro} 
+              onSearch={handleBuscar}
               placeholder="Buscar por usuario..." 
             />
          

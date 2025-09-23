@@ -1,8 +1,6 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
-import useInactivityLogout from '../hooks/useInactivityLogout';
-import WorkJustificationModal from '../components/modals/WorkJustificationModal';
 import { useConfig } from '../contexts/ConfigContext';
 import MensajeHead from '../components/forms/MensajeHead';
 import { getEmpresas } from '../services/company/CompanyService';
@@ -10,9 +8,6 @@ import { getEmpresas } from '../services/company/CompanyService';
 const DashboardLayout = ({ children }) => {
     const { user, negocio, logout, setNegocio, loading: authLoading, error: authError } = useAuth();
     const { config, loading: configLoading, error: configError } = useConfig();
-    const [isJustificationModalOpen, setJustificationModalOpen] = useState(false);
-    const [lastActivity, setLastActivity] = useState(null);
-    const [minutesInactive, setMinutesInactive] = useState(0);
     const [empresas, setEmpresas] = useState([]);
     const [showDropdown, setShowDropdown] = useState(false);
 
@@ -31,34 +26,7 @@ const DashboardLayout = ({ children }) => {
         fetchEmpresas();
     }, []);
 
-    const handleInactivity = useCallback((data) => {
-        console.log('[DashboardLayout] Inactivity detected', data);
-        setLastActivity(data.lastActivity);
-        setMinutesInactive(data.minutesInactive);
-        setJustificationModalOpen(true);
-    }, []);
-
-    const { resetTimer } = useInactivityLogout({
-        onInactivity: handleInactivity,
-        enabled: !!user,
-        debug: true,
-    });
-
-    const handleContinue = () => {
-        setJustificationModalOpen(false);
-        resetTimer();
-    };
-
-    const handleRRHHJustification = (motivo) => {
-        console.log('Justificación para RRHH:', motivo);
-        setJustificationModalOpen(false);
-        resetTimer();
-    };
-
-    const handleLogout = () => {
-        setJustificationModalOpen(false);
-        logout();
-    };
+    const location = useLocation();
 
     const handleNegocioChange = (e) => {
         const selectedCode = e.target.value;
@@ -74,9 +42,7 @@ const DashboardLayout = ({ children }) => {
     };
 
     const isAdmin = user?.CodeFunction === 2;
-    const isManagerSystem = user?.UserFunction === 'MANAGER SYSTEM';
-
-    const location = useLocation();
+    const isManagerSystem = user?.CodeFunction === 1;
 
     if (authLoading || configLoading) {
         return (
@@ -104,7 +70,7 @@ const DashboardLayout = ({ children }) => {
     };
 
     const getUserFunctionDisplay = () => {
-        if (location.pathname === '/configuracion') return 'CONFIGURACION GENERAL:' 
+        if (location.pathname === '/configuracion') return 'CONFIGURACION GENERAL:'
         if (isAdmin) return 'ADMINISTRADOR:';
         if (isManagerSystem) return 'MANAGER SYSTEM:';
         if (user?.UserFunction) return user.UserFunction;
@@ -125,12 +91,12 @@ const DashboardLayout = ({ children }) => {
 
     return (
         <div className="h-screen w-[95%] flex flex-col">
-            <MensajeHead 
+            <MensajeHead
                 mensaje={config?.ambienteTrabajoHabilitado ? 'AMBIENTE DE PRUEBA' : ''}
                 style={{ boxShadow: 'none', backgroundColor: '#FEE2E2' }}
                 textStyle={{ color: '#8ba4cb', fontWeight: '400', fontSize: '0.9rem' }}
             />
-                
+
             <div className="bg-[#e9e9e9] py-3 flex justify-between items-center px-8 text-xs w-full">
                 <div className="flex items-center px-[186px]">
                     <span className="font-bold text-[#7a7a7a] text-[14px]">NEGOCIO:</span>
@@ -166,8 +132,8 @@ const DashboardLayout = ({ children }) => {
             <div className="flex flex-1 overflow-hidden">
                 <div className="w-[180px] bg-[#1e4e9c] flex flex-col flex-shrink-0">
                     <div className="text-white text-center py-4">
-                        <h1 className="text-[15px] px-2 font-bold"> {config.nombrecomerciallogin || 'N/A'} </h1> 
-                    
+                        <h1 className="text-[15px] px-2 font-bold"> {config.nombrecomerciallogin || 'N/A'} </h1>
+
                         <p className="text-xs mt-1">Sistema de Gestión y<br></br></p>
                         <p className="text-xs">Control de Negocios</p>
                     </div>
@@ -234,16 +200,6 @@ const DashboardLayout = ({ children }) => {
                     </div>
                 </main>
             </div>
-
-            <WorkJustificationModal
-                isOpen={isJustificationModalOpen}
-                onClose={() => setJustificationModalOpen(false)}
-                onContinue={handleContinue}
-                onSubmitJustification={handleRRHHJustification}
-                lastActivity={lastActivity}
-                minutesInactive={minutesInactive}
-                onLogout={handleLogout}
-            />
         </div>
     );
 };

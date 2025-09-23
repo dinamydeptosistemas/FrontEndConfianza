@@ -200,7 +200,7 @@ const FilterModal = ({
     switch (type) {
       case 'search':
         return (
-          <div className="col-span-2 mt-4 mb-6">
+          <div key={name} className="col-span-2 mt-4 mb-6">
             <SearchBar
               onSearch={handleSearch}
               placeholder={placeholder}

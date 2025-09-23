@@ -187,6 +187,9 @@ export default function PermisoCreateModal({ onClose, onSave }) {
     }));
   };
 
+ 
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoadingData(true);
@@ -222,8 +225,8 @@ export default function PermisoCreateModal({ onClose, onSave }) {
         estadoPermisoActivado: formData.estadoPermisoActivado,
         permitirTodasEmpresas: formData.permitirTodasEmpresas,
         permitirMasDeUnaSesion: formData.permitirMasDeUnaSesion,
-        cierreSesionJornada: formData.cierreSesionJornada ? 1 : 0,
-        bloqueoSesionMaxima: formData.bloqueoSesionMaxima ? 1 : 0,
+        cierreSesionJornada: formData.cierreSesionJornada, // Use numeric value directly
+        bloqueoSesionMaxima: formData.bloqueoSesionMaxima, // Use numeric value directly
         userioResponsable: user?.userName || 'XAVIER',
         fechaInicioPermiso: formData.fechaInicioPermiso,
         fechaFinalPermiso: formData.fechaFinalPermiso,

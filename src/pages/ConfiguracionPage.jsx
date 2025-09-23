@@ -659,10 +659,7 @@ const ConfiguracionPage = () => {
           textStyle={{ color: '#8ba4cb', fontWeight:'400', fontSize: '0.9rem' }}
         />
       <div className={`${styles.general.minHeight} ${styles.general.background} ${styles.layout.container.padding} ${styles.spacing.margin.leftMain}`}>
-        <style jsx>{`
-          @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-          .animate-fadeIn { animation: fadeIn ${styles.animations.fadeIn.duration} ${styles.animations.fadeIn.timingFunction}; }
-        `}</style>
+        
 
         <div className="flex justify-start mb-6">
           {isDirty && <span className="text-orange-600 text-sm mr-4">✏️ Cambios sin guardar</span>}

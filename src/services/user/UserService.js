@@ -202,7 +202,7 @@ export const downloadTemplate = async (filters = {}) => {
         }, {});
 
         console.log('Solicitando plantilla con filtros (PascalCase):', pascalCaseFilters);
-        const response = await axiosInstance.post('api/user/export', pascalCaseFilters, {
+        const response = await axiosInstance.post(`${API_BASE}/users/Export`, pascalCaseFilters, {
             responseType: 'blob',
             headers: {
                 'Content-Type': 'application/json',
