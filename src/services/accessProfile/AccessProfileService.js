@@ -57,7 +57,7 @@ export const deletePerfilAcceso = async (idFunction) => {
  */
 export const downloadTemplate = async (filters = {}) => {
   try {
-    console.log('Solicitando plantilla de perfiles de acceso con filtros:', filters);
+  
     // Asegurar que la URL esté correcta (con mayúscula inicial en 'AccessProfiles')
     const response = await axiosInstance.post('api/AccessProfiles/Export', filters, {
       responseType: 'blob',
@@ -84,12 +84,7 @@ export const downloadTemplate = async (filters = {}) => {
       }
     }
   } catch (error) {
-    console.error('Error al descargar plantilla:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      headers: error.response?.headers
-    });
+   
     
     let errorMessage = 'Error al descargar la plantilla';
     
@@ -136,10 +131,8 @@ export const downloadTemplate = async (filters = {}) => {
 export const uploadTemplate = async (formData) => {
   try {
     // Inspeccionar el FormData para depuración
-    console.log('FormData contiene las siguientes claves:');
-    for (let pair of formData.entries()) {
-      console.log(pair[0] + ': ' + (pair[0] === 'Archivo' ? 'Archivo seleccionado' : pair[1]));
-    }
+   
+    
     
     // Asegurarse de que la URL esté correcta con mayúsculas iniciales
     // Según el controlador backend, siempre es el mismo endpoint: api/AccessProfiles/Import
@@ -157,12 +150,6 @@ export const uploadTemplate = async (formData) => {
       }
     });
 
-    console.log('Respuesta recibida del servidor:', {
-      status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
-      data: response.data
-    });
 
     // Verificar el código de estado HTTP
     if (response.status >= 200 && response.status < 300) {
@@ -191,14 +178,7 @@ export const uploadTemplate = async (formData) => {
     
     throw new Error(errorMessage);
   } catch (error) {
-    console.error('Error detallado al subir archivo:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      response: error.response?.data,
-      status: error.response?.status,
-      headers: error.response?.headers
-    });
+   
     
     let errorMessage = 'Error al subir el archivo';
     

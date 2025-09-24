@@ -57,9 +57,9 @@ export const getEmpresas = async (params = {}) => {
       currentPage = 1;
     } else {
       // If not fetching all, just fetch the requested page
-      console.log('getEmpresas - Enviando solicitud única:', apiParams);
+     
       const response = await axiosInstance.post(`${API_BASE}/Companies/Process`, apiParams);
-      console.log('getEmpresas - Respuesta recibida:', response.data);
+     
 
       // Handle response
       let companies = [];
@@ -96,11 +96,11 @@ export const getEmpresas = async (params = {}) => {
       // Actualizar el número de página en los parámetros
       apiParams.Page = currentPage;
 
-      console.log(`getEmpresas - Enviando solicitud para página ${currentPage}:`, apiParams);
+     
       
       // Realizar la petición
       const response = await axiosInstance.post(`${API_BASE}/Companies/Process`, apiParams);
-      console.log(`getEmpresas - Respuesta recibida para página ${currentPage}:`, response.data);
+     
       
       // Manejar la respuesta según la estructura esperada
       let companies = [];
@@ -145,8 +145,7 @@ export const getEmpresas = async (params = {}) => {
       testRecords: testRecords || 0
     };
   } catch (error) {
-    console.error('Error en getEmpresas:', error);
-    console.error('Detalles del error:', error.response?.data || error.message);
+
     throw error;
   }
 };
@@ -212,33 +211,22 @@ export const putEmpresa = async (empresa) => {
       }
     });
   } else {
-    console.error('Error: El objeto empresa es null o undefined');
+ 
     throw new Error('El objeto empresa es inválido');
   }
-  console.log('Enviando datos de empresa:', empresaDTO);
+
   try {
     const response = await axiosInstance.post(`${API_BASE}/Companies/Process`, empresaDTO);
-    console.log('Respuesta de actualización:', response.data);
+   
     return response.data;
   } catch (error) {
-    console.error('Error detallado en putEmpresa:', {
-      mensaje: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      headers: error.response?.headers,
-      config: {
-        url: error.config?.url,
-        method: error.config?.method,
-        data: error.config?.data
-      }
-    });
+   
     
     // Mostrar errores de validación específicos si existen
     if (error.response?.data?.errors) {
-      console.error('Errores de validación detallados:');
+    
       Object.entries(error.response.data.errors).forEach(([campo, mensajes]) => {
-        console.error(`Campo '${campo}':`, mensajes);
+       
       });
     }
     throw error;
@@ -271,7 +259,7 @@ export const deleteEmpresa = async (codeCompany) => {
  */
 export const downloadTemplate = async (filters = {}) => {
   try {
-    console.log('Solicitando plantilla de empresas con filtros:', filters);
+    
     
     // Asegurar que los nombres de parámetros estén en PascalCase como espera el backend
     const formattedFilters = {};
@@ -288,7 +276,7 @@ export const downloadTemplate = async (filters = {}) => {
       formattedFilters.Process = 'getCompanies';
     }
     
-    console.log('Filtros formateados:', formattedFilters);
+  
     
     const response = await axiosInstance.post('api/Companies/Export', formattedFilters, {
       responseType: 'blob',
@@ -315,12 +303,7 @@ export const downloadTemplate = async (filters = {}) => {
       }
     }
   } catch (error) {
-    console.error('Error al descargar plantilla:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      headers: error.response?.headers
-    });
+ 
     
     let errorMessage = 'Error al descargar la plantilla';
     
@@ -366,17 +349,14 @@ export const downloadTemplate = async (filters = {}) => {
  */
 export const uploadTemplate = async (formData) => {
   try {
-    console.log('Enviando archivo al servidor...');
+  
     
     // Verificar que el FormData tenga los campos correctos según espera el backend
     if (!formData.has('Archivo')) {
       console.warn('El FormData no contiene el campo "Archivo" que espera el backend');
     }
     
-    // Mostrar contenido del FormData para depuración
-    for (let [key, value] of formData.entries()) {
-      console.log(`FormData contiene: ${key} = ${value instanceof File ? value.name : value}`);
-    }
+  
     
     const response = await axiosInstance.post('api/Companies/Import', formData, {
       headers: {
@@ -387,11 +367,7 @@ export const uploadTemplate = async (formData) => {
       responseType: 'blob' // Permitir respuestas de tipo blob para manejar archivos de errores
     });
 
-    console.log('Respuesta recibida:', {
-      status: response.status,
-      headers: response.headers,
-      contentType: response.headers['content-type']
-    });
+  
 
     // Verificar el tipo de contenido de la respuesta
     const contentType = response.headers['content-type'];
@@ -425,7 +401,7 @@ export const uploadTemplate = async (formData) => {
     
     return response.data;
   } catch (error) {
-    console.error('Error al subir plantilla:', error);
+   
     
     // Manejar diferentes tipos de errores
     if (error.response) {

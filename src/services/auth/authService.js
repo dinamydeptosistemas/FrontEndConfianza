@@ -43,7 +43,7 @@ const handleLogout = async (isAutomatic = false) => {
             window.location.replace('/login');
         }
     } catch (error) {
-        console.error('Error durante el logout:', error);
+     
         // Aún así, limpiar la sesión y redirigir
         clearSession();
         if (!window.location.pathname.includes('/login')) {
@@ -148,7 +148,7 @@ const authService = {
                         cleanPermissions = JSON.parse(cleanPermissions);
                     }
                 } catch (error) {
-                    console.error('[authService] Error al limpiar permisos:', error);
+                   
                 }
             }
 

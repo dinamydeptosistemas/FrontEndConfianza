@@ -21,14 +21,14 @@ export const getPaperworks = async (params = {}) => {
             ...params
         };
 
-        console.log('PaperworkService: Enviando solicitud getPaperworks con parámetros:', requestParams);
+        
 
         // Realizar la petición
         const response = await axiosInstance.post(API_BASE, requestParams);
         
         // Procesar la respuesta para asegurar que los contadores están disponibles
         const data = response.data;
-        console.log('PaperworkService: Respuesta recibida:', data);
+        
         
         // Asegurar que los contadores existan en el formato esperado
         const processedData = {
@@ -48,10 +48,10 @@ export const getPaperworks = async (params = {}) => {
                              (data.countPorProcesar !== undefined ? data.countPorProcesar : 0)
         };
         
-        console.log('PaperworkService: Datos procesados con contadores:', processedData);
+       
         return processedData;
     } catch (error) {
-        console.error('PaperworkService: Error en getPaperworks:', error);
+       
         throw error;
     }
 };
@@ -89,7 +89,7 @@ export const putPaperwork = async (paperwork) => {
         
         return response.data;
     } catch (error) {
-        console.error('Error al actualizar el trámite:', error);
+       
         throw error;
     }
 };
