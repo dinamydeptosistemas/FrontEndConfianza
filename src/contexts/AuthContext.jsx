@@ -5,9 +5,107 @@ import PropTypes from 'prop-types';
 
 import axiosInstance from '../config/axios';
 import { useConfig } from './ConfigContext';
-import { LogoutConfirmModal } from '../components/modals/LogoutConfirmModal';
+
 import TimeoutModal from '../components/modals/TimeoutModal';
-import WorkActivityMonitor from '../components/WorkActivityMonitor';
+
+const FirstWarningModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors" aria-label="Cerrar modal">
+          <span className="text-2xl" aria-hidden="true">&times;</span>
+        </button>
+        <div className="flex items-center mb-4">
+          <div className="bg-orange-100 p-3 rounded-full mr-4">
+            <div className="w-6 h-6 bg-orange-500 rounded-full"></div> {/* Icono con Tailwind */}
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">Primer Aviso</h2>
+            <p className="text-gray-600 text-sm">Tu sesión está próxima a expirar</p>
+          </div>
+        </div>
+        <div className="mb-6">
+          <p className="text-gray-600 text-sm leading-relaxed">
+            Para mantener tu sesión activa, confirma que sigues trabajando. Si no respondes, tu sesión se cerrará pronto.
+          </p>
+        </div>
+        <div className="flex justify-center">
+          <button onClick={onClose} className="bg-blue-600 text-white py-3 px-8 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+            Aceptar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SecondWarningModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors" aria-label="Cerrar modal">
+          <span className="text-2xl" aria-hidden="true">&times;</span>
+        </button>
+        <div className="flex items-center mb-4">
+          <div className="bg-red-100 p-3 rounded-full mr-4">
+            <div className="w-6 h-6 bg-red-500 rounded-full"></div> {/* Icono con Tailwind */}
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">Segundo Aviso</h2>
+            <p className="text-gray-600 text-sm">Tu sesión está a punto de expirar</p>
+          </div>
+        </div>
+        <div className="mb-6">
+          <p className="text-gray-600 text-sm leading-relaxed">
+            Tu sesión se cerrará muy pronto. Por favor, guarda cualquier trabajo pendiente para no perderlo.
+          </p>
+        </div>
+        <div className="flex justify-center">
+          <button onClick={onClose} className="bg-blue-600 text-white py-3 px-8 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+            Aceptar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SessionExpiredModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
+        <div className="flex items-center mb-4">
+          <div className="bg-red-100 p-3 rounded-full mr-4">
+            <div className="w-6 h-6 bg-red-500 rounded-full"></div>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">Sesión Expirada</h2>
+            <p className="text-gray-600 text-sm">Tu sesión ha finalizado.</p>
+          </div>
+        </div>
+        <div className="mb-6">
+          <p className="text-gray-600 text-sm leading-relaxed">
+            Por tu seguridad, la sesión se ha cerrado. Por favor, inicia sesión de nuevo.
+          </p>
+        </div>
+        <div className="flex justify-center">
+          <button onClick={onClose} className="bg-blue-600 text-white py-3 px-8 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+            Aceptar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- FIN DE MODALES LOCALES ---
+
 
 // Constantes para mejor mantenimiento
 const STORAGE_KEYS = {
@@ -17,10 +115,7 @@ const STORAGE_KEYS = {
   TOKEN: 'token'
 };
 
-const STATUS_CODES = {
-  AUTHENTICATED: '200',
-  UNAUTHENTICATED: '404'
-};
+
 
 const PUBLIC_ROUTES = [
   '/login', 
@@ -68,9 +163,7 @@ const storageUtils = {
 
 // Utilidades para normalización de datos de usuario
 const userDataUtils = {
-  normalizeUserData: (responseData, jwtClaims = {}) => {
-    const userData = { ...responseData, ...jwtClaims };
-    
+  normalizeUserData: (userData) => {
     return {
       ...userData,
       UserId: userData.UserID || userData.UserId || userData.userId,
@@ -78,9 +171,42 @@ const userDataUtils = {
       UserFunction: userData.UserFunction || userData.userFunction,
       CodeFunction: userData.CodeFunction || userData.codeFunction,
       NameEntity: userData.NameEntity || userData.nameEntity,
+      nombrecomerciallogin: userData.NameEntity || userData.nameEntity, // Added this line
       StatusCode: userData.StatusCode || userData.statusCode || 200,
       Username: userData.Username || userData.username,
-      LoginMessage: userData.LoginMessage || userData.loginMessage || 'Sesión válida'
+      LoginMessage: userData.LoginMessage || userData.loginMessage || 'Sesión válida',
+      // Explicitly add other fields from the 'Data' object in the example JSON
+      AllowPermissions: userData.AllowPermissions,
+      AllModulesAccess: userData.AllModulesAccess,
+      AdministrationAccess: userData.AdministrationAccess,
+      ProductAccess: userData.ProductAccess,
+      InventoryAccess: userData.InventoryAccess,
+      PurchaseAccess: userData.PurchaseAccess,
+      SaleAccess: userData.SaleAccess,
+      CashRegisterAccess: userData.CashRegisterAccess,
+      BankAccess: userData.BankAccess,
+      AccountingAccess: userData.AccountingAccess,
+      PayrollAccess: userData.PayrollAccess,
+      GeneralCashAccess: userData.GeneralCashAccess,
+      GeneralCashCloseAccess: userData.GeneralCashCloseAccess,
+      CashRegister001Access: userData.CashRegister001Access,
+      CashRegister002Access: userData.CashRegister002Access,
+      CashRegister003Access: userData.CashRegister003Access,
+      CashRegister004Access: userData.CashRegister004Access,
+      PermitirMasdeUnaSesion: userData.PermitirMasdeUnaSesion,
+      CierreSesionJornada: userData.CierreSesionJornada,
+      BloqueoSesionMaxima: userData.BloqueoSesionMaxima,
+      // Also ensure top-level fields are captured if not in Data
+      Permissions: userData.Permissions,
+      estadousuario: userData.estadousuario,
+      TokenSession: userData.TokenSession,
+      NewBitacoraRegAcceso: userData.NewBitacoraRegAcceso,
+      IsPostulante: userData.IsPostulante,
+      Activo: userData.Activo,
+      SMS: userData.SMS,
+      WhatsApp: userData.WhatsApp,
+      // Add avisos data if present
+      avisos: userData.avisos || null,
     };
   },
 
@@ -115,7 +241,6 @@ const userDataUtils = {
       const decoded = jwtDecode(token);
       const currentTime = Date.now() / 1000;
       
-      // Verificar si el token ha expirado
       if (decoded.exp && decoded.exp < currentTime) {
         console.log('Token JWT expirado');
         return false;
@@ -140,21 +265,76 @@ export const useAuth = () => {
   return context;
 };
 
-// Estado inicial
-const initialState = {
-  user: null,
-  negocio: null,
-  loading: true,
-  error: null,
-  isLogoutModalOpen: false,
-  isInitialized: false,
-  showTimeoutModal: false
+const getTimeForToday = (timeString) => {
+  if (!timeString || !timeString.includes(':')) return new Date(0);
+  const [hours, minutes] = timeString.split(':');
+  const date = new Date();
+  date.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+  
+  // If the calculated time is in the past, assume it's for tomorrow
+  if (date.getTime() < new Date().getTime()) {
+    date.setDate(date.getDate() + 1);
+  }
+  return date;
 };
+
+export const formatTimeToHHMM = (date) => {
+  if (!date) return null;
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
+
+// Utilidad para obtener el estado inicial desde localStorage
+const getInitialAuthState = () => {
+  try {
+    const storedToken = storageUtils.getItem(STORAGE_KEYS.TOKEN);
+    const storedUser = storageUtils.getItem(STORAGE_KEYS.USER_DATA, true); // true para parsear JSON
+    const storedNegocio = storageUtils.getItem(STORAGE_KEYS.NEGOCIO, true); // true para parsear JSON
+
+    if (storedToken && storedUser && userDataUtils.isTokenValid(storedToken)) {
+      return {
+        user: storedUser,
+        negocio: storedNegocio,
+        loading: false,
+        error: null,
+        isLogoutModalOpen: false,
+        isInitialized: true, // Se establece en true si se carga correctamente desde el almacenamiento
+        showTimeoutModal: false,
+        isSessionExpiredModalOpen: false,
+        isFirstWarningModalOpen: false,
+        isSecondWarningModalOpen: false,
+        formattedExpirationTime: null,
+      };
+    }
+  } catch (error) {
+    console.error("Error al cargar el estado de autenticación inicial desde el almacenamiento:", error);
+    // Limpiar cualquier dato de almacenamiento corrupto
+    storageUtils.clearAll();
+  }
+  return {
+    user: null,
+    negocio: null,
+    loading: true, // Todavía cargando si no hay datos válidos en el almacenamiento
+    error: null,
+    isLogoutModalOpen: false,
+    isInitialized: false,
+    showTimeoutModal: false,
+    isSessionExpiredModalOpen: false,
+    isFirstWarningModalOpen: false,
+    isSecondWarningModalOpen: false,
+    formattedExpirationTime: null,
+  };
+};
+
+// Estado inicial
+const initialState = getInitialAuthState();
 
 export const AuthProvider = ({ children }) => {
   // Estados principales
   const [state, setState] = useState(initialState);
-  const { reloadConfig, clearConfig } = useConfig();
+  const { config, reloadConfig, clearConfig } = useConfig();
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -168,449 +348,248 @@ export const AuthProvider = ({ children }) => {
   const cleanupAndRedirect = useCallback(() => {
     console.log('Ejecutando cleanup y redirección...');
     
-    updateState({ loading: true });
-    clearConfig();
-    
+    // Clear storage first
     try {
-      // Limpiar localStorage de manera más eficiente
-      Object.values(STORAGE_KEYS).forEach(key => {
-        try {
-          localStorage.removeItem(key);
-        } catch (error) {
-          console.warn(`Error removiendo ${key} del localStorage:`, error);
-        }
-      });
-      
-      // Limpiar sessionStorage
-      try {
-        sessionStorage.removeItem(STORAGE_KEYS.NEGOCIO);
-        sessionStorage.clear();
-      } catch (error) {
-        console.warn('Error limpiando sessionStorage:', error);
-      }
-      
-      // Limpiar localStorage completamente como respaldo
-      try {
-        localStorage.clear();
-      } catch (error) {
-        console.warn('Error limpiando localStorage completamente:', error);
-      }
+      sessionStorage.clear();
+      localStorage.clear(); // This clears all localStorage, including non-auth related items
     } catch (error) {
-      console.error('Error durante la limpieza:', error);
+      console.error('Error durante la limpieza de storage:', error);
     }
     
-    // Resetear estado
-    setState(initialState);
+    // Reset state and ensure it's ready to render the login page
+    setState({ 
+      ...initialState, 
+      loading: false, // Ensure loading is false for the login page
+      isInitialized: true // Ensure AuthProvider renders its children
+    });
+    clearConfig(); // Clear config after state reset
     
-    // Establecer status como deslogueado
-    try {
-      storageUtils.setItem(STORAGE_KEYS.STATUS, STATUS_CODES.UNAUTHENTICATED);
-    } catch (error) {
-      console.warn('Error estableciendo status de logout:', error);
-    }
-    
-    // Navegar a login
-    try {
-      navigate('/login', { replace: true });
-      console.log('Cleanup completado, redirigido a login');
-    } catch (error) {
-      console.error('Error navegando a login:', error);
-      // Fallback usando window.location
-      window.location.href = '/login';
-    }
-  }, [navigate, updateState, clearConfig]);
+    navigate('/login', { replace: true });
+    console.log('Cleanup completado, redirigido a login');
+
+  }, [navigate, clearConfig]);
 
   // Función auxiliar para realizar logout con reintentos
-  const performLogoutRequest = useCallback(async (retries = 0) => {
-    // Para logout, no hacemos reintentos por defecto ya que lo importante es limpiar el estado local
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        // Usar el endpoint correcto según el README: POST /api/auth/logout-cookie
-        // Este endpoint maneja la invalidación de cookies en el servidor
-        await axiosInstance.post('/api/auth/logout-cookie', {}, {
-          withCredentials: true,
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          },
-          timeout: 5000 // 5 segundos de timeout
-        });
-        return { success: true };
-      } catch (error) {
-        console.error(`Intento ${attempt + 1} de logout falló:`, error);
-
-        // Si es un error 401 (no autorizado), el usuario ya está deslogueado en el servidor
-        // En este caso, procedemos con el logout localmente sin más reintentos
-        if (error?.response?.status === 401) {
-          console.log('Usuario ya deslogueado en el servidor (401), procediendo con logout local');
-          return { success: true };
-        }
-
-        // Para errores de red o de servidor, solo reintentamos una vez
-        if (attempt === retries) {
-          // Obtener mensaje de error específico del servidor si está disponible
-          const errorMessage = error?.response?.data?.message ||
-                              error?.response?.data?.Message ||
-                              error?.message ||
-                              'Error al cerrar sesión en el servidor';
-          return {
-            success: false,
-            error: errorMessage
-          };
-        }
-
-        // Esperar antes del siguiente intento (solo para errores de red)
-        await new Promise(resolve => setTimeout(resolve, 500));
+  const performLogoutRequest = useCallback(async () => {
+    try {
+      await axiosInstance.post('/api/auth/logout-cookie', {}, { withCredentials: true });
+      return { success: true };
+    } catch (error) {
+      console.error('Logout en servidor falló:', error);
+      if (error?.response?.status === 401) {
+        return { success: true }; // Ya está deslogueado en el servidor
       }
+      return { success: false, error: error.message };
     }
   }, []);
 
   // Logout confirmado por el usuario
   const confirmLogout = useCallback(async () => {
     updateState({ loading: true, error: null });
-    storageUtils.setItem(STORAGE_KEYS.STATUS, STATUS_CODES.UNAUTHENTICATED);
-
-    try {
-      // Solo un reintento para logout confirmado
-      const result = await performLogoutRequest(1);
-
-      if (result.success) {
-        updateState({ isLogoutModalOpen: false, error: null, loading: false });
-        cleanupAndRedirect();
-      } else {
-        console.error('Error al cerrar sesión:', result.error);
-        updateState({
-          error: result.error || 'Error desconocido al cerrar sesión',
-          loading: false,
-          isLogoutModalOpen: false
-        });
-        // Ejecutar cleanup después de un breve delay para mostrar el error
-        setTimeout(() => {
-          cleanupAndRedirect();
-        }, 3000);
-      }
-    } catch (error) {
-      console.error('Error inesperado en confirmLogout:', error);
-      updateState({
-        error: error.message || 'Error inesperado al cerrar sesión',
-        loading: false,
-        isLogoutModalOpen: false
-      });
-      setTimeout(() => {
-        cleanupAndRedirect();
-      }, 3000);
-    }
+    await performLogoutRequest();
+    cleanupAndRedirect();
   }, [performLogoutRequest, cleanupAndRedirect, updateState]);
 
   // Logout directo (sin confirmación)
   const directLogout = useCallback(async () => {
-    try {
-      updateState({ loading: true });
-      storageUtils.setItem(STORAGE_KEYS.STATUS, STATUS_CODES.UNAUTHENTICATED);
-
-      // Para logout directo, no hacemos reintentos
-      const result = await performLogoutRequest(0);
-      if (!result.success) {
-        console.error('Error en logout directo:', result.error);
-        updateState({
-          error: result.error || 'Error desconocido en logout directo',
-          loading: false,
-        });
-      }
-    } catch (error) {
-      console.error('Error inesperado en logout directo:', error);
-      updateState({
-        error: error.message || 'Error inesperado en logout directo',
-        loading: false,
-      });
-    } finally {
-      cleanupAndRedirect();
-    }
-  }, [performLogoutRequest, cleanupAndRedirect, updateState]);
+    await performLogoutRequest();
+    cleanupAndRedirect();
+  }, [performLogoutRequest, cleanupAndRedirect]);
 
   // Mostrar modal de confirmación de logout
   const logout = useCallback(() => {
-    // Verificar si el usuario está autenticado antes de mostrar el modal
-    const currentStatus = storageUtils.getItem(STORAGE_KEYS.STATUS);
-    const currentUser = storageUtils.getItem(STORAGE_KEYS.USER_DATA, true);
-    const currentToken = storageUtils.getItem(STORAGE_KEYS.TOKEN);
-    
-    // Validaciones múltiples para asegurar que el usuario está realmente autenticado
-    const isAuthenticated = (
-      currentStatus === STATUS_CODES.AUTHENTICATED && 
-      currentUser && 
-      currentToken && 
-      userDataUtils.isTokenValid(currentToken)
-    );
-    
+    const isAuthenticated = state.user && userDataUtils.isTokenValid(storageUtils.getItem(STORAGE_KEYS.TOKEN));
     if (!isAuthenticated) {
-      console.log('Usuario no autenticado o token inválido, redirigiendo directamente');
       cleanupAndRedirect();
       return;
     }
-    
     updateState({ isLogoutModalOpen: true });
-  }, [updateState, cleanupAndRedirect]);
+  }, [state.user, updateState, cleanupAndRedirect]);
 
-  // Cancelar logout
-  const cancelLogout = useCallback(() => {
-    updateState({ 
-      isLogoutModalOpen: false, 
-      error: null 
-    });
-  }, [updateState]);
 
   const setNegocio = useCallback((negocioData) => {
     if (negocioData) {
       updateState({ negocio: negocioData });
       storageUtils.setItem(STORAGE_KEYS.NEGOCIO, negocioData);
-      try {
-        sessionStorage.setItem(STORAGE_KEYS.NEGOCIO, JSON.stringify(negocioData));
-      } catch (error) {
-        console.error('Error guardando en sessionStorage:', error);
-      }
+      sessionStorage.setItem(STORAGE_KEYS.NEGOCIO, JSON.stringify(negocioData));
     }
   }, [updateState]);
 
+  // Verificar usuario actual
+  const fetchCurrentUser = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get('/api/auth/current-user', { withCredentials: true });
+      alert(response)
+      if (response.success) {
+        const fullResponseData = response.data;
+        const nestedData = response.data.Data;
+        const jwtToken = fullResponseData.TokenSession;
+        const jwtClaims = userDataUtils.decodeJwtToken(jwtToken || '');
+        const horaTerminoJornadaLaboral = response.HoraTerminoJornadaLaboral;
+        const primerAviso = response.data.primerAviso;
+        const segundoAviso = response.data.segundoAviso;
+
+        const combinedData = {
+          ...fullResponseData,
+          ...(nestedData && nestedData),
+          ...jwtClaims,
+          avisos: { // Add avisos to combinedData
+            primeraviso: primerAviso,
+            segundoaviso: segundoAviso,
+            expiracion: horaTerminoJornadaLaboral,
+          },
+        };
+        const normalizedUser = userDataUtils.normalizeUserData(combinedData);
+        updateState({ user: normalizedUser, loading: false, isInitialized: true, error: null });
+        const negocioData = userDataUtils.extractNegocioData(normalizedUser);
+        if (negocioData) setNegocio(negocioData);
+      } else {
+         console.log(response)
+        // If API call is successful but backend indicates not authenticated
+        if (!PUBLIC_ROUTES.includes(location.pathname)) cleanupAndRedirect();
+             
+        else updateState({ loading: false, isInitialized: true });
+      }
+    } catch (error) {
+      console.error('Error al verificar usuario actual:', error);
+      // If API call fails (e.g., 401 due to invalid/missing cookie)
+      if (!PUBLIC_ROUTES.includes(location.pathname)) {
+        cleanupAndRedirect();
+      }
+      else {
+        // On public routes, if current user check fails, ensure user state is cleared
+        updateState({ user: null, loading: false, isInitialized: true, error: null });
+      }
+    } finally {
+      // Ensure isInitialized is always set to true after the check
+      if (!state.isInitialized) updateState({ isInitialized: true });
+    }
+  }, [location.pathname, cleanupAndRedirect, updateState, state.isInitialized, setNegocio]);
+
   // Función de login
   const login = useCallback(async (credentials) => {
+    updateState({ loading: true, error: null });
     try {
-      console.log('Iniciando proceso de login');
-      updateState({ loading: true, error: null });
-      
-      const response = await axiosInstance.post('/api/auth/login', credentials, {
-        withCredentials: true
-      });
+      const response = await axiosInstance.post('/api/auth/login', credentials, { withCredentials: true });
       
       if (!response.data.Success) {
         throw new Error(response.data.Message || 'Error en la autenticación');
       }
 
-      const responseData = response.data.Data || response.data;
-      const jwtToken = response.data.TokenSession;
-      const jwtClaims = userDataUtils.decodeJwtToken(jwtToken);
-      
-      // Normalizar datos del usuario
-      const normalizedUser = userDataUtils.normalizeUserData(responseData, {
-        ...response.data,
-        ...jwtClaims,
-        JWTToken: jwtToken,
-        SessionToken: responseData.TokenSession
-      });
+      const fullResponseData = response.data; // Get the whole response.data
+      const nestedData = response.data.Data; // Get the nested Data object
 
-      // Actualizar estado
-      updateState({ user: normalizedUser });
+      const jwtToken = fullResponseData.TokenSession;
+      const jwtClaims = userDataUtils.decodeJwtToken(jwtToken);
+      const horaTerminoJornadaLaboral = response.data.horaTerminoJornadaLaboral;
+      const primerAviso = response.data.primerAviso;
+      const segundoAviso = response.data.segundoAviso;
+
+      // Combine all relevant data sources, prioritizing nestedData and then jwtClaims
+      const combinedData = {
+        ...fullResponseData, // Start with top-level response data
+        ...(nestedData && nestedData), // Overlay with nested Data if it exists
+        ...jwtClaims, // Overlay with JWT claims
+        avisos: { // Add avisos to combinedData
+          primeraviso: primerAviso,
+          segundoaviso: segundoAviso,
+          expiracion: horaTerminoJornadaLaboral,
+        },
+      };
       
-      // Guardar en localStorage
-      if (jwtToken) {
-        storageUtils.setItem(STORAGE_KEYS.TOKEN, jwtToken);
-      }
-      storageUtils.setItem(STORAGE_KEYS.STATUS, STATUS_CODES.AUTHENTICATED);
+      const normalizedUser = userDataUtils.normalizeUserData(combinedData);
+
+      updateState({ user: normalizedUser, loading: false, error: null });
+      
+      // If using HTTP-only cookies, storing token in localStorage is not strictly necessary for session management
+      if (jwtToken) storageUtils.setItem(STORAGE_KEYS.TOKEN, jwtToken);
       storageUtils.setItem(STORAGE_KEYS.USER_DATA, normalizedUser);
       
-      // Manejar datos del negocio
       const negocioData = userDataUtils.extractNegocioData(normalizedUser);
-      if (negocioData) {
-        updateState({ negocio: negocioData });
-        storageUtils.setItem(STORAGE_KEYS.NEGOCIO, negocioData);
-        sessionStorage.setItem(STORAGE_KEYS.NEGOCIO, JSON.stringify(negocioData));
-      }
+      if (negocioData) setNegocio(negocioData);
 
       await reloadConfig();
       
+      // After successful login, the user state is set. Let ProtectedRoute handle the initial check on next route.
+      // Removed: await fetchCurrentUser();
+
       return normalizedUser;
-      
     } catch (error) {
       const errorMessage = error.response?.data?.Message || 'Error en la autenticación';
-      updateState({ error: errorMessage });
+      updateState({ error: errorMessage, loading: false });
       throw error;
-    } finally {
-      updateState({ loading: false });
-    }
-  }, [updateState, reloadConfig]);
+    } 
+  }, [updateState, reloadConfig, setNegocio]);
 
-  // Funciones auxiliares para fetchCurrentUser
-  const restoreStoredData = useCallback(() => {
-    const storedNegocio = storageUtils.getItem(STORAGE_KEYS.NEGOCIO, true);
-    if (storedNegocio) {
-      updateState({ negocio: storedNegocio });
-    }
-
-    const storedStatus = storageUtils.getItem(STORAGE_KEYS.STATUS);
-    const storedUserData = storageUtils.getItem(STORAGE_KEYS.USER_DATA, true);
-    
-    if (storedStatus === STATUS_CODES.AUTHENTICATED && storedUserData) {
-      console.log('Usuario encontrado en localStorage');
-      updateState({ 
-        user: storedUserData, 
-        loading: false, 
-        isInitialized: true 
-      });
-      return true;
-    }
-    return false;
-  }, [updateState]);
-
-  const processServerResponse = useCallback((response) => {
-    const isValidResponse = (
-      response.status === 200 ||
-      response.data.StatusCode === 200 || 
-      response.data.statusCode === 200 ||
-      response.data.Success || 
-      response.data.success ||
-      response.data.LoginMessage === 'Sesión válida' || 
-      response.data.LoginMessage === 'Inicio de sesión exitoso'
-    );
-
-    if (!isValidResponse) return false;
-
-    const responseData = response.data.Data || response.data;
-    const jwtToken = response.data.TokenSession;
-    const jwtClaims = userDataUtils.decodeJwtToken(jwtToken);
-    
-    const normalizedUser = userDataUtils.normalizeUserData({
-      ...responseData,
-      ...response.data,
-      ...jwtClaims
-    });
-
-    // Actualizar estado y localStorage
-    updateState({ user: normalizedUser });
-    
-    if (jwtToken) {
-      storageUtils.setItem(STORAGE_KEYS.TOKEN, jwtToken);
-    }
-    storageUtils.setItem(STORAGE_KEYS.STATUS, STATUS_CODES.AUTHENTICATED);
-    storageUtils.setItem(STORAGE_KEYS.USER_DATA, normalizedUser);
-
-    // Manejar negocio
-    const negocioData = userDataUtils.extractNegocioData(normalizedUser);
-    if (negocioData) {
-      updateState({ negocio: negocioData });
-      storageUtils.setItem(STORAGE_KEYS.NEGOCIO, negocioData);
-      try {
-        sessionStorage.setItem(STORAGE_KEYS.NEGOCIO, JSON.stringify(negocioData));
-      } catch (error) {
-        console.error('Error guardando en sessionStorage:', error);
-      }
-    }
-    
-    return true;
-  }, [updateState]);
-
-  const handleFetchError = useCallback((error) => {
-    const isPublicRoute = PUBLIC_ROUTES.includes(location.pathname);
-    const isUnauthorized = error?.response?.status === 401;
-    
-    if (isUnauthorized) {
-      // Intentar usar datos almacenados como fallback
-      const storedStatus = storageUtils.getItem(STORAGE_KEYS.STATUS);
-      const storedUserData = storageUtils.getItem(STORAGE_KEYS.USER_DATA, true);
-
-      if (storedStatus === STATUS_CODES.AUTHENTICATED && storedUserData) {
-        console.warn('Error 401 - usando datos locales como fallback');
-        updateState({ user: storedUserData });
-        return;
-      }
-
-      if (!isPublicRoute) {
-        console.log('Error 401 sin datos locales válidos - redirigiendo');
-        cleanupAndRedirect();
-      }
-    } else if (!isPublicRoute) {
-      // Para otros errores, intentar usar localStorage como fallback
-      const storedStatus = storageUtils.getItem(STORAGE_KEYS.STATUS);
-      const storedUserData = storageUtils.getItem(STORAGE_KEYS.USER_DATA, true);
-      
-      if (storedStatus === STATUS_CODES.AUTHENTICATED && storedUserData) {
-        console.log('Usando datos del localStorage como fallback');
-        updateState({ user: storedUserData });
-      } else {
-        cleanupAndRedirect();
-      }
-    }
-  }, [location.pathname, updateState, cleanupAndRedirect]);
-
-  // Verificar usuario actual (función principal simplificada)
-  const fetchCurrentUser = useCallback(async () => {
-    try {
-      const isPublicRoute = PUBLIC_ROUTES.includes(location.pathname);
-      console.log(`Verificando usuario - Ruta: ${location.pathname}, ¿Pública?: ${isPublicRoute}`);
-      
-      // Intentar restaurar datos almacenados
-      if (restoreStoredData()) {
-        return;
-      }
-
-      // Consultar al servidor
-      console.log('Consultando usuario actual al servidor...');
-      const response = await axiosInstance.get('/api/auth/current-user', {
-        withCredentials: true,
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-
-      const processed = processServerResponse(response);
-      if (!processed && !isPublicRoute) {
-        console.log('Respuesta del servidor indica sesión inválida');
-        cleanupAndRedirect();
-      }
-      
-    } catch (error) {
-      console.error('Error al verificar usuario actual:', error);
-      handleFetchError(error);
-    } finally {
-      updateState({ 
-        loading: false, 
-        isInitialized: true 
-      });
-    }
-  }, [location.pathname, restoreStoredData, processServerResponse, handleFetchError, cleanupAndRedirect, updateState]);
-
-  // Handlers para modal de timeout
-  const handleShowTimeoutModal = useCallback(() => {
-    if (!PUBLIC_ROUTES.includes(location.pathname)) {
-      updateState({ showTimeoutModal: true });
-    }
-  }, [location.pathname, updateState]);
-
-  const handleContinueTimeout = useCallback(() => {
-    updateState({ showTimeoutModal: false });
-    // Reiniciar el timeout manualmente
-    window.dispatchEvent(new Event('mousedown'));
-  }, [updateState]);
-
+  // Handlers para modales de aviso y timeout
+  const handleShowTimeoutModal = useCallback(() => updateState({ showTimeoutModal: true }), [updateState]);
+  const handleContinueTimeout = useCallback(() => updateState({ showTimeoutModal: false }), [updateState]);
   const handleLogoutTimeout = useCallback(() => {
     updateState({ showTimeoutModal: false });
     directLogout();
   }, [directLogout, updateState]);
 
+  const handleCloseFirstWarning = useCallback(() => updateState({ isFirstWarningModalOpen: false }), [updateState]);
+  const handleCloseSecondWarning = useCallback(() => updateState({ isSecondWarningModalOpen: false }), [updateState]);
+  const handleSessionExpired = useCallback(() => {
+    directLogout();
+  }, [directLogout]);
+
+  // EFECTO PARA EL RELOJ DE EXPIRACIÓN DE SESIÓN
+  useEffect(() => {
+    let sessionClockInterval;
+    if (state.user && state.user.avisos) {
+      let warningsShown = { first: false, second: false };
+      const checkSessionTimes = () => {
+        try {
+          const avisos = state.user.avisos;
+          const now = new Date();
+
+          const firstWarningTime = getTimeForToday(avisos.primeraviso);
+          const secondWarningTime = getTimeForToday(avisos.segundoaviso);
+          const expirationTime = getTimeForToday(avisos.expiracion);
+
+          if (now >= expirationTime) {
+            updateState({ isSessionExpiredModalOpen: true });
+            if (sessionClockInterval) clearInterval(sessionClockInterval);
+            return;
+          }
+          if (now >= secondWarningTime && !warningsShown.second) {
+            warningsShown.second = true;
+            updateState({ isSecondWarningModalOpen: true });
+          }
+          if (now >= firstWarningTime && !warningsShown.first) {
+            warningsShown.first = true;
+            updateState({ isFirstWarningModalOpen: true });
+          }
+        } catch (error) {
+          console.error("Error al verificar los tiempos de sesión:", error);
+        }
+      };
+
+      checkSessionTimes();
+      sessionClockInterval = setInterval(checkSessionTimes, 30000);
+    }
+
+    return () => {
+      if (sessionClockInterval) clearInterval(sessionClockInterval);
+    };
+  }, [state.user, updateState]);
+
   // Efecto para verificación inicial de sesión
   useEffect(() => {
-    const checkSession = async () => {
-      const status = storageUtils.getItem(STORAGE_KEYS.STATUS);
-      if (status === STATUS_CODES.UNAUTHENTICATED) {
-        updateState({ 
-          loading: false, 
-          isInitialized: true 
-        });
-        return;
-      }
-      await fetchCurrentUser();
-    };
-    
-    checkSession();
-  }, [fetchCurrentUser, updateState]);
+    // Only fetch current user if not on a public route AND if not already initialized from storage
+    if (!PUBLIC_ROUTES.includes(location.pathname) && !state.isInitialized) {
+      fetchCurrentUser();
+    } else if (PUBLIC_ROUTES.includes(location.pathname) && !state.isInitialized) {
+      // If on a public route and not initialized, just set initialized to true and loading to false
+      updateState({ loading: false, isInitialized: true });
+    }
+  }, [location.pathname, fetchCurrentUser, updateState, state.isInitialized]); // Added state.isInitialized to dependencies
 
-  // Valor del contexto (memoizado para evitar re-renders innecesarios)
+  // Valor del contexto
   const contextValue = useMemo(() => ({
-    user: state.user,
-    negocio: state.negocio,
-    loading: state.loading,
-    error: state.error,
-    isInitialized: state.isInitialized,
+    ...state,
     login,
     logout,
     directLogout,
@@ -621,52 +600,39 @@ export const AuthProvider = ({ children }) => {
     showTimeoutModal: handleShowTimeoutModal,
     handleContinueTimeout,
     handleLogoutTimeout,
-    isTimeoutModalOpen: state.showTimeoutModal
-  }), [
-    state.user,
-    state.negocio, 
-    state.loading,
-    state.error,
-    state.isInitialized,
-    state.showTimeoutModal,
-    login,
-    logout,
-    directLogout,
-    confirmLogout,
-    cleanupAndRedirect,
-    fetchCurrentUser,
-    setNegocio,
-    handleShowTimeoutModal,
-    handleContinueTimeout,
-    handleLogoutTimeout
-  ]);
+    handleCloseFirstWarning,
+    handleCloseSecondWarning,
+    handleSessionExpired
+  }), [state, login, logout, directLogout, confirmLogout, cleanupAndRedirect, fetchCurrentUser, setNegocio, handleShowTimeoutModal, handleContinueTimeout, handleLogoutTimeout, handleCloseFirstWarning, handleCloseSecondWarning, handleSessionExpired]);
 
-  // No renderizar hasta estar inicializado
   if (!state.isInitialized) {
-    return null;
+    return null; // O un spinner de carga global
   }
 
   return (
     <AuthContext.Provider value={contextValue}>
-      <WorkActivityMonitor />
       {children}
-      <LogoutConfirmModal
-        isOpen={state.isLogoutModalOpen}
-        onConfirm={confirmLogout}
-        onCancel={cancelLogout}
-        error={state.error}
-        loading={state.loading}
-      />
       <TimeoutModal
         open={state.showTimeoutModal}
         onContinue={handleContinueTimeout}
         onLogout={handleLogoutTimeout}
       />
+      <FirstWarningModal 
+        isOpen={state.isFirstWarningModalOpen} 
+        onClose={handleCloseFirstWarning} 
+      />
+      <SecondWarningModal 
+        isOpen={state.isSecondWarningModalOpen} 
+        onClose={handleCloseSecondWarning} 
+      />
+      <SessionExpiredModal 
+        isOpen={state.isSessionExpiredModalOpen} 
+        onClose={handleSessionExpired} 
+      />
     </AuthContext.Provider>
   );
 };
 
-// Validación de PropTypes
 AuthProvider.propTypes = {
   children: PropTypes.node.isRequired
 };

@@ -32,14 +32,7 @@ import EmptyPage from '../pages/EmptyPage';
 const AppRoutesContent = () => {
     const { user } = useAuth();
 
-    const isAuthenticated = user && (
-        user.StatusCode === 200 || 
-        user.LoginMessage === 'Inicio de sesión exitoso' || 
-        user.LoginMessage === 'Sesión válida' ||
-        user.UserID || 
-        user.UserId ||
-        (user.Username && user.CodeFunction !== undefined)
-    );
+    const isAuthenticated = !!user;
     
     const isManagerSystem = isAuthenticated && (
         user.CodeFunction === 1 || 

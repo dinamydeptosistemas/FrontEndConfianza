@@ -132,7 +132,7 @@ const DashboardLayout = ({ children }) => {
             <div className="flex flex-1 overflow-hidden">
                 <div className="w-[180px] bg-[#1e4e9c] flex flex-col flex-shrink-0">
                     <div className="text-white text-center py-4">
-                        <h1 className="text-[15px] px-2 font-bold"> {config.nombrecomerciallogin || 'N/A'} </h1>
+                        <h1 className="text-[15px] px-2 font-bold"> {config?.nombrecomerciallogin || 'N/A'} </h1>
 
                         <p className="text-xs mt-1">Sistema de Gestión y<br></br></p>
                         <p className="text-xs">Control de Negocios</p>

@@ -31,7 +31,7 @@ export const ConfigProvider = ({ children }) => {
   }, []);
 
   const clearConfig = useCallback(() => {
-    setLoading(true);
+    setLoading(false);
     setConfig(null);
   }, []);
 
