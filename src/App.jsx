@@ -18,8 +18,7 @@ const AppContainer = () => {
             <CurrentUserProvider>
             <AppRoutes />
             </CurrentUserProvider>
-          </NotificationProvider>
-          
+          </NotificationProvider>   
         </AuthProvider>
       </ConfigProvider>
     </ErrorBoundary>

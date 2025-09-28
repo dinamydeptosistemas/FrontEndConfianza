@@ -6,7 +6,7 @@ import { useAuth } from './AuthContext';
 import { SecondWarningModal } from '../components/common/SecondWarningModal';
 import { SessionExpiredModal } from '../components/common/SessionExpiredModal';
 import axiosInstance from '../config/axios';
-
+import { useConfig } from '../contexts/ConfigContext';
 
 const getTimeForToday = (timeString) => {
   if (!timeString || !timeString.includes(':')) return new Date(0);
@@ -16,16 +16,10 @@ const getTimeForToday = (timeString) => {
   return date;
 };
 
-// Utilidad para limpiar el formato "HH:MM:SS" a "HH:MM"
 const cleanTimeString = (timeString) => {
   if (!timeString || typeof timeString !== 'string') return null;
-  // Toma los primeros 5 caracteres ("HH:MM")
-  return timeString.substring(0, 5); 
+  return timeString.substring(0, 5);
 };
-
-// =================================================================================
-// 3. CONTEXTO DE USUARIO (CurrentUserContext)
-// =================================================================================
 
 const CurrentUserContext = createContext();
 
@@ -51,101 +45,95 @@ export const CurrentUserProvider = ({ children }) => {
   const location = useLocation();
   const [state, setState] = useState(initialState);
   const { directLogout } = useAuth();
+  const { config, loading: configLoading } = useConfig();
 
   const updateState = useCallback((updates) => {
     setState(prevState => ({ ...prevState, ...updates }));
   }, []);
 
-  // Función para simular la obtención del usuario actual
   const fetchCurrentUser = useCallback(async () => {
     updateState({ loading: true, error: null });
     try {
       const response = await axiosInstance.get('/api/auth/current-user');
-
       if (response.data && response.data.success) {
         const userData = response.data;
-        // Mapeo de campos del JSON a la estructura esperada por la aplicación
         const normalizedUser = {
           Username: userData.username,
-          UserType: userData.userFunction, // userFunction mapeado a UserType
+          UserType: userData.userFunction,
           NameEntity: userData.nameEntity,
           CodeEntity: userData.codeEntity,
           avisos: {
-            // Normalización de HH:MM:SS a HH:MM
             primeraviso: cleanTimeString(userData.primerAviso),
             segundoaviso: cleanTimeString(userData.segundoAviso),
             expiracion: cleanTimeString(userData.horaTerminoJornadaLaboral),
           },
         };
-        
-        updateState({ 
-            user: normalizedUser, 
-            loading: false, 
-            isInitialized: true, 
-            error: null 
-        });
+        updateState({ user: normalizedUser, loading: false, isInitialized: true, error: null });
         return normalizedUser;
       } else {
         throw new Error(response.data.Message || 'Fallo al cargar usuario.');
       }
     } catch (error) {
       console.error('Error al obtener el usuario actual:', error);
-      updateState({ 
-        user: null, 
-        loading: false, 
-        isInitialized: true, 
-        error: error.message || 'Error desconocido al obtener usuario' 
-      });
+      updateState({ user: null, loading: false, isInitialized: true, error: error.message || 'Error desconocido al obtener usuario' });
       return null;
     }
   }, [updateState]);
 
-  // Handlers para modales de aviso
   const handleCloseFirstWarning = useCallback(() => updateState({ isFirstWarningModalOpen: false }), [updateState]);
   const handleCloseSecondWarning = useCallback(() => updateState({ isSecondWarningModalOpen: false }), [updateState]);
   const handleSessionExpired = useCallback(() => {
     console.log('Sesión Expirada. Ejecutando logout completo...');
+    updateState({ isSessionExpiredModalOpen: false });
     directLogout();
-  }, [directLogout]);
+  }, [directLogout, updateState]);
 
-  // EFECTO 1: Verificación inicial de usuario
   useEffect(() => {
     const publicPages = ['/login', '/registrar-usuario-interno', '/registrar-usuario-externo'];
     if (publicPages.includes(location.pathname)) {
       updateState({ loading: false, isInitialized: true, user: null });
       return;
     }
-
     if (!state.isInitialized) {
-        fetchCurrentUser();
+      fetchCurrentUser();
     }
   }, [state.isInitialized, fetchCurrentUser, location.pathname, updateState]);
 
-  // EFECTO 2: LÓGICA DEL RELOJ DE SESIÓN
   useEffect(() => {
-    const publicPages = ['/login', '/registrar-usuario-interno', '/registrar-usuario-externo'];
-    if (publicPages.includes(location.pathname) || !state.user) {
-      // Si estamos en una página pública o no hay usuario, nos aseguramos que los modales estén cerrados y no hacemos nada más.
-      updateState({
-        isFirstWarningModalOpen: false,
-        isSecondWarningModalOpen: false,
-        isSessionExpiredModalOpen: false,
-      });
+    console.log('[Debug] Evaluando useEffect del reloj de sesión...');
+
+    if (!config || configLoading) {
+      console.log('[Debug] Configuración no cargada o en proceso. Abortando reloj.');
       return;
     }
+
+    if (config.cerradosesioninactiva === false) {
+      console.log('[Debug] Cierre de sesión por inactividad está deshabilitado en la configuración.');
+      return;
+    }
+
+    console.log('[Debug] Cierre de sesión por inactividad está HABILITADO.');
+
+    const publicPages = ['/login', '/registrar-usuario-interno', '/registrar-usuario-externo'];
+    if (publicPages.includes(location.pathname) || !state.user) {
+      console.log('[Debug] En página pública o sin usuario. Abortando reloj.');
+      updateState({ isFirstWarningModalOpen: false, isSecondWarningModalOpen: false, isSessionExpiredModalOpen: false });
+      return;
+    }
+
+    console.log('[Debug] Usuario autenticado y en página privada.');
 
     let sessionClockInterval;
 
     if (state.user && state.user.avisos) {
-      // Usamos una referencia mutable local para controlar si ya se mostraron los avisos
+      console.log('[Debug] Usuario tiene objeto de avisos. Configurando intervalo...');
+      
       let warningsShown = { first: state.isFirstWarningModalOpen, second: state.isSecondWarningModalOpen };
       const { primeraviso, segundoaviso, expiracion } = state.user.avisos;
 
       const checkSessionTimes = () => {
         try {
           const now = new Date();
-
-          // Las horas se obtienen del estado del usuario
           const firstWarningTime = getTimeForToday(primeraviso);
           const secondWarningTime = getTimeForToday(segundoaviso);
           const expirationTime = getTimeForToday(expiracion);
@@ -154,12 +142,7 @@ export const CurrentUserProvider = ({ children }) => {
           const timeFormat = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
           console.log(`[Reloj] Hora Actual: ${now.toLocaleTimeString('es-CL', timeFormat)}`);
           console.log(`[Reloj] Hora de Expiración: ${expirationTime.toLocaleTimeString('es-CL', timeFormat)}`);
-          console.log(`[Debug] ¿Tiempo de expirar? ${now >= expirationTime}`);
-          console.log(`[Debug] ¿Tiempo del 2do aviso? ${now >= secondWarningTime}`);
-          console.log(`[Debug] ¿Tiempo del 1er aviso? ${now >= firstWarningTime}`);
 
-
-          // 1. Lógica de Expiración (Máxima Prioridad)
           if (now >= expirationTime) {
             console.warn('[Reloj] Sesión Expirada!');
             updateState({ isSessionExpiredModalOpen: true });
@@ -167,62 +150,52 @@ export const CurrentUserProvider = ({ children }) => {
             return;
           }
 
-          // 2. Lógica de Segundo Aviso
           if (now >= secondWarningTime && !warningsShown.second) {
             console.log('[Reloj] Activando Segundo Aviso.');
             warningsShown.second = true;
             updateState({ isSecondWarningModalOpen: true });
           }
           
-          // 3. Lógica de Primer Aviso
-          // Solo mostrar el primer aviso si el segundo no está ya activo
           if (now >= firstWarningTime && !warningsShown.first && !warningsShown.second) {
             console.log('[Reloj] Activando Primer Aviso.');
             warningsShown.first = true;
             updateState({ isFirstWarningModalOpen: true });
           }
-
         } catch (error) {
           console.error("Error al verificar los tiempos de sesión:", error);
         }
       };
 
-      // Ejecutar inmediatamente y luego cada 10 segundos
       checkSessionTimes();
-      sessionClockInterval = setInterval(checkSessionTimes, 10000); // Check cada 10 segundos
+      sessionClockInterval = setInterval(checkSessionTimes, 10000);
+      console.log('[Debug] Intervalo configurado para ejecutarse cada 10 segundos.');
+
+    } else {
+      console.log('[Debug] Usuario NO tiene objeto de avisos. El reloj no se configurará.');
     }
 
-    // Función de limpieza
     return () => {
-      if (sessionClockInterval) clearInterval(sessionClockInterval);
+      if (sessionClockInterval) {
+        console.log('[Debug] Limpiando intervalo del reloj de sesión.');
+        clearInterval(sessionClockInterval);
+      }
     };
-  }, [state.user, updateState, location.pathname]);
+  }, [state.user, updateState, location.pathname, config, configLoading]);
 
   const contextValue = useMemo(() => ({
     ...state,
-    fetchCurrentUser, 
+    fetchCurrentUser,
     handleCloseFirstWarning,
     handleCloseSecondWarning,
     handleSessionExpired,
   }), [state, fetchCurrentUser, handleCloseFirstWarning, handleCloseSecondWarning, handleSessionExpired]);
 
-
   return (
     <CurrentUserContext.Provider value={contextValue}>
       {children}
-      {/* Renderizado de Modales */}
-      <FirstWarningModal 
-        isOpen={state.isFirstWarningModalOpen} 
-        onClose={handleCloseFirstWarning} 
-      />
-      <SecondWarningModal 
-        isOpen={state.isSecondWarningModalOpen} 
-        onClose={handleCloseSecondWarning} 
-      />
-      <SessionExpiredModal 
-        isOpen={state.isSessionExpiredModalOpen} 
-        onClose={handleSessionExpired} 
-      />
+      <FirstWarningModal isOpen={state.isFirstWarningModalOpen} onClose={handleCloseFirstWarning} />
+      <SecondWarningModal isOpen={state.isSecondWarningModalOpen} onClose={handleCloseSecondWarning} />
+      <SessionExpiredModal isOpen={state.isSessionExpiredModalOpen} onClose={handleSessionExpired} />
     </CurrentUserContext.Provider>
   );
 };
@@ -230,8 +203,5 @@ export const CurrentUserProvider = ({ children }) => {
 CurrentUserProvider.propTypes = {
   children: PropTypes.node.isRequired
 };
-
-
-
 
 export default CurrentUserContext;
