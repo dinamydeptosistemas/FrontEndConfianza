@@ -5,15 +5,21 @@ import { NotificationProvider } from './context/NotificationContext';
 import { ConfigProvider } from './contexts/ConfigContext';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import { AppRoutes } from './routes/AppRoutes';
+import { CurrentUserProvider } from './contexts/CurrentUserContext';
+
 
 const AppContainer = () => {
   return (
     <ErrorBoundary>
       <ConfigProvider>
         <AuthProvider>
+          
           <NotificationProvider>
+            <CurrentUserProvider>
             <AppRoutes />
+            </CurrentUserProvider>
           </NotificationProvider>
+          
         </AuthProvider>
       </ConfigProvider>
     </ErrorBoundary>

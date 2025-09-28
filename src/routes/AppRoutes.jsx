@@ -2,6 +2,7 @@ import React from 'react';
 import { useRoutes, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useConfig } from '../contexts/ConfigContext';
+import { useCurrentUser } from '../contexts/CurrentUserContext';
 
 // Layouts
 import DashboardLayout from '../layouts/DashboardLayout';
@@ -129,10 +130,11 @@ const AppRoutesContent = () => {
 }
 
 export const AppRoutes = () => {
-    const { loading, isInitialized } = useAuth();
+    const { loading: authLoading, isInitialized: authInitialized } = useAuth();
     const { loading: configLoading } = useConfig();
+    const { loading: userLoading, isInitialized: userInitialized } = useCurrentUser();
 
-    if (!isInitialized || loading || configLoading) {
+    if (!authInitialized || !userInitialized || authLoading || userLoading || configLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
