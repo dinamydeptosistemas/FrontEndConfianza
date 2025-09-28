@@ -1,13 +1,34 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Outlet } from 'react-router-dom';
+import { useConfig } from '../contexts/ConfigContext';
 
 const DashboardLayoutLight = () => {
-    const { user, negocio, logout } = useAuth();
+    const { user, negocio, logout, loading: authLoading, error: authError } = useAuth();
+    const { config, loading: configLoading, error: configError } = useConfig();
 
     const handleLogout = () => {
         logout();
     };
+
+    if (authLoading || configLoading) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <div className="loader">Loading...</div>
+            </div>
+        );
+    }
+
+    if (authError || configError) {
+        return (
+            <div className="flex flex-col justify-center items-center h-screen">
+                <p className="text-red-500 mb-4">Error al cargar datos.</p>
+                <button onClick={() => window.location.reload()} className="bg-blue-500 text-white px-4 py-2 rounded">
+                    Reintentar
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="h-screen w-full flex flex-col">
@@ -68,7 +89,7 @@ const DashboardLayoutLight = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white shadow-md min-h-full flex-1 w-full">
+                    <div className="bg-white min-h-full flex-1 w-full">
                         <Outlet />
                     </div>
                 </div>

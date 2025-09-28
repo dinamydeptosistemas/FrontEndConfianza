@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { getPaperworks } from '../../services/Paperwork/PaperworkService';
-import { getBitacora } from '../../services/bitacora/BitacoraService';
+
 import ManagementDashboardLayout from '../../layouts/ManagementDashboardLayout';
 import GenericTable from '../../components/common/GenericTable';
 import ConfirmEliminarModal from '../../components/common/ConfirmEliminarModal';
@@ -16,33 +16,237 @@ export default function PaperworksDashboard() {
   const [filtro, setFiltro] = useState('');
   const [filtroActivo, setFiltroActivo] = useState('');
   const [paperworkAEliminar, setPaperworkAEliminar] = useState(null);
+  const [tramiteprueba , setTramiteprueba] = useState(0);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [paperworkAEditar, setPaperworkAEditar] = useState(null);
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
+  
   // No necesitamos mantener el estado de las bitácoras aquí
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
   const [filtrosEstado, setFiltrosEstado] = useState({
-    RECHAZADO: false,
-    APROBADO: false,
-    'POR PROCESAR': false
+    'Rechazado': false,
+    'Aprobado': false,
+    'Por Procesar': false
   });
   const handleCancelDelete = () => handleCloseConfirmDelete();
   
   const searchTimeoutRef = useRef(null);
 
-  // Función para actualizar bitácoras sin guardar el estado
-  const actualizarBitacoras = useCallback(async () => {
-    try {
-      console.log('Actualizando bitácoras...');
-      await getBitacora(); // Solo llamamos al servicio para actualizar los datos
-      console.log('Bitácoras actualizadas');
-    } catch (error) {
-      console.error('Error al actualizar bitácoras:', error);
+  // Función para procesar la respuesta de la API de trámites
+  const procesarRespuestaTramites = useCallback((response, pagina, filtroBusqueda, totalPaginasForzado = null) => {
+    console.log('RESPUESTA DIRECTA DEL BACKEND:', response);
+    
+    // Validar que la respuesta sea válida
+    if (!response) {
+      console.error('Respuesta inválida del servidor');
+      setPaperworksOriginales([]);
+      setPaperworks([]);
+      setPaginaActual(1);
+      setTotalPaginas(1);
+      setIsLoading(false);
+      return;
     }
+    
+    let tramitesArray = [];
+
+    // Determinar dónde están los datos de trámites en la respuesta
+    // Prioridad: 1. response.paperworks, 2. response.data, 3. response si es array
+    if (response && response.paperworks && Array.isArray(response.paperworks)) {
+      tramitesArray = response.paperworks;
+      console.log('Usando response.paperworks con', tramitesArray.length, 'elementos');
+    } else if (response && response.data && Array.isArray(response.data)) {
+      tramitesArray = response.data;
+      console.log('Usando response.data con', tramitesArray.length, 'elementos');
+    } else if (Array.isArray(response)) {
+      tramitesArray = response;
+      console.log('La respuesta es un array con', tramitesArray.length, 'elementos');
+    } else if (response && typeof response === 'object') {
+      // Último recurso: buscar cualquier propiedad que sea un array
+      const arrayProps = Object.keys(response).filter(key => Array.isArray(response[key]));
+      if (arrayProps.length > 0) {
+        const arrayProp = arrayProps[0];
+        tramitesArray = response[arrayProp];
+        console.log(`Usando response.${arrayProp} con`, tramitesArray.length, 'elementos');
+      } else {
+        console.warn('No se encontró ningún array en la respuesta. Usando array vacío.');
+      }
+    }
+    
+    // Normalizar los datos para asegurar que todos los trámites tengan la misma estructura
+    const tramitesNormalizados = tramitesArray.map(tramite => {
+      // Normalizar el ID del trámite para usar siempre 'regTramite'
+      const regTramite = tramite.regTramite || tramite.RegTramite || tramite.regtramite || tramite.id || tramite.ID || tramite.Id;
+      
+      return {
+        ...tramite,
+        // Asegurar que siempre exista regTramite con el valor correcto
+        regTramite: regTramite
+      };
+    });
+    
+    // Eliminar duplicados usando un Map con regTramite como clave
+    const tramitesMap = new Map();
+    tramitesNormalizados.forEach(tramite => {
+      if (tramite.regTramite !== undefined && !tramitesMap.has(tramite.regTramite)) {
+        tramitesMap.set(tramite.regTramite, tramite);
+      }
+    });
+    
+    // Convertir el Map de vuelta a un array
+    const tramitesSinDuplicados = Array.from(tramitesMap.values());
+    
+    console.log(`Se procesaron ${tramitesArray.length} trámites y quedaron ${tramitesSinDuplicados.length} sin duplicados`);
+    
+    // Actualizar estados con el array de trámites sin duplicados
+    setPaperworksOriginales(tramitesSinDuplicados);
+    setPaperworks(tramitesSinDuplicados);
+    
+    // Extraer información de paginación y contadores
+    // Buscar en todas las posibles ubicaciones de la información de paginación
+    let totalDePaginas = 1;
+    let paginaActualResponse = pagina;
+    
+    // Si se proporciona un valor forzado para el total de páginas, usarlo
+    if (totalPaginasForzado !== null && !isNaN(totalPaginasForzado) && totalPaginasForzado > 0) {
+      console.log(`Usando valor forzado para total de páginas: ${totalPaginasForzado}`);
+      totalDePaginas = totalPaginasForzado;
+    } else {
+      // Buscar total de páginas en diferentes formatos posibles
+      if (response?.totalPages !== undefined) totalDePaginas = Number(response.totalPages);
+      else if (response?.TotalPages !== undefined) totalDePaginas = Number(response.TotalPages);
+      else if (response?.totalpages !== undefined) totalDePaginas = Number(response.totalpages);
+      else if (response?.total_pages !== undefined) totalDePaginas = Number(response.total_pages);
+      else if (response?.totalRegistros !== undefined) {
+        // Calcular total de páginas basado en total de registros y tamaño de página
+        const totalRegistros = Number(response.totalRegistros);
+        const pageSize = 5; // Tamaño de página fijo
+        totalDePaginas = Math.ceil(totalRegistros / pageSize);
+        console.log(`Calculando total de páginas: ${totalRegistros} registros / ${pageSize} por página = ${totalDePaginas} páginas`);
+      }
+      
+      // Si no se encontró información de paginación, forzar a 2 páginas como mínimo
+      // para asegurar que se muestre la paginación
+      if (totalDePaginas <= 1) {
+        console.log('No se encontró información de paginación, forzando a 2 páginas');
+        totalDePaginas = 2;
+      }
+    }
+    
+    // Buscar página actual en diferentes formatos posibles
+    if (response?.currentPage !== undefined) paginaActualResponse = Number(response.currentPage);
+    else if (response?.CurrentPage !== undefined) paginaActualResponse = Number(response.CurrentPage);
+    else if (response?.currentpage !== undefined) paginaActualResponse = Number(response.currentpage);
+    else if (response?.current_page !== undefined) paginaActualResponse = Number(response.current_page);
+    else if (response?.pagina !== undefined) paginaActualResponse = Number(response.pagina);
+    
+    // Asegurarse de que totalDePaginas sea al menos 2 y que sea un número
+    if (isNaN(totalDePaginas) || totalDePaginas < 2) totalDePaginas = 2;
+    
+    // Asegurarse de que paginaActualResponse sea un número válido
+    if (isNaN(paginaActualResponse) || paginaActualResponse < 1) paginaActualResponse = 1;
+    if (paginaActualResponse > totalDePaginas) paginaActualResponse = totalDePaginas;
+    
+    // Registrar información de paginación para depuración
+    console.log('Información de paginación procesada:', {
+      paginaActual: paginaActualResponse,
+      totalPaginas: totalDePaginas,
+      respuestaOriginal: {
+        totalPages: response?.totalPages,
+        TotalPages: response?.TotalPages,
+        totalpages: response?.totalpages,
+        total_pages: response?.total_pages,
+        totalRegistros: response?.totalRegistros,
+        currentPage: response?.currentPage,
+        CurrentPage: response?.CurrentPage,
+        currentpage: response?.currentpage,
+        current_page: response?.current_page,
+        pagina: response?.pagina,
+        CountPrueba : response?.CountPrueba
+      }
+    });
+    
+    // Actualizar estados de paginación
+    setPaginaActual(paginaActualResponse);
+    setTotalPaginas(totalDePaginas);
+    setTramiteprueba(response?.CountPrueba || 0);
+    // Forzar la actualización del estado para asegurar que el componente se re-renderice
+    if (totalDePaginas > 1) {
+      console.log(`Forzando actualización de totalPaginas a ${totalDePaginas}`);
+      setTimeout(() => setTotalPaginas(totalDePaginas), 0);
+    }
+    
+    // Registrar contadores para depuración
+    console.log('Contadores de trámites recibidos:', {
+      countAprobado: response?.countAprobado || response?.CountAprobado,
+      countRechazado: response?.countRechazado || response?.CountRechazado,
+      countPorProcesar: response?.countPorProcesar || response?.CountPorProcesar
+    });
+    
+    setIsLoading(false);
+
   }, []);
+  
+  // Función para manejar errores de carga - Comentada porque ya no se utiliza
+  /*
+  const manejarErrorCarga = useCallback((error) => {
+    console.error('Error al cargar los trámites:', error);
+    
+    if (error.response) {
+      const { status, data } = error.response;
+      console.error('Detalles del error:', { status, data });
+      
+      // Mostrar mensaje de error específico del servidor si está disponible
+      const errorMessage = data?.message || 'Error al cargar los trámites';
+      alert(`Error ${status}: ${errorMessage}`);
+    } else if (error.request) {
+      console.error('No se recibió respuesta del servidor');
+      alert('No se pudo conectar con el servidor. Verifique su conexión a internet.');
+    } else {
+      console.error('Error al configurar la solicitud');
+      alert('Error al procesar la solicitud. Por favor, intente nuevamente.');
+    }
+    
+    // Limpiar estados
+    setIsLoading(false);
+  }, []);
+  */
+
+  // Función para cargar todos los trámites sin paginación
+  const cargarTodosTramites = useCallback(async (filtroBusqueda = '') => {
+    console.log(`Iniciando carga de TODOS los trámites - Filtro: ${filtroBusqueda}`);
+    setIsLoading(true);
+    
+    try {
+      // Obtener estados seleccionados
+      const estadosSeleccionados = Object.entries(filtrosEstado)
+        .filter(([_, checked]) => checked)
+        .map(([estado]) => estado);
+      
+      // Parámetros para la petición - Sin paginación
+      const params = {
+        relacionUser: user?.userName || '',
+        tipoUser: user?.tipoUsuario || '',
+        negocio: negocio || '',
+        pageSize: 1000, // Un número grande para obtener todos los registros
+        ...(filtroBusqueda && { searchTerm: filtroBusqueda })
+      };
+      
+      // Agregar estadoTramite si hay un solo estado seleccionado
+      if (estadosSeleccionados.length === 1) {
+        params.estadoTramite = estadosSeleccionados[0];
+      }
+      
+      console.log('Solicitando TODOS los trámites con parámetros:', params);
+      const response = await getPaperworks(params);
+      
+      procesarRespuestaTramites(response, 1, filtroBusqueda);
+    } catch (error) {
+      console.error('Error al cargar todos los trámites:', error);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtrosEstado, procesarRespuestaTramites, user, negocio]);
 
   const cargarPaperworks = useCallback(async (pagina = 1, filtroBusqueda = '') => {
     console.log(`Iniciando carga de trámites - Página: ${pagina}, Filtro: ${filtroBusqueda}`);
@@ -57,122 +261,66 @@ export default function PaperworksDashboard() {
       // Parámetros para la petición
       const params = {
         page: pagina,
-        ...(filtroBusqueda && { searchTerm: filtroBusqueda }),
-        ...(estadosSeleccionados.length > 0 && { estados: estadosSeleccionados.join(',') })
+        pageSize: 5, // Establecer explícitamente el tamaño de página a 5 items
+        getAllPages: false, // No obtener todas las páginas, solo la página actual
+        ...(filtroBusqueda && { searchTerm: filtroBusqueda })
       };
+      
+      // Agregar estadoTramite si hay un solo estado seleccionado
+      if (estadosSeleccionados.length === 1) {
+        params.estadoTramite = estadosSeleccionados[0];
+      }
 
       console.log('Solicitando trámites con parámetros:', params);
       
-      // Obtener los datos del servidor
+      // Primero, obtener el total de registros para calcular el número de páginas
+      const countParams = { ...params, pageSize: 1, onlyCount: true };
+      console.log('Solicitando conteo de trámites:', countParams);
+      const countResponse = await getPaperworks(countParams);
+      console.log('Respuesta de conteo:', countResponse);
+      
+      // Calcular el total de páginas basado en el total de registros
+      let totalRegistros = 0;
+      if (countResponse?.totalRegistros) totalRegistros = Number(countResponse.totalRegistros);
+      else if (countResponse?.TotalRegistros) totalRegistros = Number(countResponse.TotalRegistros);
+      else if (countResponse?.total) totalRegistros = Number(countResponse.total);
+      else if (countResponse?.Total) totalRegistros = Number(countResponse.Total);
+      else if (Array.isArray(countResponse)) totalRegistros = countResponse.length;
+      
+      // Asegurar que totalRegistros sea un número válido
+      if (isNaN(totalRegistros) || totalRegistros < 0) totalRegistros = 0;
+      
+      // Forzar al menos 2 páginas para asegurar que se muestre la paginación
+      // Esto es temporal hasta que se resuelva el problema con el backend
+      let totalPaginas = Math.max(2, Math.ceil(totalRegistros / 5));
+      console.log(`Total de registros: ${totalRegistros}, Total de páginas calculado: ${Math.ceil(totalRegistros / 5)}, Total de páginas forzado: ${totalPaginas}`);
+      
+      // Actualizar el estado de totalPaginas inmediatamente
+      setTotalPaginas(totalPaginas);
+      
+      // Obtener los datos del servidor para la página actual
       const response = await getPaperworks(params);
-      console.log('Respuesta de la API (cruda):', response);
-      console.log('Tipo de respuesta:', typeof response);
-      console.log('Propiedades de la respuesta:', Object.keys(response));
+      console.log('Respuesta completa del backend para la página actual:', response);
       
-      // Verificar específicamente la propiedad paperworks
-      if (response.paperworks) {
-        console.log('Propiedad paperworks encontrada:', response.paperworks);
-        console.log('Tipo de paperworks:', typeof response.paperworks);
-        console.log('Es array?', Array.isArray(response.paperworks));
-      } else {
-        console.log('No se encontró la propiedad paperworks en la respuesta');
-      }
-      
-      // Manejar la respuesta del servidor
-      let listaPaperworks = [];
-      let totalDePaginas = 1;
-      
-      console.log('Procesando respuesta para extraer datos...');
-      
-      // Verificar la estructura exacta de la respuesta basada en tu mensaje de error
-      if (response && typeof response === 'object') {
-        // Extraer información de paginación
-        if (response.totalPages !== undefined) {
-          totalDePaginas = response.totalPages;
-          console.log('Total de páginas encontrado:', totalDePaginas);
-        }
-        
-        // Verificar si existe la propiedad 'paperworks' directamente
-        if ('paperworks' in response) {
-          console.log('Propiedad paperworks encontrada en la respuesta');
-          
-          if (Array.isArray(response.paperworks)) {
-            console.log('paperworks es un array con', response.paperworks.length, 'elementos');
-            listaPaperworks = response.paperworks;
-          } else {
-            console.log('paperworks no es un array, es de tipo:', typeof response.paperworks);
-          }
-        } 
-        // Si no hay paperworks, intentar buscar otros arrays en la respuesta
-        else {
-          console.log('Buscando arrays en la respuesta...');
-          const arrayKeys = Object.keys(response).filter(key => Array.isArray(response[key]));
-          console.log('Arrays encontrados:', arrayKeys);
-          
-          if (arrayKeys.length > 0) {
-            // Usar el primer array encontrado
-            const arrayKey = arrayKeys[0];
-            console.log('Usando array:', arrayKey);
-            listaPaperworks = response[arrayKey];
-          } else if (response.data && Array.isArray(response.data)) {
-            console.log('Usando response.data como fuente de datos');
-            listaPaperworks = response.data;
-          }
-        }
-      } else if (Array.isArray(response)) {
-        console.log('La respuesta es directamente un array');
-        listaPaperworks = response;
-      }
-      
-      console.log('Trámites cargados:', listaPaperworks);
-      console.log('Total de páginas:', totalDePaginas);
-      
-      // Eliminar posibles duplicados usando el RegTramite como identificador único
-      const uniquePaperworks = Array.isArray(listaPaperworks) ? 
-        listaPaperworks.filter((paperwork, index, self) => 
-          index === self.findIndex(p => p.RegTramite === paperwork.RegTramite)
-        ) : [];
-      
-      console.log('Trámites después de eliminar duplicados:', uniquePaperworks.length);
-      
-      // Actualizar el estado con la lista sin duplicados
-      setPaperworksOriginales(uniquePaperworks);
-      setPaperworks(uniquePaperworks);
-      setPaginaActual(pagina);
-      setTotalPaginas(totalDePaginas);
-      
+      procesarRespuestaTramites(response, pagina, filtroBusqueda, totalPaginas);
     } catch (error) {
-      console.error('Error al cargar los trámites:', error);
-      
-      // Mostrar mensaje de error al usuario
-      if (error.response) {
-        const { status, data } = error.response;
-        console.error('Detalles del error:', { status, data });
-        
-        // Mostrar mensaje de error específico del servidor si está disponible
-        const errorMessage = data?.message || 'Error al cargar los trámites';
-        alert(`Error ${status}: ${errorMessage}`);
-      } else if (error.request) {
-        console.error('No se recibió respuesta del servidor');
-        alert('No se pudo conectar con el servidor. Por favor, verifica tu conexión a internet.');
-      } else {
-        console.error('Error al configurar la petición:', error.message);
-        alert('Error al realizar la petición. Por favor, inténtalo de nuevo.');
-      }
-      
-      // Limpiar datos en caso de error
-      setPaperworksOriginales([]);
-      setPaperworks([]);
-      
-    } finally {
-      setIsLoading(false);
-      setIsSearching(false);
+   
     }
-  }, [filtrosEstado]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtrosEstado, procesarRespuestaTramites, user, negocio]);
 
+  // Usar una referencia para evitar cargas múltiples
+  const isInitialMount = useRef(true);
+  
+  // useEffect para la carga inicial de trámites
   useEffect(() => {
-    cargarPaperworks(1, '');
-  }, [cargarPaperworks]);
+    if (isInitialMount.current) {
+      console.log('Carga inicial de trámites');
+      cargarPaperworks(1, '');
+      isInitialMount.current = false;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);  // Deshabilitamos la regla de exhaustive-deps para evitar recarga infinita
 
   useEffect(() => {
     return () => {
@@ -182,6 +330,9 @@ export default function PaperworksDashboard() {
     };
   }, [filtro]);
 
+  // Esta función se mantiene como referencia para futuras implementaciones de búsqueda local
+  // pero actualmente la búsqueda se realiza en el servidor
+  /*
   const buscarEnPaperworks = (paperworksArr, filtro) => {
     if (!filtro) return paperworksArr;
     return paperworksArr.filter(paperwork =>
@@ -190,6 +341,7 @@ export default function PaperworksDashboard() {
       (paperwork.commercialName && paperwork.commercialName.toLowerCase().includes(filtro.toLowerCase()))
     );
   };
+  */
 
   const handleBuscar = (termino) => {
     setFiltro(termino);
@@ -220,35 +372,9 @@ export default function PaperworksDashboard() {
     };
     setFiltrosEstado(nuevosFiltros);
     
-    // Si hay un filtro de búsqueda activo, aplicar el filtro local
-    if (filtro) {
-      const paperworksFiltrados = buscarEnPaperworks(paperworksOriginales, filtro);
-      // Aplicar filtro de estado localmente
-      const paperworksFiltradosPorEstado = paperworksFiltrados.filter(paperwork => {
-        const estadosSeleccionados = Object.entries(nuevosFiltros)
-          .filter(([_, checked]) => checked)
-          .map(([estado]) => estado);
-        
-        return estadosSeleccionados.length === 0 || 
-               (paperwork.estadoTramite && estadosSeleccionados.includes(paperwork.estadoTramite));
-      });
-      
-      setPaperworks(paperworksFiltradosPorEstado);
-    } else {
-      // Si no hay filtro de búsqueda, recargar del servidor
-      const estadosSeleccionados = Object.entries(nuevosFiltros)
-        .filter(([_, checked]) => checked)
-        .map(([estado]) => estado);
-      
-      if (estadosSeleccionados.length > 0) {
-        cargarPaperworks(1, filtro);
-      } else {
-        // Si no hay filtros activos, mostrar todos los trámites
-        cargarPaperworks(1, '');
-      }
-    }
-    
-    setIsSearching(false);
+    // Recargar trámites con los nuevos filtros
+    // La función cargarPaperworks ya obtiene los estados seleccionados del estado filtrosEstado
+    cargarPaperworks(1, filtro);
   };
 
   const handleClearSearch = () => {
@@ -268,6 +394,23 @@ export default function PaperworksDashboard() {
       // Si no hay paperworks cargadas, hacer una nueva petición
       cargarPaperworks(1, '');
     }
+  };
+  
+  // Función específica para cambiar de página
+  const cambiarPagina = (nuevaPagina) => {
+    console.log(`Cambiando a página ${nuevaPagina} de ${totalPaginas}`);
+    
+    // Validar que la página sea válida
+    if (nuevaPagina < 1 || nuevaPagina > totalPaginas) {
+      console.error(`Página inválida: ${nuevaPagina}. Debe estar entre 1 y ${totalPaginas}`);
+      return;
+    }
+    
+    // Actualizar el estado de la página actual
+    setPaginaActual(nuevaPagina);
+    
+    // Cargar los trámites de la nueva página
+    cargarPaperworks(nuevaPagina, filtroActivo);
   };
 
   const handleCloseConfirmDelete = () => {
@@ -298,7 +441,23 @@ export default function PaperworksDashboard() {
  
 
   return (
-    <ManagementDashboardLayout title="TRAMITES:" user={user} negocio={negocio}>
+    <ManagementDashboardLayout  title={(
+
+       <>
+          <div>
+            <span className="font-bold">TRAMITES:</span>
+            <span className="font-light w-100 text-[16px] ml-2">{`${ paperworks.length } Total`}</span>
+          </div>
+          <span></span>
+           {tramiteprueba > 0 && (
+            <span className="text-white flex justify-end">
+              <p className='rounded-lg bg-red-400 w-8 px-2 py-1 text-center'>{`${tramiteprueba}`}</p>
+            </span>
+          )}
+       
+        </>
+      
+      )} user={user} negocio={negocio}>
       <div className="w-full bg-white border-b border-l border-r border-gray-300 rounded-b py-4">
         {/* Grid de 3 columnas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4 px-4">
@@ -307,7 +466,7 @@ export default function PaperworksDashboard() {
             <div className="bg-gray-50 px-4 py-2 rounded-lg border border-gray-200">
               <h3 className="font-medium text-gray-700 mb-3 ">Filtrar por estado</h3>
               <div className="flex flex-row flex-wrap gap-2 items-center">
-                {['POR PROCESAR', 'APROBADO', 'RECHAZADO'].map((estado) => {
+                {['Por Procesar', 'Aprobado', 'Rechazado'].map((estado) => {
                   const isActive = filtrosEstado[estado] || false;
                   return (
                     <label
@@ -334,18 +493,25 @@ export default function PaperworksDashboard() {
           </div>
           
           {/* Columna 2: Paginador */}
-          <div className="col-span-1 flex items-center justify-center">
+          <div className="col-span-1 flex flex-col items-center justify-center gap-2">
             <Paginador
               paginaActual={paginaActual}
               totalPaginas={totalPaginas}
               onPageChange={(pagina) => cargarPaperworks(pagina, filtroActivo)}
             />
+            <button
+              onClick={() => cargarTodosTramites(filtroActivo)}
+              className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md transition-colors"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Cargando...' : 'Mostrar Todos los Trámites'}
+            </button>
           </div>
           
           {/* Columna 3: Buscador */}
           <div className="col-span-1">
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <div className="relative w-full">
+         
+              <div className="flex justify-end  gap-2">
                 <SearchBar
                   onSearch={handleBuscar}
                   value={filtro}
@@ -354,9 +520,9 @@ export default function PaperworksDashboard() {
                   showClearButton={true}
                   onClear={handleClearSearch}
                   disabled={isLoading}
-                  className="w-full"
+                  className="w-[300px]"
                 />
-                {(isSearching || isLoading) && (
+                {(isLoading) && (
                   <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
                   </div>
@@ -372,7 +538,7 @@ export default function PaperworksDashboard() {
                   Limpiar filtros
                 </button>
               )}
-            </div>
+          
           </div>
         </div>
         {/* La tabla está fuera del grid, pero dentro del mismo div principal */}
@@ -407,13 +573,32 @@ export default function PaperworksDashboard() {
               { 
                 key: 'estadoTramite', 
                 label: 'Estado',
-                render: (row) => (
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                        row.estadoTramite === 'APROBADO' ? 'bg-blue-100 text-blue-800' : row.estadoTramite === 'RECHAZADO' ? 'bg-red-100 text-red-800' : row.estadoTramite === 'POR PROCESAR' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                        {row.estadoTramite}
+                render: (row) => {
+                  const estado = row.estadoTramite || '';
+                  const estadoLower = estado.toLowerCase();
+                  
+                  // Definir clases de color para cada estado
+                  let bgColorClass = 'bg-gray-100 text-gray-800';
+                  let estadoDisplay = estado;
+                  
+                  // Asignar colores según el estado
+                  if (estadoLower.includes('aprobado')) {
+                    bgColorClass = 'bg-green-100 text-green-800';
+                    estadoDisplay = 'APROBADO';
+                  } else if (estadoLower.includes('rechazado')) {
+                    bgColorClass = 'bg-red-100 text-red-800';
+                    estadoDisplay = 'RECHAZADO';
+                  } else if (estadoLower.includes('por procesar') || estadoLower.includes('porprocesar')) {
+                    bgColorClass = 'bg-yellow-100 text-yellow-800';
+                    estadoDisplay = 'POR PROCESAR';
+                  }
+                  
+                  return (
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${bgColorClass}`}>
+                      {estadoDisplay}
                     </span>
-                )
+                  );
+                }
               },
               { 
                 key: 'registradoComo', 
@@ -432,7 +617,7 @@ export default function PaperworksDashboard() {
               }
             ]}
             data={paperworks}
-            rowKey="RegTramite"
+            rowKey="regTramite"
             actions={true}
             onEdit={handleEdit}
             showActions={{
@@ -441,6 +626,18 @@ export default function PaperworksDashboard() {
               updatePermissions: false
             }}
           />
+          
+          {/* Componente de paginación */}
+          <div className="w-full flex justify-center mt-4 mb-6">
+            <Paginador 
+              paginaActual={paginaActual} 
+              totalPaginas={totalPaginas} 
+              onChange={cambiarPagina}
+            />
+            <div className="ml-4 text-sm text-gray-600">
+              Página {paginaActual} de {totalPaginas} | Total: {paperworks.length} trámites en esta página
+            </div>
+          </div>
         </div>
       </div>
       {/* Modales fuera del div principal, pero dentro del layout */}
@@ -466,8 +663,7 @@ export default function PaperworksDashboard() {
             
             // Recargar la lista de paperworks después de actualizar
             cargarPaperworks();
-            // Actualizar las bitácoras
-            actualizarBitacoras();
+            // Las bitácoras se actualizan en el backend al modificar un trámite.
             
             return true;
           } catch (error) {

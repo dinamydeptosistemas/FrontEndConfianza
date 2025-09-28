@@ -31,6 +31,8 @@ const INITIAL_FILTERS = {
 };
 
 export default function SocialMediaDashboard() {
+  // Estado para el total de medios sociales
+  const [totalRecords, setTotalRecords] = useState(0);
   const { user, negocio } = useAuth();
   const [mediosSocialesOriginales, setMediosSocialesOriginales] = useState([]);
   const [mediosSociales, setMediosSociales] = useState([]);
@@ -49,6 +51,7 @@ export default function SocialMediaDashboard() {
   const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
+  const [tramiteprueba , settramiteprueba] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   
@@ -93,28 +96,33 @@ export default function SocialMediaDashboard() {
 
       const response = await getSocialMedia(params);
       console.log('Respuesta del servidor (medios sociales):', response);
-      
       let listaMedios = [];
       let totalDePaginas = 1;
       let paginaActualRespuesta = pagina;
-
+      let totalRegistros = 0;
+      let vartramitesdeprueba = 0 ;
       if (Array.isArray(response)) {
         listaMedios = response;
+        totalRegistros = response.length;
       } else if (response && typeof response === 'object') {
         if (Array.isArray(response.data)) {
           listaMedios = response.data;
           totalDePaginas = response.last_page || response.totalPages || 1;
           paginaActualRespuesta = response.current_page || response.page || pagina;
+          totalRegistros = response.totalRecords || response.total || response.data.length;
+          vartramitesdeprueba = response.tramiteprueba || 0;
         } else if (Array.isArray(response)) {
           listaMedios = response;
+          totalRegistros = response.length;
         }
       }
 
-      // Guardar los datos originales y mostrar todos
       setMediosSocialesOriginales(listaMedios);
       setMediosSociales(listaMedios);
       setPaginaActual(paginaActualRespuesta);
       setTotalPaginas(totalDePaginas);
+      setTotalRecords(totalRegistros);
+      settramiteprueba(vartramitesdeprueba)
     } catch (error) {
       console.error('Error al cargar medios sociales:', error);
     } finally {
@@ -264,7 +272,24 @@ export default function SocialMediaDashboard() {
   console.log('=== DEBUG: datosTabla first item ===', datosTabla[0]);
 
   return (
-    <ManagementDashboardLayout title="MEDIOS SOCIALES:" user={user} negocio={negocio}>
+    <ManagementDashboardLayout title={(
+ 
+
+
+   <>
+          <div>
+            <span className="font-bold">MEDIOS SOCIALES:</span>
+            <span className="font-light w-100 text-[16px] ml-2">{`${ totalRecords } Total`}</span>
+          </div>
+          <span></span>
+         {tramiteprueba > 0 && (
+            <span className="text-white flex justify-end">
+              <p className='rounded-lg bg-red-400 w-8 px-2 py-1 text-center'>{`${tramiteprueba}`}</p>
+            </span>
+          )}
+        
+        </>
+    )} user={user} negocio={negocio}>
       <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
              <div className="w-full sm:w-auto">
@@ -362,13 +387,22 @@ export default function SocialMediaDashboard() {
                   key: 'medioActivo', 
                   label: 'Estado', 
                   render: (row) => row.medioActivo ? 'Activo' : 'Inactivo' 
-                }
+                },
+
+             
               ]}
               data={datosTabla}
               rowKey="idMedio"
               actions={true}
               onEdit={handleEditClick}
               onDelete={handleDeleteClick}
+               rowClassName={(row) => {
+              const environment = (row.Ambiente || row.ambiente);
+              if (environment === 'PRUEBA') {
+                return 'bg-red-100';
+              }
+              return '';
+            }}
             />
           )}
         </div>

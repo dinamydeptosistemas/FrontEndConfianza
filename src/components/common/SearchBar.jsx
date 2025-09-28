@@ -5,7 +5,7 @@ const SearchBar = ({
   onSearch,
   placeholder = 'Buscar...',
   className = '',
-  showClearButton = true,
+  showClearButton = false,
   value = '',
   onChange = () => {},
   showSearchButton = true,
@@ -46,7 +46,7 @@ const SearchBar = ({
         {showClearButton && searchTerm && (
           <button
             onClick={handleClear}
-            className="absolute right-8 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            className="absolute right-12 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
             type="button"
             aria-label="Limpiar búsqueda"
           >

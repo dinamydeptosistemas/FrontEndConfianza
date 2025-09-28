@@ -1,337 +1,349 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import axiosInstance from '../config/axios';
-import { LogoutConfirmModal } from '../components/modals/LogoutConfirmModal';
-import { jwtDecode } from "jwt-decode";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import TimeoutModal from '../components/modals/TimeoutModal';
-import SessionTimeoutHandler from '../components/SessionTimeoutHandler';
+import { jwtDecode } from "jwt-decode";
+import PropTypes from 'prop-types';
 
-const AuthContext = createContext();
-const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutos en milisegundos
+import axiosInstance from '../config/axios';
+import { useConfig } from './ConfigContext';
 
-const publicRoutes = ['/login', '/registrar-usuario-interno', '/registrar-usuario-externo', '/validate-email'];
+import { LogoutConfirmModal } from '../components/modals/LogoutConfirmModal';
 
-export const useAuth = () => {
-    return useContext(AuthContext);
+// Constantes para mejor mantenimiento
+const STORAGE_KEYS = {
+  STATUS: 'status',
+  USER_DATA: 'userData',
+  NEGOCIO: 'negocio',
+  TOKEN: 'token'
 };
 
-export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [negocio, setNegocio] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-    const [lastActivity, setLastActivity] = useState(Date.now());
-    const [isInitialized, setIsInitialized] = useState(false);
-    const [showTimeoutModal, setShowTimeoutModal] = useState(false);
-    const navigate = useNavigate();
-    const location = useLocation();
+const PUBLIC_ROUTES = [
+  '/login',
+  '/registrar-usuario-interno',
+  '/registrar-usuario-externo',
+  '/validate-email'
+];
 
-    const cleanupAndRedirect = useCallback(() => {
-        setLoading(true);
-        localStorage.removeItem('negocio');
-        sessionStorage.removeItem('negocio');
-        localStorage.clear();
-        setUser(null);
-        setNegocio(null);
-        setError(null);
-        setIsLogoutModalOpen(false);
-        setIsInitialized(false);
-        navigate('/login');
-        setLoading(false);
-    }, [navigate]);
+// Utilidades para manejo de storage
+const storageUtils = {
+  setItem: (key, value) => {
+    try {
+      localStorage.setItem(key, typeof value === 'object' ? JSON.stringify(value) : value);
+    } catch (error) {
+      console.error(`Error guardando en localStorage (${key}):`, error);
+    }
+  },
 
-    const confirmLogout = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        localStorage.setItem('status', '404');
-        try {
-            await axiosInstance.post('/api/Auth/logout-cookie', null, {
-                withCredentials: true,
-                headers: {
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache'
-                }
-            });
-            setIsLogoutModalOpen(false);
-            cleanupAndRedirect();
-        } catch (error) {
-            setError('Error al cerrar sesión');
-            setLoading(false);
-        }
-    }, [cleanupAndRedirect]);
+  getItem: (key, parse = false) => {
+    try {
+      const item = localStorage.getItem(key);
+      return parse && item ? JSON.parse(item) : item;
+    } catch (error) {
+      console.error(`Error leyendo de localStorage (${key}):`, error);
+      return null;
+    }
+  },
 
-    const directLogout = useCallback(async () => {
-        try {
-            setLoading(true);
-            localStorage.setItem('status', '404');
-            await axiosInstance.post('/api/Auth/logout-cookie', null, {
-                withCredentials: true
-            });
-            cleanupAndRedirect();
-        } catch (error) {
-            localStorage.setItem('status', '404');
-            cleanupAndRedirect();
-        }
-    }, [cleanupAndRedirect]);
+  removeItem: (key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch (error) {
+      console.error(`Error eliminando de localStorage (${key}):`, error);
+    }
+  },
 
-    const handleInactivityLogout = useCallback(async () => {
-        try {
-            setLoading(true);
-            await axiosInstance.post('/api/Auth/logout-cookie', null, {
-                withCredentials: true
-            });
-            localStorage.setItem('status', '404');
-            cleanupAndRedirect();
-        } catch (error) {
-            cleanupAndRedirect();
-        }
-    }, [cleanupAndRedirect]);
+  clearAll: () => {
+    try {
+      localStorage.clear();
+    } catch (error) {
+      console.error('Error limpiando localStorage:', error);
+    }
+  }
+};
 
-    // Monitorear actividad del usuario
-    useEffect(() => {
-        if (!isInitialized) return;
-
-        const updateActivity = () => setLastActivity(Date.now());
-        const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
-        
-        events.forEach(event => {
-            window.addEventListener(event, updateActivity);
-        });
-
-        const checkInactivity = setInterval(() => {
-            const timeSinceLastActivity = Date.now() - lastActivity;
-            if (user && timeSinceLastActivity > INACTIVITY_TIMEOUT) {
-                handleInactivityLogout();
-            }
-        }, 60000);
-
-        return () => {
-            events.forEach(event => {
-                window.removeEventListener(event, updateActivity);
-            });
-            clearInterval(checkInactivity);
-        };
-    }, [user, lastActivity, handleInactivityLogout, isInitialized]);
-
-    const logout = () => {
-        setIsLogoutModalOpen(true);
+// Utilidades para normalización de datos de usuario
+const userDataUtils = {
+  normalizeUserData: (userData) => {
+    return {
+      ...userData,
+      // Normaliza campos para consistencia en la aplicación
+      UserId: userData.UserID || userData.UserId || userData.userId,
+      UserType: userData.TipoUsuario || userData.UserType || userData.userType,
+      UserFunction: userData.UserFunction || userData.userFunction,
+      CodeFunction: userData.CodeFunction || userData.codeFunction,
+      NameEntity: userData.NameEntity || userData.nameEntity,
+      nombrecomerciallogin: userData.NameEntity || userData.nameEntity,
+      StatusCode: userData.StatusCode || userData.statusCode || 200,
+      Username: userData.Username || userData.username,
+      LoginMessage: userData.LoginMessage || userData.loginMessage || 'Sesión válida',
     };
+  },
 
-    const cancelLogout = () => {
-        setIsLogoutModalOpen(false);
-        setError(null);
-    };
-
-    const login = async (credentials) => {
-        try {
-            console.log('Iniciando proceso de login con credenciales:', { ...credentials, password: '***' });
-            setLoading(true);
-            setError(null);
-            const response = await axiosInstance.post('/api/auth/login', credentials, {
-                withCredentials: true
-            });
-            
-            console.log('Respuesta del login:', response.data);
-            
-            if (response.data.Success) {
-                let claims = {};
-                if (response.data.TokenSession) {
-                    try {
-                        claims = jwtDecode(response.data.TokenSession);
-                        console.log('Token decodificado:', claims);
-                    } catch (e) {
-                        console.error('Error al decodificar el token:', e);
-                        claims = {};
-                    }
-                }
-                
-                const userData = { ...response.data, ...claims };
-                console.log('Datos del usuario después de combinar:', userData);
-                const normalizedUser = {
-                    ...userData,
-                    UserId: userData.UserId || userData.userId,
-                    UserType: userData.UserType || userData.userType,
-                    UserFunction: userData.UserFunction || userData.userFunction,
-                    CodeFunction: userData.CodeFunction || userData.codeFunction,
-                    NameEntity: userData.NameEntity || userData.nameEntity,
-                    StatusCode: userData.StatusCode || userData.statusCode,
-                    Username: userData.Username || userData.username,
-                };
-
-                setUser(normalizedUser);
-                localStorage.setItem('status', '200');
-                
-                if (normalizedUser.NameEntity) {
-                    const negocioData = {
-                        nombre: normalizedUser.NameEntity,
-                        codigo: normalizedUser.CodeEntity
-                    };
-                    setNegocio(negocioData);
-                    localStorage.setItem('negocio', JSON.stringify(negocioData));
-                    sessionStorage.setItem('negocio', JSON.stringify(negocioData));
-                }
-                
-                return normalizedUser;
-            } else {
-                throw new Error(response.data.Message || 'Error en la autenticación');
-            }
-        } catch (error) {
-            setError(error.response?.data?.Message || 'Error en la autenticación');
-            throw error;
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchCurrentUser = useCallback(async () => {
-        try {
-            console.log('Ruta actual:', location.pathname, '¿Es pública?', publicRoutes.includes(location.pathname));
-            const storedNegocio = localStorage.getItem('negocio');
-            if (storedNegocio) {
-                try {
-                    const negocioData = JSON.parse(storedNegocio);
-                    setNegocio(negocioData);
-                } catch (e) {
-                    console.error('Error al parsear negocio del localStorage:', e);
-                }
-            }
-
-            const response = await axiosInstance.get('/api/auth/current-user', {
-                withCredentials: true,
-                headers: {
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache'
-                }
-            });
-
-            if (response.data.success || response.data.statusCode === 200) {
-                let claims = {};
-                if (response.data.TokenSession) {
-                    try {
-                        claims = jwtDecode(response.data.TokenSession);
-                    } catch (e) {
-                        claims = {};
-                    }
-                }
-
-                const userData = { ...response.data, ...claims };
-                const normalizedUser = {
-                    ...userData,
-                    UserId: userData.UserId || userData.userId,
-                    UserType: userData.UserType || userData.userType,
-                    UserFunction: userData.UserFunction || userData.userFunction,
-                    CodeFunction: userData.CodeFunction || userData.codeFunction,
-                    NameEntity: userData.NameEntity || userData.nameEntity,
-                    StatusCode: userData.StatusCode || userData.statusCode,
-                    Username: userData.Username || userData.username,
-                };
-
-                setUser(normalizedUser);
-                localStorage.setItem('status', '200');
-
-                if (normalizedUser.NameEntity) {
-                    const negocioData = {
-                        nombre: normalizedUser.NameEntity,
-                        codigo: normalizedUser.CodeEntity
-                    };
-                    setNegocio(negocioData);
-                    localStorage.setItem('negocio', JSON.stringify(negocioData));
-                    sessionStorage.setItem('negocio', JSON.stringify(negocioData));
-                }
-            } else {
-                
-                if (!publicRoutes.includes(location.pathname)) {
-                    cleanupAndRedirect();
-                }
-            }
-        } catch (error) {
-           
-            if (
-                error?.response?.status === 401 &&
-                !publicRoutes.includes(location.pathname)
-
-            ) {
-                cleanupAndRedirect();
-            }
-        } finally {
-            setLoading(false);
-            setIsInitialized(true);
-        }
-    }, [cleanupAndRedirect, location]);
-
-    // Verificación inicial de sesión
-    useEffect(() => {
-        const checkSession = async () => {
-            const status = localStorage.getItem('status');
-            if (status === '404') {
-                setLoading(false);
-                setIsInitialized(true);
-                return;
-            }
-            await fetchCurrentUser();
-        };
-        checkSession();
-    }, [fetchCurrentUser]);
-
-    const handleShowTimeoutModal = useCallback(() => {
-        if (!publicRoutes.includes(location.pathname)) {
-            setShowTimeoutModal(true);
-        }
-    }, [location.pathname]);
-
-    const handleContinueTimeout = useCallback(() => {
-        setShowTimeoutModal(false);
-        // Reiniciar el timeout manualmente
-        const event = new Event('mousedown');
-        window.dispatchEvent(event);
-    }, []);
-
-    const handleLogoutTimeout = useCallback(() => {
-        setShowTimeoutModal(false);
-        directLogout();
-    }, [directLogout]);
-
-    const value = {
-        user,
-        negocio,
-        loading,
-        error,
-        isInitialized,
-        login,
-        logout,
-        directLogout,
-        confirmLogout,
-        cleanupAndRedirect,
-        fetchCurrentUser,
-        showTimeoutModal: handleShowTimeoutModal,
-        handleContinueTimeout,
-        handleLogoutTimeout,
-        isTimeoutModalOpen: showTimeoutModal
-    };
-
-    if (!isInitialized) {
-        return null;
+  decodeJwtToken: (token) => {
+    if (!token || typeof token !== 'string' || !token.includes('.')) {
+      return {};
     }
 
-    return (
-        <AuthContext.Provider value={value}>
-            <SessionTimeoutHandler />
-            {children}
-            <LogoutConfirmModal
-                isOpen={isLogoutModalOpen}
-                onConfirm={confirmLogout}
-                onCancel={cancelLogout}
-                error={error}
-                loading={loading}
-            />
-            <TimeoutModal
-                open={showTimeoutModal}
-                onContinue={handleContinueTimeout}
-                onLogout={handleLogoutTimeout}
-            />
-        </AuthContext.Provider>
-    );
+    try {
+      return jwtDecode(token);
+    } catch (error) {
+      console.error('Error decodificando JWT:', error);
+      return {};
+    }
+  },
+
+  extractNegocioData: (userData) => {
+    if (!userData.NameEntity) return null;
+    
+    return {
+      nombre: userData.NameEntity,
+      codigo: userData.CodeEntity
+    };
+  },
+
+  isTokenValid: (token) => {
+    if (!token || typeof token !== 'string' || !token.includes('.')) {
+      return false;
+    }
+
+    try {
+      const decoded = jwtDecode(token);
+      const currentTime = Date.now() / 1000;
+      
+      if (decoded.exp && decoded.exp < currentTime) {
+        console.log('Token JWT expirado');
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error validando token JWT:', error);
+      return false;
+    }
+  }
+};
+
+// Context y hook personalizado
+const AuthContext = createContext();
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth debe ser usado dentro de un AuthProvider');
+  }
+  return context;
+};
+
+// Utilidad para obtener el estado inicial desde localStorage
+const getInitialAuthState = () => {
+  try {
+    const storedToken = storageUtils.getItem(STORAGE_KEYS.TOKEN);
+    const storedUser = storageUtils.getItem(STORAGE_KEYS.USER_DATA, true); // true para parsear JSON
+    const storedNegocio = storageUtils.getItem(STORAGE_KEYS.NEGOCIO, true); // true para parsear JSON
+
+    if (storedToken && storedUser && userDataUtils.isTokenValid(storedToken)) {
+      return {
+        user: storedUser,
+        negocio: storedNegocio,
+        loading: false,
+        error: null,
+        isLogoutModalOpen: false,
+        isInitialized: true, // Se establece en true si se carga correctamente desde el almacenamiento
+      };
+    }
+  } catch (error) {
+    console.error("Error al cargar el estado de autenticación inicial desde el almacenamiento:", error);
+    // Limpiar cualquier dato de almacenamiento corrupto
+    storageUtils.clearAll();
+  }
+  return {
+    user: null,
+    negocio: null,
+    loading: true, // Todavía cargando si no hay datos válidos en el almacenamiento
+    error: null,
+    isLogoutModalOpen: false,
+    isInitialized: false,
+  };
+};
+
+// Estado inicial
+const initialState = getInitialAuthState();
+
+export const AuthProvider = ({ children }) => {
+  // Estados principales
+  const [state, setState] = useState(initialState);
+  const { reloadConfig, clearConfig } = useConfig();
+  
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Función para actualizar estado de manera controlada
+  const updateState = useCallback((updates) => {
+    setState(prevState => ({ ...prevState, ...updates }));
+  }, []);
+
+  // Limpieza completa del estado y redirección
+  const cleanupAndRedirect = useCallback(() => {
+    console.log('Ejecutando cleanup y redirección...');
+    
+    // Clear storage first
+    try {
+      sessionStorage.clear();
+      localStorage.clear(); // This clears all localStorage, including non-auth related items
+    } catch (error) {
+      console.error('Error durante la limpieza de storage:', error);
+    }
+    
+    // Reset state and ensure it's ready to render the login page
+    setState({ 
+      ...initialState, 
+      user: null,
+      negocio: null,
+      loading: false, // Ensure loading is false for the login page
+      isInitialized: true // Ensure AuthProvider renders its children
+    });
+    clearConfig(); // Clear config after state reset
+    
+    navigate('/login', { replace: true });
+    console.log('Cleanup completado, redirigido a login');
+
+  }, [navigate, clearConfig]);
+
+  // Función auxiliar para realizar logout con reintentos
+  const performLogoutRequest = useCallback(async () => {
+    try {
+      await axiosInstance.post('/api/auth/logout-cookie', {}, { withCredentials: true });
+      return { success: true };
+    } catch (error) {
+      console.error('Logout en servidor falló:', error);
+      if (error?.response?.status === 401) {
+        return { success: true }; // Ya está deslogueado en el servidor
+      }
+      return { success: false, error: error.message };
+    }
+  }, []);
+
+  // Logout confirmado por el usuario
+  const confirmLogout = useCallback(async () => {
+    updateState({ loading: true, error: null });
+    await performLogoutRequest();
+    cleanupAndRedirect();
+  }, [performLogoutRequest, cleanupAndRedirect, updateState]);
+
+  // Logout directo (sin confirmación)
+  const directLogout = useCallback(async () => {
+    await performLogoutRequest();
+    cleanupAndRedirect();
+  }, [performLogoutRequest, cleanupAndRedirect]);
+
+  // Mostrar modal de confirmación de logout
+  const logout = useCallback(() => {
+    const isAuthenticated = state.user && userDataUtils.isTokenValid(storageUtils.getItem(STORAGE_KEYS.TOKEN));
+    if (!isAuthenticated) {
+      cleanupAndRedirect();
+      return;
+    }
+    updateState({ isLogoutModalOpen: true });
+  }, [state.user, updateState, cleanupAndRedirect]);
+
+
+  const setNegocio = useCallback((negocioData) => {
+    if (negocioData) {
+      updateState({ negocio: negocioData });
+      storageUtils.setItem(STORAGE_KEYS.NEGOCIO, negocioData);
+      sessionStorage.setItem(STORAGE_KEYS.NEGOCIO, JSON.stringify(negocioData));
+    }
+  }, [updateState]);
+
+  // Función de login
+  const login = useCallback(async (credentials) => {
+    updateState({ loading: true, error: null });
+    try {
+      const response = await axiosInstance.post('/api/auth/login', credentials, { withCredentials: true });
+      
+      if (!response.data.Success) {
+        throw new Error(response.data.Message || 'Error en la autenticación');
+      }
+
+      const loginResponseData = response.data;
+      const jwtToken = loginResponseData.TokenSession;
+      const jwtClaims = userDataUtils.decodeJwtToken(jwtToken);
+
+      // Consolida todos los datos en un solo objeto de usuario para el estado.
+      // Esto asegura que todo lo de la respuesta se almacene.
+      const userObject = {
+        ...loginResponseData,
+        ...(loginResponseData.Data || {}),
+        ...jwtClaims
+      };
+      
+      // Normaliza campos para consistencia, sin perder ningún dato.
+      const normalizedUser = userDataUtils.normalizeUserData(userObject);
+
+      updateState({ user: normalizedUser, loading: false, error: null });
+      
+      if (jwtToken) storageUtils.setItem(STORAGE_KEYS.TOKEN, jwtToken);
+      storageUtils.setItem(STORAGE_KEYS.USER_DATA, normalizedUser);
+      
+      const negocioData = userDataUtils.extractNegocioData(normalizedUser);
+      if (negocioData) setNegocio(negocioData);
+
+      await reloadConfig();
+      
+      return normalizedUser;
+    } catch (error) {
+      const errorMessage = error.response?.data?.Message || 'Error en la autenticación';
+      updateState({ error: errorMessage, loading: false });
+      throw error;
+    } 
+  }, [updateState, reloadConfig, setNegocio]);
+
+  // Efecto para verificación inicial de sesión
+  useEffect(() => {
+    if (!state.isInitialized) {
+        if (PUBLIC_ROUTES.includes(location.pathname)) {
+            updateState({ loading: false, isInitialized: true });
+        } else {
+            const token = storageUtils.getItem(STORAGE_KEYS.TOKEN);
+            if (!userDataUtils.isTokenValid(token)) {
+                cleanupAndRedirect();
+            } else {
+                updateState({ loading: false, isInitialized: true });
+            }
+        }
+    }
+  }, [location.pathname, state.isInitialized, updateState, cleanupAndRedirect]);
+
+  // Valor del contexto
+  const contextValue = useMemo(() => ({
+    ...state,
+    login,
+    logout,
+    directLogout,
+    confirmLogout,
+    cleanupAndRedirect,
+    setNegocio,
+  }), [state, login, logout, directLogout, confirmLogout, cleanupAndRedirect, setNegocio]);
+
+  if (!state.isInitialized) {
+    return null; // O un spinner de carga global
+  }
+
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+      <LogoutConfirmModal
+        isOpen={state.isLogoutModalOpen}
+        onConfirm={confirmLogout}
+        onCancel={() => updateState({ isLogoutModalOpen: false })}
+        loading={state.loading}
+        error={state.error}
+      />
+    </AuthContext.Provider>
+  );
+};
+
+AuthProvider.propTypes = {
+  children: PropTypes.node.isRequired
 };
 
 export default AuthContext;

@@ -28,78 +28,23 @@ console.log('Configuración de axios:', {
  */
 export const getUsers = async (params = {}) => {
     try {
-        // Validar y limpiar parámetros para evitar errores 400
-        const cleanParams = {};
-        
-        // Procesar y mapear los filtros especiales usando los nombres originales
-        if (params.usuarioActivoFiltro !== undefined) {
-            // Mantener el parámetro original y también enviar como 'activo' para compatibilidad
-            cleanParams.usuarioActivoFiltro = params.usuarioActivoFiltro;
-            cleanParams.activo = params.usuarioActivoFiltro ? 1 : 0;
-            console.log('UserService: Aplicando filtro usuarioActivoFiltro =', params.usuarioActivoFiltro);
-            console.log('UserService: Aplicando filtro activo =', cleanParams.activo);
-        }
-        
-        if (params.tipoUserFiltro) {
-            // Mantener el parámetro original y también enviar como 'tipoUsuario' para compatibilidad
-            cleanParams.tipoUserFiltro = params.tipoUserFiltro;
-            cleanParams.tipoUsuario = params.tipoUserFiltro;
-            console.log('UserService: Aplicando filtro tipoUserFiltro/tipoUsuario =', params.tipoUserFiltro);
-        }
-        
-        if (params.relacionUsuarioFiltro) {
-            // Mantener el parámetro original y también enviar como 'relacion' para compatibilidad
-            cleanParams.relacionUsuarioFiltro = params.relacionUsuarioFiltro;
-            cleanParams.relacion = params.relacionUsuarioFiltro;
-            console.log('UserService: Aplicando filtro relacionUsuarioFiltro/relacion =', params.relacionUsuarioFiltro);
-        }
-        
-        // Manejar fechas de registro
-        if (params.fechaRegistroDesde) {
-            // Mantener el parámetro original y también enviar como 'fechaDesde' para compatibilidad
-            cleanParams.fechaRegistroDesde = params.fechaRegistroDesde;
-            cleanParams.fechaDesde = params.fechaRegistroDesde;
-            console.log('UserService: Aplicando filtro fechaRegistroDesde/fechaDesde =', params.fechaRegistroDesde);
-        }
-        
-        if (params.fechaRegistroHasta) {
-            // Mantener el parámetro original y también enviar como 'fechaHasta' para compatibilidad
-            cleanParams.fechaRegistroHasta = params.fechaRegistroHasta;
-            cleanParams.fechaHasta = params.fechaRegistroHasta;
-            console.log('UserService: Aplicando filtro fechaRegistroHasta/fechaHasta =', params.fechaRegistroHasta);
-        }
-        
-        // Copiar el resto de parámetros válidos y no undefined/null
-        Object.entries(params).forEach(([key, value]) => {
-            // Saltamos los filtros que ya procesamos
-            if (['usuarioActivoFiltro', 'tipoUserFiltro', 'relacionUsuarioFiltro', 
-                 'fechaRegistroDesde', 'fechaRegistroHasta'].includes(key)) {
-                return;
-            }
-            
-            if (value !== undefined && value !== null && value !== '') {
-                cleanParams[key] = value;
-                console.log(`UserService: Aplicando parámetro ${key} =`, value);
-            }
-        });
-        
-        // Asegurarnos de que params sea un objeto y contenga el proceso
-        const requestParams = {
-            process: 'getUsers',
-            ...cleanParams
+        const toPascalCase = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+
+        const pascalCaseParams = Object.keys(params).reduce((acc, key) => {
+            const pascalKey = toPascalCase(key);
+            acc[pascalKey] = params[key];
+            return acc;
+        }, {});
+
+        const requestBody = {
+            Process: 'getUsers',
+            ...pascalCaseParams
         };
 
-        // Log de la petición
-        console.log('Enviando petición a /user/process con:', requestParams);
-        console.log('URL completa:', `${axiosInstance.defaults.baseURL}${API_BASE}/users/process`);
-        console.log('Headers de la petición:', axiosInstance.defaults.headers);
+        console.log('Enviando petición a /Users/Process con:', requestBody);
+        const response = await axiosInstance.post(`${API_BASE}/Users/Process`, requestBody);
+        console.log('Respuesta de /Users/Process:', response.data);
 
-        // Realizar la petición
-        const response = await axiosInstance.post(`${API_BASE}/user/process`, requestParams);
-        
-        // Log de la respuesta
-        console.log('Respuesta recibida:', response.data);
-        
         return response.data;
     } catch (error) {
         console.error('Error en getUsers:', error);
@@ -149,10 +94,21 @@ export const getUsers = async (params = {}) => {
  * @returns {Promise<Object>} Usuario creado/actualizado
  */
 export const putUser = async (userData) => {
-    const response = await axiosInstance.post(`${API_BASE}/user/process`, {
-        process: 'putUsers',
-        ...userData
-    });
+    const toPascalCase = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+
+    const pascalCaseData = Object.keys(userData).reduce((acc, key) => {
+        const pascalKey = toPascalCase(key);
+        acc[pascalKey] = userData[key];
+        return acc;
+    }, {});
+
+    const requestBody = {
+        Process: 'putUsers',
+        ...pascalCaseData
+    };
+
+    console.log('Enviando petición (putUser) a /Users/Process con:', requestBody);
+    const response = await axiosInstance.post(`${API_BASE}/Users/Process`, requestBody);
     return response.data;
 };
 
@@ -162,10 +118,12 @@ export const putUser = async (userData) => {
  * @returns {Promise<Object>} Resultado de la eliminación
  */
 export const deleteUser = async (idUser) => {
-    const response = await axiosInstance.post(`${API_BASE}/user/process`, {
-        process: 'deleteUsers',
-        idUser
-    });
+    const requestBody = {
+        Process: 'deleteUsers',
+        IdUser: idUser
+    };
+    console.log('Enviando petición (deleteUser) a /Users/Process con:', requestBody);
+    const response = await axiosInstance.post(`${API_BASE}/Users/Process`, requestBody);
     return response.data;
 };
 
@@ -176,4 +134,118 @@ export const deleteUser = async (idUser) => {
  */
 export const getUser = async (id) => {
     return getUsers(1, id);
+};
+
+/**
+ * Sube un archivo de plantilla para importar usuarios
+ * @param {FormData} formData - Datos del formulario que incluye el archivo y opciones
+ * @returns {Promise<Object>} Respuesta del servidor
+ */
+export const uploadTemplate = async (formData) => {
+    try {
+        // Asegurarse de que 'EsActualizacion' sea un string si existe
+        if (formData.has('EsActualizacion')) {
+            const value = formData.get('EsActualizacion');
+            formData.set('EsActualizacion', String(value === 'true' || value === true));
+        }
+
+        console.log('Enviando archivo al servidor...');
+        const response = await axiosInstance.post('api/user/import', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                'Accept': 'application/json, text/plain, */*'
+            },
+            responseType: 'blob', // Recibir como blob para manejar errores de archivo y JSON
+        });
+
+        if (response.data.type.includes('json')) {
+            const jsonResponse = JSON.parse(await response.data.text());
+            console.log('Respuesta JSON recibida:', jsonResponse);
+            return jsonResponse;
+        } else if (response.data.type.includes('text') || response.data.type.includes('octet-stream')) {
+            console.log('Respuesta de archivo de error recibida');
+            return response.data; // Devolver el blob del archivo de error
+        }
+
+        return response.data;
+
+    } catch (error) {
+        console.error('Error al subir archivo:', error);
+        let errorMessage = 'Error al procesar el archivo';
+        if (error.response && error.response.data) {
+            try {
+                const errorBlob = error.response.data;
+                const errorText = await errorBlob.text();
+                const errorJson = JSON.parse(errorText);
+                errorMessage = errorJson.message || errorJson.error || errorMessage;
+            } catch (e) {
+                // No se pudo parsear el error
+            }
+        }
+        throw new Error(errorMessage);
+    }
+};
+
+/**
+ * Descarga una plantilla de usuarios
+ * @param {Object} filters - Filtros para la descarga
+ * @returns {Promise<Blob>} Archivo de plantilla
+ */
+export const downloadTemplate = async (filters = {}) => {
+    try {
+        const toPascalCase = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+
+        const pascalCaseFilters = Object.keys(filters).reduce((acc, key) => {
+            const pascalKey = toPascalCase(key);
+            acc[pascalKey] = filters[key];
+            return acc;
+        }, {});
+
+        console.log('Solicitando plantilla con filtros (PascalCase):', pascalCaseFilters);
+        const response = await axiosInstance.post(`${API_BASE}/users/Export`, pascalCaseFilters, {
+            responseType: 'blob',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/json'
+            }
+        });
+
+        if (response.data instanceof Blob && response.data.size > 0) {
+            return response.data;
+        } else {
+            throw new Error('La respuesta del servidor no es un archivo válido o está vacío.');
+        }
+    } catch (error) {
+        console.error('Error al descargar plantilla:', error);
+        let errorMessage = 'Error al descargar la plantilla';
+        if (error.response && error.response.data) {
+            try {
+                const errorBlob = error.response.data;
+                const errorText = await errorBlob.text();
+                const errorJson = JSON.parse(errorText);
+                errorMessage = errorJson.message || errorMessage;
+            } catch (e) {
+                // El error no es un JSON, puede ser un mensaje de texto plano
+            }
+        }
+        throw new Error(errorMessage);
+    }
+};
+
+/**
+ * Obtiene solo usuarios internos.
+ * @param {Object} params - Parámetros de búsqueda adicionales.
+ * @returns {Promise<Object>} Objeto con usuarios y metadatos de paginación.
+ */
+export const getInternalUsers = async (params = {}) => {
+    return getUsers({ ...params, tipoUserFiltro: 'INTERNO' });
+};
+
+/**
+ * Obtiene solo usuarios externos.
+ * @param {Object} params - Parámetros de búsqueda adicionales.
+ * @returns {Promise<Object>} Objeto con usuarios y metadatos de paginación.
+ */
+export const getExternalUsers = async (params = {}) => {
+    return getUsers({ ...params, tipoUserFiltro: 'EXTERNO' });
 };

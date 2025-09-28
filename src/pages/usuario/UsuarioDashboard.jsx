@@ -1,5 +1,12 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { getUsers, putUser, deleteUser } from '../../services/user/UserService';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { 
+  getUsers, 
+  putUser, 
+  deleteUser,
+  uploadTemplate,
+  downloadTemplate
+} from '../../services/user/UserService';
+
 import ManagementDashboardLayout from '../../layouts/ManagementDashboardLayout';
 import { useAuth } from '../../contexts/AuthContext';
 import ButtonGroup from '../../components/common/ButtonGroup';
@@ -11,9 +18,10 @@ import Paginador from '../../components/common/Paginador';
 import { useNotification } from '../../context/NotificationContext';
 import FilterModal from '../../components/common/FilterModal';
 
+
 export default function UsuarioDashboard() {
     const { user, negocio } = useAuth();
-    const { showSuccessMessage } = useNotification();
+    const { showSuccessMessage, showErrorMessage } = useNotification();
     const [usuariosOriginales, setUsuariosOriginales] = useState([]);
     const [usuarios, setUsuarios] = useState([]);
     const [busqueda, setBusqueda] = useState('');
@@ -25,8 +33,118 @@ export default function UsuarioDashboard() {
     const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
     const [paginaActual, setPaginaActual] = useState(1);
     const [totalPaginas, setTotalPaginas] = useState(1);
+    const [totalprueba , settotalprueba] = useState(0);
     const [mostrarModalFiltros, setMostrarModalFiltros] = useState(false);
+    const [mostrarModalSubirPlantilla, setMostrarModalSubirPlantilla] = useState(false);
+    const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
+    const [mostrarConfirmacionActualizacion, setMostrarConfirmacionActualizacion] = useState(false);
     const [filtros, setFiltros] = useState({});
+    const [showPlantillaMenu, setShowPlantillaMenu] = useState(false);
+    const plantillaMenuRef = useRef(null);
+    // Estados para totales dinámicos
+    const [totalRegistros, setTotalRegistros] = useState(0);
+    const [totalInternos, setTotalInternos] = useState(0);
+    const [totalExternos, setTotalExternos] = useState(0);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (plantillaMenuRef.current && !plantillaMenuRef.current.contains(event.target)) {
+                setShowPlantillaMenu(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Función para descargar un archivo desde un Blob
+    const descargarArchivo = (blob, nombreArchivo) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = nombreArchivo || 'usuarios.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+    };
+
+    const handleExportExcel = async () => {
+        try {
+            console.log('Iniciando exportación de usuarios con filtros:', filtros);
+            const blob = await downloadTemplate({
+                process: 'getUsers',
+                ...filtros
+            });
+
+            if (!blob || !(blob instanceof Blob)) {
+                throw new Error('El archivo recibido no es válido');
+            }
+
+            if (blob.size === 0) {
+                throw new Error('No hay datos para exportar');
+            }
+
+            descargarArchivo(blob, `usuarios_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+            showSuccessMessage('Exportación completada exitosamente');
+        } catch (error) {
+            console.error('Error al exportar usuarios:', error);
+            showErrorMessage(error.message || 'Error al exportar los datos');
+        }
+    };
+
+    const confirmarSubirPlantilla = async (esActualizacion) => {
+    setMostrarConfirmacionActualizacion(false);
+    
+    try {
+      // Si es una descarga de plantilla
+      if (esActualizacion === undefined) {
+        const blob = await downloadTemplate({
+          process: 'template',
+          page: 0
+        });
+        if (blob) {
+          descargarArchivo(blob, 'plantilla_usuarios.xlsx');
+          showSuccessMessage('Plantilla descargada exitosamente');
+        }
+        return;
+      }
+      const formData = new FormData();
+      formData.append('Archivo', archivoSeleccionado);
+      formData.append('EsActualizacion', esActualizacion);
+      
+      // Mostrar mensaje de carga
+      showSuccessMessage(esActualizacion 
+        ? 'Actualizando registros existentes...' 
+        : 'Creando nuevos registros...');
+      
+      // Subir el archivo y esperar la respuesta
+      const response = await uploadTemplate(formData);
+      
+      // Mostrar mensaje de éxito basado en la respuesta del servidor
+      if (response && response.message) {
+        showSuccessMessage(response.message);
+      } else if (response && response.error) {
+        throw new Error(response.error);
+      } else {
+        showSuccessMessage(esActualizacion 
+          ? 'Registros actualizados correctamente' 
+          : 'Registros creados correctamente');
+      }
+      
+      // Cerrar el modal y limpiar el estado
+      setMostrarModalSubirPlantilla(false);
+      setArchivoSeleccionado(null);
+      
+      // Recargar usuarios después de subir la plantilla
+      cargarUsuarios(paginaActual, busqueda, filtros);
+    } catch (error) {
+      console.error('Error al subir plantilla:', error);
+      showErrorMessage(error.message || 'Error al procesar el archivo');
+    }
+    };
 
     const cargarUsuarios = useCallback(async (pagina = 1, filtroBusqueda = '', filtrosAdicionales = {}) => {
         // Preparar los parámetros para la llamada a la API
@@ -85,22 +203,15 @@ export default function UsuarioDashboard() {
         try {
             const data = await getUsers(params);
             console.log('Datos recibidos de la API:', data);
-            console.log('Usuarios recibidos:', data.users);
-            console.log('Total de usuarios:', data.users?.length || 0);
-            
-            // Verificar si los datos están siendo filtrados correctamente
-            if (params.usuarioActivo === false) {
-                console.log('Filtrando por usuarios inactivos, total recibidos:', data.users?.length || 0);
-                console.log('Primer usuario recibido:', data.users?.[0]);
-            } else if (params.usuarioActivo === true) {
-                console.log('Filtrando por usuarios activos, total recibidos:', data.users?.length || 0);
-                console.log('Primer usuario recibido:', data.users?.[0]);
-            }
-            
+            // Actualizar los totales desde la respuesta del servicio
+            setTotalRegistros(data.totalRecords || 0);
+            setTotalInternos(data.totalInternos || 0);
+            setTotalExternos(data.totalExternos || 0);
             setUsuariosOriginales(data.users || []);
             setUsuarios(data.users || []);
             setPaginaActual(pagina);
             setTotalPaginas(data.totalPages || 1);
+            settotalprueba(data.totalPrueba || 0);
         } catch (error) {
             console.error('Error al cargar usuarios:', error);
             alert('Error al cargar usuarios');
@@ -147,28 +258,15 @@ export default function UsuarioDashboard() {
     };
 
     const handleConfirmarEliminar = async () => {
+        if (!usuarioAEliminar) return;
         try {
-            await deleteUser(usuarioAEliminar?.idUser);
-            // Recargar usuarios después de eliminar
-            const data = await getUsers({ page: paginaActual });
-            setUsuariosOriginales(data.users || []);
-            const filtroActual = filtroActivo;
-            if (!filtroActual) {
-                setUsuarios(data.users || []);
-            } else {
-                const filtradas = (data.users || []).filter(u =>
-                    (u.nombreUser && u.nombreUser.toLowerCase().includes(filtroActual.toLowerCase())) ||
-                    (u.apellidosUser && u.apellidosUser.toLowerCase().includes(filtroActual.toLowerCase())) ||
-                    (u.username && u.username.toLowerCase().includes(filtroActual.toLowerCase())) ||
-                    (u.emailUsuario && u.emailUsuario.toLowerCase().includes(filtroActual.toLowerCase())) ||
-                    (u.identificacion && u.identificacion.toLowerCase().includes(filtroActual.toLowerCase()))
-                );
-                setUsuarios(filtradas);
-            }
+            const userId = usuarioAEliminar.IdUser || usuarioAEliminar.idUser;
+            await deleteUser(userId);
             showSuccessMessage('Usuario eliminado correctamente');
+            cargarUsuarios(paginaActual, filtroActivo, filtros);
         } catch (error) {
             console.error('Error al eliminar usuario:', error);
-            alert('Error al eliminar usuario');
+            showErrorMessage(error.message || 'Error al eliminar usuario');
         } finally {
             setUsuarioAEliminar(null);
             setMostrarModal(false);
@@ -187,37 +285,41 @@ export default function UsuarioDashboard() {
 
     const handleSaveUsuario = async (nuevoUsuario) => {
         try {
-            const response = await putUser(nuevoUsuario);
-            if (response) {
-                // Recargar usuarios después de guardar
-                const data = await getUsers({ page: 1 });
-                setUsuariosOriginales(data.users || []);
-                const filtroActual = filtroActivo;
-                if (!filtroActual) {
-                    setUsuarios(data.users || []);
-                } else {
-                    const filtradas = (data.users || []).filter(u =>
-                        (u.nombreUser && u.nombreUser.toLowerCase().includes(filtroActual.toLowerCase())) ||
-                        (u.apellidosUser && u.apellidosUser.toLowerCase().includes(filtroActual.toLowerCase())) ||
-                        (u.username && u.username.toLowerCase().includes(filtroActual.toLowerCase())) ||
-                        (u.emailUsuario && u.emailUsuario.toLowerCase().includes(filtroActual.toLowerCase())) ||
-                        (u.identificacion && u.identificacion.toLowerCase().includes(filtroActual.toLowerCase()))
-                    );
-                    setUsuarios(filtradas);
-                }
-                setPaginaActual(1);
-                showSuccessMessage('Usuario guardado exitosamente');
-            }
+            await putUser(nuevoUsuario);
+            showSuccessMessage('Usuario guardado exitosamente');
+            setMostrarModalCreacion(false);
+            setMostrarModalEdicion(false);
+            cargarUsuarios(paginaActual, filtroActivo, filtros);
         } catch (error) {
             console.error('Error al guardar usuario:', error);
-            alert('Error al guardar usuario');
+            showErrorMessage(error.message || 'Error al guardar usuario');
         }
     };
 
 
     return (
-        <ManagementDashboardLayout title="USUARIOS:" user={user} negocio={negocio}>
+        <ManagementDashboardLayout title={(
+        <>
+         <div>
+          <span className="font-bold">USUARIOS:</span>
+          {filtros.tipoUserFiltro === 'INTERNO' ? (
+            <span className="font-light ml-5 text-[16px]">{`${totalInternos} Internos`}</span>
+          ) : filtros.tipoUserFiltro === 'EXTERNO' ? (
+            <span className="font-light ml-5 text-[16px]">{`${totalExternos} Externos`}</span>
+          ) : (
+            <span className="font-light ml-5 text-[16px]">{`${totalRegistros} Totales`}</span>
+          )}
+          </div>
+           <span></span>
+           {totalprueba > 0 && (
+            <span className="text-white flex justify-end">
+              <p className='rounded-lg bg-red-400 w-8 px-2 py-1 text-center'>{`${totalprueba}`}</p>
+            </span>
+          )}
+        </>
+      )} user={user} negocio={negocio}>
             <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
+
                 <div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
           <div className="flex gap-2">
             <ButtonGroup
@@ -230,18 +332,103 @@ export default function UsuarioDashboard() {
             />
             <button
               onClick={() => setMostrarModalFiltros(true)}
-              className="flex items-center gap-1 bg-white border-[#1e4e9c] border px-4 py-1 font-bold hover:text-white hover:bg-[#1e4e9c] rounded"
+              className="flex items-center text-[#1e4e9c]  gap-1 bg-white border-[#1e4e9c] border px-4 py-1 font-bold hover:text-white hover:bg-[#1e4e9c] rounded"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
-              Filtros
+              
               {Object.keys(filtros).length > 0 && (
                 <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
                   {Object.keys(filtros).length}
                 </span>
               )}
             </button>
+            <div className="relative" ref={plantillaMenuRef}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowPlantillaMenu(!showPlantillaMenu);
+                  }}
+                  className="flex items-center gap-1 bg-white border border-[#1e4e9c] text-[#1e4e9c] px-2 py-2 font-bold hover:text-white hover:bg-[#1e4e9c] rounded"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 11-2 0V4H5v11h4a1 1 0 110 2H4a1 1 0 01-1-1V3zm7 4a1 1 0 011-1h5a1 1 0 011 1v5a1 1 0 01-1 1h-5a1 1 0 01-1-1V7z" clipRule="evenodd" />
+                  </svg>
+                  Plantilla
+                </button>
+
+                {showPlantillaMenu && (
+                  <div className="absolute right-0 mt-1 w-64 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                    <div className="py-1">
+                      {/* Botón para descargar plantilla vacía */}
+                      <button
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowPlantillaMenu(false);
+                          try {
+                            const blob = await downloadTemplate({
+                              process: 'getUsers',
+                              page: 0 // Página 0 para plantilla vacía
+                            });
+                            
+                            if (!blob || !(blob instanceof Blob)) {
+                              throw new Error('El archivo recibido no es válido');
+                            }
+                            
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'plantilla_usuarios.xlsx';
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            a.remove();
+                            
+                            showSuccessMessage('Plantilla descargada exitosamente');
+                          } catch (error) {
+                            console.error('Error al descargar la plantilla:', error);
+                            showErrorMessage(error.message || 'Error al descargar la plantilla');
+                          }
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      >
+                        Descargar Plantilla (vacía)
+                      </button>
+                      
+                      {/* Botón para subir plantilla */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setMostrarModalSubirPlantilla(true);
+                          setShowPlantillaMenu(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      >
+                        Subir Plantilla
+                      </button>
+                      
+                      
+                      
+                      {/* Botón para exportar datos */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleExportExcel();
+                          setShowPlantillaMenu(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      >
+                        Actualizar Plantilla (descargar)
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
           </div>
           <div className="flex justify-center">
             <Paginador
@@ -268,53 +455,59 @@ export default function UsuarioDashboard() {
               onSearch={handleBuscar}
               value={busqueda}
               onChange={setBusqueda}
-              placeholder="Buscar por nombre, apellido, usuario o email..."
+              placeholder="Buscar por Apellido, Username..."
               className="w-[300px]"
               debounceTime={300}
             />
           </div>
         </div>
                 <div className="mb-4 overflow-x-auto">
-                    <GenericTable 
+                    <GenericTable
                         columns={[
-                            { key: 'idUser', label: 'ID' },
-                            { key: 'nombreUser', label: 'Nombre' },
-                            { key: 'apellidosUser', label: 'Apellidos' },
-                            { key: 'identificacion', label: 'Identificación' },
-                            { 
-                                key: 'relacionUsuario', 
+                            { key: 'idUser', label: 'ID', render: (row) => row.idUser || row.IdUser },
+                            { key: 'nombreUser', label: 'Nombre', render: (row) => row.nombreUser || row.NombreUser },
+                            { key: 'apellidosUser', label: 'Apellidos', render: (row) => row.apellidosUser || row.ApellidosUser },
+                            { key: 'identificacion', label: 'Identificación', render: (row) => row.identificacion || row.Identificacion },
+                            {
+                                key: 'relacionUsuario',
                                 label: 'Relación',
-                                render: (row) => (
-                                    <span className={`px-2 py-1 rounded-full text-xs ${
-                                        row.relacionUsuario === 'EMPLEADO' ? ' text-blue-800' : 'bg-white'
-                                    }`}>
-                                        {row.relacionUsuario || 'N/A'}
-                                    </span>
-                                )
+                                render: (row) => {
+                                    const relacion = row.relacionUsuario || row.RelacionUsuario;
+                                    return (
+                                        <span className={`px-2 py-1 rounded-full text-xs ${relacion === 'EMPLEADO' ? 'text-blue-800' : 'bg-white'}`}>
+                                            {relacion || 'N/A'}
+                                        </span>
+                                    );
+                                }
                             },
-                            { key: 'tipoUser', label: 'Tipo' },
-                            { key: 'username', label: 'Usuario' },
-                            { 
-                                key: 'emailUsuario', 
-                                label: 'Email'
-                            },
-                            { 
-                                key: 'usuarioActivo', 
+                            { key: 'tipoUser', label: 'Tipo', render: (row) => row.tipoUser || row.TipoUser },
+                            { key: 'username', label: 'Usuario', render: (row) => row.username || row.Username },
+                            { key: 'emailUsuario', label: 'Email', render: (row) => row.emailUsuario || row.EmailUsuario },
+                            {
+                                key: 'usuarioActivo',
                                 label: 'Estado',
-                                render: (row) => (
-                                    <span className={`px-2 py-1 rounded-full text-xs ${
-                                        row.usuarioActivo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                    }`}>
-                                        {row.usuarioActivo ? 'Activo' : 'Inactivo'}
-                                    </span>
-                                )
+                                render: (row) => {
+                                    const isActive = row.usuarioActivo !== undefined ? row.usuarioActivo : row.UsuarioActivo;
+                                    return (
+                                        <span className={`px-2 py-1 rounded-full text-xs ${isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                            {isActive ? 'Activo' : 'Inactivo'}
+                                        </span>
+                                    );
+                                }
                             }
-                        ]} 
-                        data={usuarios} 
-                        rowKey="idUser"
+                        ]}
+                        data={usuarios}
+                        rowKey={(row) => row.idUser || row.IdUser}
                         actions={true}
                         onEdit={handleEditar}
                         onDelete={handleEliminar}
+                         rowClassName={(row) => {
+              const enviroment = (row.enviroment || row.environment || '').toUpperCase();
+              if (enviroment === 'PRUEBA') {
+                return 'bg-red-100';
+              }
+              return '';
+            }}
                     />
                 </div>
 
@@ -322,7 +515,7 @@ export default function UsuarioDashboard() {
                     isOpen={mostrarModal}
                     onConfirm={handleConfirmarEliminar}
                     onCancel={handleCancelarEliminar}
-                    mensaje={`¿Está seguro de eliminar al usuario ${usuarioAEliminar?.nombreUser || ''}?`}
+                    mensaje={`¿Está seguro de eliminar al usuario ${(usuarioAEliminar?.nombreUser || usuarioAEliminar?.NombreUser) ?? ''} ${(usuarioAEliminar?.apellidosUser || usuarioAEliminar?.ApellidosUser) ?? ''}?`}
                 />
 
                 {mostrarModalEdicion && (
@@ -464,6 +657,125 @@ export default function UsuarioDashboard() {
                     title="Filtros de Usuarios"
                 />
             </div>
+
+            {/* Upload Template Modal */}
+            {mostrarModalSubirPlantilla && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+                        <h3 className="text-lg font-bold mb-4">Subir Plantilla</h3>
+                        
+                        <div className="mb-4">
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="text-sm font-medium text-gray-700">
+                                    Seleccionar el archivo
+                                </label>
+                                <div className="relative">
+                                    <div className="relative">
+                                        <div className="text-sm text-white bg-blue-500 hover:bg-blue-600 py-2 px-4 rounded-md font-medium cursor-pointer w-[100px] text-center">
+                                            Seleccionar
+                                            <input
+                                                type="file"
+                                                accept=".xlsx, .xls"
+                                                onChange={(e) => setArchivoSeleccionado(e.target.files[0])}
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                                {archivoSeleccionado ? archivoSeleccionado.name : 'No se ha seleccionado ningún archivo'}
+                            </div>
+                        </div>
+                        
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setMostrarModalSubirPlantilla(false);
+                                    setArchivoSeleccionado(null);
+                                }}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 w-[100px] text-center"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    console.log('Subir button clicked');
+                                    console.log('archivoSeleccionado:', archivoSeleccionado);
+                                    if (archivoSeleccionado) {
+                                        console.log('Showing confirmation dialog');
+                                        setMostrarConfirmacionActualizacion(true);
+                                    } else {
+                                        console.log('No file selected');
+                                    }
+                                }}
+                                disabled={!archivoSeleccionado}
+                                className={`px-4 py-2 text-sm font-medium text-white rounded-md w-[100px] text-center ${
+                                    archivoSeleccionado 
+                                        ? 'bg-blue-600 hover:bg-blue-700' 
+                                        : 'bg-gray-400 cursor-not-allowed'
+                                }`}
+                            >
+                                Subir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirmación de actualización */}
+            {console.log('Render - mostrarConfirmacionActualizacion:', mostrarConfirmacionActualizacion)}
+            {mostrarConfirmacionActualizacion && (
+                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[1000] p-4">
+                    <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md">
+                        <h3 className="text-xl font-bold mb-4 text-gray-800">Tipo de Importación</h3>
+                        <p className="mb-6 text-gray-700">
+                            ¿Necesita crear nuevos registros o actualizar registros existentes?
+                        </p>
+                        
+                        <div className="flex flex-col sm:flex-row justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setMostrarConfirmacionActualizacion(false)}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex-1 sm:flex-none w-[100px]"
+                            >
+                                Cancelar
+                            </button>
+                            {mostrarModalSubirPlantilla && (
+                              <>
+                                <button 
+                                    type="button"
+                                    onClick={() => confirmarSubirPlantilla(false)}
+                                    className="px-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 flex-1 sm:flex-none w-[100px]"
+                                >
+                                    Crear
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => confirmarSubirPlantilla(true)}
+                                    className="px-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex-1 sm:flex-none w-[100px]"
+                                >
+                                    Actualizar
+                                </button>
+                              </>
+                            )}
+                            {!mostrarModalSubirPlantilla && (
+                              <button
+                                  type="button"
+                                  onClick={() => confirmarSubirPlantilla()}
+                                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex-1 sm:flex-none"
+                              >
+                                  Descargar Plantilla
+                              </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </ManagementDashboardLayout>
-    );
-}
+  );
+};

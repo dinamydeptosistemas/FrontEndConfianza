@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { getEmpresas } from '../../services/company/CompanyService';
 import { useNotification } from '../../context/NotificationContext';
 import ActionButtons, { LoadingOverlay } from '../common/Buttons';
+import { useConfig } from '../../contexts/ConfigContext';
+
 
 function generarUsername({ apellidosUser, nombreUser, celularUsuario }) {
   const [primerApellido = '', segundoApellido = ''] = (apellidosUser || '').trim().split(' ');
@@ -25,11 +27,9 @@ const UsuarioModal = ({
   const [showPassword, setShowPassword] = useState(false);
   const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
-  
-  // Usar el contexto de notificaciones global
+  const { config } = useConfig();
   const { showSuccessMessage } = useNotification();
 
-  // Estado inicial del formulario
   const [formData, setFormData] = useState({
     nombreUser: '',
     apellidosUser: '',
@@ -45,7 +45,8 @@ const UsuarioModal = ({
     whatsap: false,
     tipoUser: '',
     relacionUsuario: '',
-    codeEntity: ''
+    codeEntity: '',
+    enviroment: null,
   });
 
   // Estados para empresas
@@ -57,15 +58,35 @@ const UsuarioModal = ({
 
   // Efecto para inicializar datos cuando se recibe el usuario
   useEffect(() => {
-    if (usuario) {
-      setFormData({
-        ...usuario,
-        password: '', // Nunca mostrar ni inicializar password real
-        passnumber: '', // Al editar, el PIN siempre inicia vacío
-        confirmPassword: ''
-      });
+    console.log('Config object in useEffect:', config);
+    const initialEnv = config ? config.ambienteTrabajoModo : null;
+    console.log('Initial environment:', initialEnv);
+
+    if (isEditing && usuario) {
+      const newFormData = {
+        idUser: usuario.idUser || usuario.IdUser,
+        nombreUser: usuario.nombreUser || usuario.NombreUser || '',
+        apellidosUser: usuario.apellidosUser || usuario.ApellidosUser || '',
+        identificacion: usuario.identificacion || usuario.Identificacion || '',
+        usuarioActivo: usuario.usuarioActivo !== undefined ? usuario.usuarioActivo : usuario.UsuarioActivo,
+        username: usuario.username || usuario.Username || '',
+        emailUsuario: usuario.emailUsuario || usuario.EmailUsuario || '',
+        celularUsuario: usuario.celularUsuario || usuario.CelularUsuario || '',
+        sms: usuario.sms || usuario.Sms || false,
+        whatsap: usuario.whatsap || usuario.Whatsap || false,
+        tipoUser: usuario.tipoUser || usuario.TipoUser || '',
+        relacionUsuario: usuario.relacionUsuario || usuario.RelacionUsuario || '',
+        codeEntity: usuario.codeEntity || usuario.CodeEntity || '',
+        password: '',
+        passnumber: '',
+        confirmPassword: '',
+        enviroment: initialEnv,
+      };
+      setFormData(newFormData);
+      console.log('Form data set for editing:', newFormData);
     } else {
-      setFormData({
+      // Reset form for creation
+      const newFormData = {
         nombreUser: '',
         apellidosUser: '',
         identificacion: '',
@@ -80,10 +101,13 @@ const UsuarioModal = ({
         whatsap: false,
         tipoUser: '',
         relacionUsuario: '',
-        codeEntity: ''
-      });
+        codeEntity: '',
+        enviroment: initialEnv
+      };
+      setFormData(newFormData);
+      console.log('Form data set for creation:', newFormData);
     }
-  }, [usuario]);
+  }, [usuario, isEditing, config]);
 
   // Efecto para cargar empresas cuando se abre el modal
   useEffect(() => {
@@ -96,25 +120,28 @@ const UsuarioModal = ({
         
         do {
           const response = await getEmpresas({ page });
-          if (Array.isArray(response.companies)) {
-            allEmpresas = allEmpresas.concat(response.companies);
+          const companiesList = response.Companies || response.companies || [];
+          if (Array.isArray(companiesList)) {
+            allEmpresas = allEmpresas.concat(companiesList);
           }
-          totalPages = response.totalPages || totalPages;
+          totalPages = response.TotalPages || response.totalPages || totalPages;
           page++;
-          
-          if (!response.totalPages && (!response.companies || response.companies.length === 0)) {
+
+          if (!totalPages && companiesList.length === 0) {
             break;
           }
         } while (page <= totalPages);
         
-        // Si estamos editando y la empresa actual no está en la lista, agrégala
-        if (isEditing && usuario && usuario.codeEntity) {
-          const exists = allEmpresas.some(e => e.codeEntity === usuario.codeEntity);
-          if (!exists) {
-            allEmpresas.unshift({
-              codeEntity: usuario.codeEntity,
-              businessName: '(Empresa actual, no disponible)'
-            });
+        if (isEditing && usuario) {
+          const userCodeEntity = usuario.codeEntity || usuario.CodeEntity;
+          if (userCodeEntity) {
+            const exists = allEmpresas.some(e => (e.codeEntity || e.CodeEntity) === userCodeEntity);
+            if (!exists) {
+              allEmpresas.unshift({
+                CodeEntity: userCodeEntity,
+                BusinessName: `(${(usuario.businessName || usuario.BusinessName) ?? 'Empresa actual'})`
+              });
+            }
           }
         }
         
@@ -141,7 +168,6 @@ const UsuarioModal = ({
         [name]: type === 'checkbox' ? checked : value
       };
       
-      // Solo autogenerar username si NO es edición
       if (!isEditing && (name === 'nombreUser' || name === 'apellidosUser' || name === 'celularUsuario')) {
         newData.username = generarUsername({
           apellidosUser: newData.apellidosUser,
@@ -161,31 +187,26 @@ const UsuarioModal = ({
     setLoading(true);
     
     try {
-      // Validación de PIN solo al crear
       if (!isEditing && !/^\d{4}$/.test(formData.passnumber)) {
         setError('El PIN debe tener exactamente 4 dígitos numéricos.');
         setLoading(false);
         return;
       }
       
-      // Validación de password solo si tiene valor
       if (formData.password && formData.password.length < 4) {
         setError('La contraseña debe tener al menos 4 caracteres.');
         setLoading(false);
         return;
       }
       
-      // Validación de confirmación solo si password tiene valor
       if (formData.password && formData.password !== formData.confirmPassword) {
         setError('Las contraseñas no coinciden.');
         setLoading(false);
         return;
       }
       
-      // Preparar datos para envío
       let dataToSend = { ...formData };
       
-      // El backend espera 'passNumber' en lugar de 'passnumber'
       if (dataToSend.passnumber !== undefined) {
         if (dataToSend.passnumber && dataToSend.passnumber.trim() !== '') {
           dataToSend.passNumber = dataToSend.passnumber;
@@ -193,7 +214,6 @@ const UsuarioModal = ({
         delete dataToSend.passnumber;
       }
       
-      // Eliminar confirmPassword del payload
       delete dataToSend.confirmPassword;
       
       console.log('Datos a guardar:', dataToSend);
@@ -202,10 +222,8 @@ const UsuarioModal = ({
       
       setLoading(false);
       
-      // Mostrar mensaje de éxito usando el contexto global
       showSuccessMessage(isEditing ? '¡Usuario actualizado exitosamente!' : '¡Usuario creado exitosamente!');
       
-      // Cerrar modal
       if (onClose) {
         onClose();
       }
@@ -222,25 +240,13 @@ const UsuarioModal = ({
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
       <div className="bg-white py-6 px-10 rounded-lg shadow-lg w-[750px] max-h-[90vh] overflow-y-auto relative">
-        {/* Overlay de carga */}
         {loading && <LoadingOverlay isLoading={true} message={isEditing ? "Actualizando usuario..." : "Creando usuario..."} />}
         
-        {/* Botón cerrar */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl font-bold focus:outline-none"
-          aria-label="Cerrar"
-        >
-          ×
-        </button>
-
-        {/* Header con título y botones */}
-        <div className="grid grid-cols-2 items-center mb-2">
+        <div className="grid grid-cols-2 items-center">
           <h2 className="text-2xl font-bold text-gray-800 pt-4">
-            {isEditing ? 'Actualizar Usuario' : 'Crear Usuario'}
+            {isEditing ? 'Editar Usuario' : 'Crear Usuario'}
           </h2>
-          <div className="flex justify-end gap-3 mr-[25px]">
+          <div className="flex justify-end gap-3 mr-[25px] mb-2">
             <ActionButtons 
               onClose={onClose} 
               handleSubmit={handleSubmit} 
@@ -252,7 +258,6 @@ const UsuarioModal = ({
         </div>
         <hr className="col-span-2 border-blue-500 mr-6 m-0 p-0" />
 
-        {/* Mostrar errores */}
         {error && (
           <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
             {error}
@@ -261,9 +266,14 @@ const UsuarioModal = ({
 
         <form onSubmit={handleSubmit} className="grid mt-5 grid-cols-2 gap-x-4 gap-y-3 relative">
           
-          {/* Row 1: Estado activo + Indicador visual */}
           <div className="flex items-center h-10">
-            <label className="text-sm text-gray-700 font-medium">Usuario Activo</label>
+          <div className={`inline-flex px-4 py-2 text-[1rem] rounded-full text-xs font-medium ${formData.usuarioActivo ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}> 
+              {formData.usuarioActivo ? 'ACTIVO' : 'INACTIVO'}
+            </div>
+
+          </div>
+          <div className="flex items-center h-10">
+        <label className="text-sm text-gray-700 font-medium">Usuario Activo</label>
             <input
               type="checkbox"
               name="usuarioActivo"
@@ -272,13 +282,35 @@ const UsuarioModal = ({
               className="h-4 w-4 ml-2 rounded border-gray-200 text-blue-600 focus:ring-blue-500 outline-none"
             />
           </div>
-          <div className="flex items-center h-10">
-            <div className={`inline-flex px-4 py-2 text-[1rem] rounded-full text-xs font-medium ${formData.usuarioActivo ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}> 
-              {formData.usuarioActivo ? 'ACTIVO' : 'INACTIVO'}
-            </div>
+
+          
+          <div>
+          <label className="block text-sm font-medium text-gray-700">Username</label>
+            <input
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-blue-200 text-gray-600 transition-colors outline-none"
+              readOnly
+            />
+          </div>
+          <div>
+
+          <label className="block text-sm font-medium text-gray-700">Identificación</label>
+            <input
+              type="text"
+              name="identificacion"
+              value={formData.identificacion}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
+              required={!isEditing}
+            />
+         
+           
           </div>
 
-          {/* Row 2: Nombre + Apellidos */}
+
           <div>
             <label className="block text-sm font-medium text-gray-700">Nombre</label>
             <input
@@ -302,31 +334,6 @@ const UsuarioModal = ({
             />
           </div>
 
-          {/* Row 3: Identificación + Username */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Identificación</label>
-            <input
-              type="text"
-              name="identificacion"
-              value={formData.identificacion}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
-              required={!isEditing}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Username</label>
-            <input
-              type="text"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-gray-50 text-gray-600 transition-colors outline-none"
-              readOnly
-            />
-          </div>
-
-          {/* Row 4: Email + Celular */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Email</label>
             <input
@@ -349,7 +356,6 @@ const UsuarioModal = ({
             />
           </div>
 
-          {/* Row 5: Código de Empresa + Tipo de Usuario */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Código de Empresa</label>
             <select
@@ -364,8 +370,8 @@ const UsuarioModal = ({
                 <option>Cargando...</option>
               ) : (
                 empresas.map(empresa => (
-                  <option key={empresa.codeEntity} value={empresa.codeEntity}>
-                    {empresa.businessName}
+                  <option key={empresa.codeEntity || empresa.CodeEntity} value={empresa.codeEntity || empresa.CodeEntity}>
+                    {empresa.businessName || empresa.BusinessName}
                   </option>
                 ))
               )}
@@ -386,7 +392,6 @@ const UsuarioModal = ({
             </select>
           </div>
 
-          {/* Row 6: Relación Usuario + Contraseña */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Relación Usuario</label>
             <select
@@ -441,7 +446,6 @@ const UsuarioModal = ({
             )}
           </div>
 
-          {/* Row 7: PIN + Confirmar Contraseña */}
           <div>
             <label className="block text-sm font-medium text-gray-700">PIN (4 dígitos)</label>
             <div className="relative">
@@ -485,7 +489,6 @@ const UsuarioModal = ({
             />
           </div>
 
-          {/* Row final: Checkboxes en 2 columnas */}
           <div className="col-span-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center h-10">

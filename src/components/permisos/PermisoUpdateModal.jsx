@@ -47,7 +47,7 @@ export default function PermisoUpdateModal({ onClose, onUpdate, permiso }) {
     const { name, type, checked, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : (type === 'number' ? Number(value) : value)
     }));
   };
 

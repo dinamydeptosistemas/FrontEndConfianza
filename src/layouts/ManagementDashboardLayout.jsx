@@ -1,16 +1,42 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useConfig } from '../contexts/ConfigContext';
+import MensajeHead from '../components/forms/MensajeHead';
+import { useAuth } from '../contexts/AuthContext';
 
-/**
- * Layout especializado para las páginas de gestión (empresa, usuario, perfil, permisos).
- * Incluye cabecera, barra de usuario, y espacio para el contenido principal.
- */
-function ManagementDashboardLayout({ title, user, negocio, children }) {
+function ManagementDashboardLayout({ title, children }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, negocio, loading: authLoading, error: authError } = useAuth();
+  const { config, loading: configLoading, error: configError } = useConfig();
+
+  if (authLoading || configLoading) {
+    return (
+        <div className="grid  grid-cols-3 justify-center   items-center h-screen">
+            <div className="loader">Loading...</div>
+        </div>
+    );
+  }
+
+  if (authError || configError) {
+      return (
+          <div className="flex flex-col justify-center items-center h-screen">
+              <p className="text-red-500 mb-4">Error al cargar datos.</p>
+              <button onClick={() => window.location.reload()} className="bg-blue-500 text-white px-4 py-2 rounded">
+                  Reintentar
+              </button>
+          </div>
+      );
+  }
+
   return (
-    <div className="min-h-screen w-full flex flex-col bg-gray-100 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
-      <div className="w-full shadow-lg">
+    <div className="w-full h-full flex flex-col bg-gray-100 px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
+            <MensajeHead 
+                mensaje={config?.ambienteTrabajoHabilitado ? 'AMBIENTE DE PRUEBA' : ''}
+                style={{ boxShadow: 'none', backgroundColor: '#FEE2E2' }}
+                textStyle={{ color: '#8ba4cb', fontWeight: '400', fontSize: '0.9rem' }}
+            />
+      <div className="w-full">
         {/* Header superior */}
         <div className="bg-[#e9e9e9] py-2 px-1.5 md:px-1 lg:px-2 xl:px-4 2xl:px-4 flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[#ccc] text-sm w-full">
           <div className="flex items-center mb-2 sm:mb-0 pl-7">
@@ -26,7 +52,8 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
         </div>
 
         {/* Contenido principal */}
-        <div className="bg-white rounded-b-xl text-justify pt-5">
+        <div className="
+         rounded-b-xl text-justify pt-5 h-full">
           {/* Barra de usuario */}
           <div className="w-full py-2">
             <div className="w-full flex flex-row justify-between items-center px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
@@ -38,7 +65,7 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
               </div>
               <button 
                 className="border border-orange-500 text-orange-500 px-6 h-9 text-xs sm:text-sm font-bold rounded bg-white hover:bg-orange-50 transition-colors" 
-                onClick={() => navigate('/dashboard-internal')}
+                onClick={() => navigate('/dashboard')}
               >
                 SALIR
               </button>
@@ -112,29 +139,31 @@ function ManagementDashboardLayout({ title, user, negocio, children }) {
           </div>
 
           {/* Área de contenido */}
-          <div className="flex-1 flex flex-col items-center bg-[#f8f9fb] pt-5">
-            <div className="w-full px-2 sm:px-3 md:px-4 lg:px-6 xl:px-8">
-              <div className="flex justify-between bg-[#1e4e9c] w-full">
-                <div className="w-full py-1 px-4 h-[50px] flex items-center">
-                  <h2 className="text-lg font-bold text-white"> 
-                    <span className="text-base ml-2 text-[1.1rem]">
+          <div className="flex-1 flex flex-col items-center bg-[#f8f9fb] pt-5 h-full">
+            <div className="w-full px-2 sm:px-3 md:px-4 lg:px-6 xl:px-8 h-full " >
+              <div className="flex justify-between bg-[#1e4e9c] w-full ">
+                <div className="  py-1 px-4 h-[50px] grid w-full items-center ">
+                  <h2 className="text-lg font-bold text-white " > 
+                    <span className="grid w-full grid-cols-3 items-center gap-4 text-base text-white">
                       {title}
                     </span>
                   </h2>
                 </div>
               </div>
-              <div className="w-full mt-1 sm:mt-2">
+              <div className="w-full  mt-1 sm:mt-2 h-full">
                 {children}
+                
               </div>
             </div>
           </div>
           {/* Sombreado lateral izquierdo */}
-          <div className="hidden xl:block fixed left-0 top-0 h-full w-12 bg-gradient-to-r from-black/5 to-transparent pointer-events-none" />
+          <div className="hidden xl:block fixed left-0 top-0 h-[150vh] w-12 bg-gradient-to-r from-black/5 to-transparent pointer-events-none" />
           {/* Sombreado lateral derecho */}
-          <div className="hidden xl:block fixed right-0 top-0 h-full w-12 bg-gradient-to-l from-black/5 to-transparent pointer-events-none" />
+          <div className="hidden xl:block fixed right-0 top-0 h-[150vh] w-12 bg-gradient-to-l from-black/5 to-transparent pointer-events-none" />
         </div>
       </div>
     </div>
+ 
   );
 }
 

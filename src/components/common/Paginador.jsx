@@ -2,18 +2,33 @@ import React from 'react';
 import { FaChevronLeft, FaChevronRight, FaAngleDoubleLeft, FaAngleDoubleRight } from 'react-icons/fa';
 
 function getPages(paginaActual, totalPaginas) {
+  console.log(`Generando páginas para paginador: paginaActual=${paginaActual}, totalPaginas=${totalPaginas}`);
+  
+  // Asegurar que totalPaginas sea al menos 1
+  const total = Math.max(1, totalPaginas);
+  
+  // Asegurar que paginaActual esté dentro del rango válido
+  const actual = Math.max(1, Math.min(paginaActual, total));
+  
   const pages = [];
-  if (totalPaginas <= 7) {
-    for (let i = 1; i <= totalPaginas; i++) pages.push(i);
+  // Si hay pocas páginas, mostrar todas
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) pages.push(i);
   } else {
-    if (paginaActual <= 4) {
-      pages.push(1, 2, 3, 4, 5, '...', totalPaginas);
-    } else if (paginaActual >= totalPaginas - 3) {
-      pages.push(1, '...', totalPaginas - 4, totalPaginas - 3, totalPaginas - 2, totalPaginas - 1, totalPaginas);
+    // Lógica para mostrar páginas con elipsis
+    if (actual <= 4) {
+      // Cerca del inicio
+      pages.push(1, 2, 3, 4, 5, '...', total);
+    } else if (actual >= total - 3) {
+      // Cerca del final
+      pages.push(1, '...', total - 4, total - 3, total - 2, total - 1, total);
     } else {
-      pages.push(1, '...', paginaActual - 1, paginaActual, paginaActual + 1, '...', totalPaginas);
+      // En medio
+      pages.push(1, '...', actual - 1, actual, actual + 1, '...', total);
     }
   }
+  
+  console.log('Páginas generadas para el paginador:', pages);
   return pages;
 }
 
@@ -51,9 +66,9 @@ const Paginador = ({ paginaActual, totalPaginas, onPageChange }) => {
       <div className="flex items-center gap-0.5">
         {pages.map((p, idx) =>
           p === '...'
-            ? <span key={idx} className="px-2 py-1 border border-gray-200 bg-white text-gray-500">...</span>
+            ? <span key={`ellipsis-${idx}`} className="px-2 py-1 border border-gray-200 bg-white text-gray-500">...</span>
             : <button
-                key={p}
+                key={`page-${p}-${idx}`}
                 className={`w-8 h-8 border ${p === paginaActual 
                   ? 'bg-blue-600 text-white border-blue-600' 
                   : 'bg-white text-gray-700 hover:bg-blue-50 border-gray-200'} font-semibold rounded`}

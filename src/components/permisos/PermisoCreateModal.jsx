@@ -4,6 +4,7 @@ import { getUsers } from '../../services/user/UserService';
 import { getPerfilesAcceso } from '../../services/accessProfile/AccessProfileService';
 import { useAuth } from '../../contexts/AuthContext';
 import ActionButtons, { LoadingOverlay } from '../common/Buttons';
+import {useConfig  } from '../../contexts/ConfigContext';
 
 /**
  * Modal para crear permisos.
@@ -13,6 +14,8 @@ import ActionButtons, { LoadingOverlay } from '../common/Buttons';
  */
 export default function PermisoCreateModal({ onClose, onSave }) {
   const { user } = useAuth();
+  const { config } = useConfig();
+  const initialEnv = config ? config.ambienteTrabajoModo : null;
   const [formData, setFormData] = useState({
     idUser: '',
     idFunction: '',
@@ -25,7 +28,8 @@ export default function PermisoCreateModal({ onClose, onSave }) {
     userioResponsable: user?.userName || 'XAVIER',
     fechaInicioPermiso: new Date().toISOString().split('T')[0],
     fechaFinalPermiso: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
-    selectedEmpresa: null
+    selectedEmpresa: null,
+    enviroment: initialEnv
   });
 
   useEffect(() => {
@@ -35,6 +39,7 @@ export default function PermisoCreateModal({ onClose, onSave }) {
         ...prev,
         userioResponsable: user.userName || '',
         codigoEntidad: user.codigoEmpresa || ''
+        
       }));
     }
   }, [user]);
@@ -43,6 +48,7 @@ export default function PermisoCreateModal({ onClose, onSave }) {
   const [usuarios, setUsuarios] = useState([]);
   const [funciones, setFunciones] = useState([]);
   const [loading, setLoading] = useState(true);
+  
   const [error, setError] = useState('');
   const [loadingData, setLoadingData] = useState(false);
 
@@ -181,6 +187,9 @@ export default function PermisoCreateModal({ onClose, onSave }) {
     }));
   };
 
+ 
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoadingData(true);
@@ -216,16 +225,17 @@ export default function PermisoCreateModal({ onClose, onSave }) {
         estadoPermisoActivado: formData.estadoPermisoActivado,
         permitirTodasEmpresas: formData.permitirTodasEmpresas,
         permitirMasDeUnaSesion: formData.permitirMasDeUnaSesion,
-        cierreSesionJornada: formData.cierreSesionJornada ? 1 : 0,
-        bloqueoSesionMaxima: formData.bloqueoSesionMaxima ? 1 : 0,
+        cierreSesionJornada: formData.cierreSesionJornada, // Use numeric value directly
+        bloqueoSesionMaxima: formData.bloqueoSesionMaxima, // Use numeric value directly
         userioResponsable: user?.userName || 'XAVIER',
         fechaInicioPermiso: formData.fechaInicioPermiso,
-        fechaFinalPermiso: formData.fechaFinalPermiso
+        fechaFinalPermiso: formData.fechaFinalPermiso,
+        enviroment: formData.enviroment
       };
 
       // Llamar a la función onSave proporcionada por el componente padre
       const response = await onSave(permisoData);
-      
+
       // Mostrar mensaje de éxito
       if (response && response.status === 'SUCCESS') {
         // Cerrar el modal después de un breve retraso para mostrar el mensaje
@@ -297,23 +307,23 @@ export default function PermisoCreateModal({ onClose, onSave }) {
           
           {/* Row 1: Estado del permiso */}
           <div className="flex items-center h-10">
-            <label className="text-sm text-gray-700 font-medium">Estado Activo</label>
-            <input
-              type="checkbox"
-              name="estadoPermisoActivado"
-              checked={formData.estadoPermisoActivado}
-              onChange={handleChange}
-              className="h-4 w-4 ml-2 rounded border-gray-200 text-blue-600 focus:ring-blue-500 outline-none"
-            />
-          </div>
-          <div className="flex items-center h-10">
-            <div className={`inline-flex px-4 py-2 text-[1rem] rounded-full text-xs font-medium ${
+          <div className={`inline-flex px-4 py-2 text-[1rem] rounded-full text-xs font-medium ${
               formData.estadoPermisoActivado 
                 ? 'bg-blue-100 text-blue-800' 
                 : 'bg-red-100 text-red-800'
             }`}> 
               {formData.estadoPermisoActivado ? 'ACTIVO' : 'INACTIVO'}
             </div>
+          </div>
+          <div className="flex items-center h-10">
+          <label className="text-sm text-gray-700 font-medium">Estado Activo</label>
+            <input
+              type="checkbox"
+              name="estadoPermisoActivado"
+              checked={formData.estadoPermisoActivado}
+              onChange={handleChange}
+              className="h-4 w-4 ml-2 rounded border-gray-200 text-blue-600 focus:ring-blue-500 outline-none"
+            /> 
           </div>
 
           {/* Row 2: Usuario + Función */}

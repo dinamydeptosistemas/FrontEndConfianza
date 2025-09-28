@@ -115,18 +115,110 @@ const deleteSocialMedia = async (idMedio) => {
   );
 };
 
+/**
+ * Procesa la respuesta de medios sociales y extrae estadísticas útiles
+ * @param {Object} response - Respuesta de la API de medios sociales
+ * @returns {Object} - Estadísticas procesadas
+ */
+const processSocialMediaResponse = (response) => {
+  if (!response || !response.data) {
+    console.error('Error: Respuesta inválida o sin datos');
+    return {
+      totalRecords: 0,
+      redesActivas: 0,
+      redesInactivas: 0,
+      tiposMedio: {},
+      redesSociales: {},
+      departamentos: {},
+      tiposProceso: {}
+    };
+  }
+
+  try {
+    const { data, totalRecords } = response;
+    
+    // Estadísticas básicas
+    const redesActivas = data.filter(medio => medio.medioActivo === true).length;
+    const redesInactivas = data.filter(medio => medio.medioActivo === false).length;
+    
+    // Análisis por categorías
+    const tiposMedio = {};
+    const redesSociales = {};
+    const departamentos = {};
+    const tiposProceso = {};
+    
+    // Procesar cada medio social
+    data.forEach(medio => {
+      // Contar por tipo de medio
+      if (medio.tipoMedio) {
+        tiposMedio[medio.tipoMedio] = (tiposMedio[medio.tipoMedio] || 0) + 1;
+      }
+      
+      // Contar por red social
+      if (medio.redSocial) {
+        redesSociales[medio.redSocial] = (redesSociales[medio.redSocial] || 0) + 1;
+      }
+      
+      // Contar por departamento
+      if (medio.departamento) {
+        departamentos[medio.departamento] = (departamentos[medio.departamento] || 0) + 1;
+      }
+      
+      // Contar por tipo de proceso
+      if (medio.tipoProceso) {
+        tiposProceso[medio.tipoProceso] = (tiposProceso[medio.tipoProceso] || 0) + 1;
+      }
+    });
+    
+    console.log('✅ Datos de medios sociales procesados:', {
+      totalRecords,
+      redesActivas,
+      redesInactivas,
+      tiposMedio,
+      redesSociales,
+      departamentos,
+      tiposProceso
+    });
+    
+    return {
+      totalRecords,
+      redesActivas,
+      redesInactivas,
+      tiposMedio,
+      redesSociales,
+      departamentos,
+      tiposProceso,
+      data
+    };
+  } catch (error) {
+    console.error('Error procesando datos de medios sociales:', error);
+    return {
+      totalRecords: response.totalRecords || 0,
+      redesActivas: 0,
+      redesInactivas: 0,
+      tiposMedio: {},
+      redesSociales: {},
+      departamentos: {},
+      tiposProceso: {},
+      data: response.data || []
+    };
+  }
+};
+
 // Export individual functions
 export {
   getSocialMedia,
   saveSocialMedia,
-  deleteSocialMedia
+  deleteSocialMedia,
+  processSocialMediaResponse
 };
 
 // Also export as default object for backward compatibility
 const socialMediaService = {
   getSocialMedia,
   saveSocialMedia,
-  deleteSocialMedia
+  deleteSocialMedia,
+  processSocialMediaResponse
 };
 
 export default socialMediaService;

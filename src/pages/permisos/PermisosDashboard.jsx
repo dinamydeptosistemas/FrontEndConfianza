@@ -6,12 +6,19 @@ import ButtonGroup from '../../components/common/ButtonGroup';
 import SearchBar from '../../components/common/SearchBar';
 import ConfirmEliminarModal from '../../components/common/ConfirmEliminarModal';
 import PermisoCreateModal from '../../components/permisos/PermisoCreateModal';
+import PermisosFilterModal from '../../components/permisos/PermisosFilterModal';
 import PermisosModal from '../../components/bitacora/PermisosModal';
 import Paginador from '../../components/common/Paginador';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 
 export default function PermisosDashboard() {
+  // Estado para mostrar el modal de filtros
+  const [mostrarModalFiltros, setMostrarModalFiltros] = useState(false);
+  const [filtros, setFiltros] = useState({});
+  const [mostrarListaFiltros, setMostrarListaFiltros] = useState(false);
+  // Estado para el total de permisos
+  const [totalRecords, setTotalRecords] = useState(0);
   const { user, negocio } = useAuth();
   const { showSuccessMessage } = useNotification();
   const [permisosOriginales, setPermisosOriginales] = useState([]);
@@ -22,6 +29,7 @@ export default function PermisosDashboard() {
   const [permisoAEditar, setPermisoAEditar] = useState(null);
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   const [mostrarModalCreacion, setMostrarModalCreacion] = useState(false);
+  const [registrosPrueba, setRegistrosPrueba] = useState(0);
   const [paginaActual, setPaginaActual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [showConfirmEliminar, setShowConfirmEliminar] = useState(false);
@@ -29,19 +37,38 @@ export default function PermisosDashboard() {
   const [eliminando, setEliminando] = useState(false);
   const [errorEliminacion, setErrorEliminacion] = useState('');
 
-  // Ya no necesitamos este efecto porque el NotificationContext maneja el cierre automático
+  // Limpia los filtros para no enviar valores vacíos, nulos o undefined
+  function limpiarFiltros(obj) {
+    const limpio = {};
+    Object.entries(obj).forEach(([key, value]) => {
+      // No enviar FiltroEstadoPermiso si es '' (Todos)
+      if (key === 'FiltroEstadoPermiso' && value === '') return;
+      // Enviar booleanos como true o false, y strings solo si no son vacíos
+      if (typeof value === 'boolean') {
+        limpio[key] = value;
+      } else if (value !== '' && value !== null && value !== undefined) {
+        limpio[key] = value;
+      }
+    });
+    return limpio;
+  }
 
-  const cargarPermisos = useCallback(async (pagina = 1, filtroBusqueda = '') => {
-    const params = { page: pagina };
+  // Ahora acepta un tercer parámetro opcional para filtros extra
+  const cargarPermisos = useCallback(async (pagina = 1, filtroBusqueda = '', filtrosExtra = {}) => {
+    const filtrosLimpios = limpiarFiltros(filtrosExtra);
+    const params = { page: pagina, ...filtrosLimpios };
     if (filtroBusqueda) {
       params.searchTerm = filtroBusqueda;
       setFiltroActivo(filtroBusqueda);
     }
+    console.log('Filtros enviados al servidor:', params);
     const data = await getPermisos(params);
     setPermisosOriginales(data.permissions || []);
     setPermisos(data.permissions || []);
     setPaginaActual(pagina);
     setTotalPaginas(data.totalPages || 1);
+    setRegistrosPrueba(data.permisosPrueba || 0);
+    setTotalRecords(data.totalRecords || (data.permissions ? data.permissions.length : 0));
   }, []);
 
   useEffect(() => {
@@ -73,14 +100,14 @@ export default function PermisosDashboard() {
 
   const confirmarEliminacion = async () => {
     if (!permisoAEliminar) return;
-    
+
     setEliminando(true);
     setErrorEliminacion('');
-    
+
     try {
       await deletePermiso(permisoAEliminar.regPermiso);
-      // Recargar los permisos después de eliminar
-      await cargarPermisos(paginaActual, filtro);
+      // Recargar los permisos después de eliminar (volver a la primera página)
+      await cargarPermisos(1, filtro);
       showSuccessMessage(`Permiso de ${permisoAEliminar.userName || 'usuario'} eliminado correctamente`);
       setShowConfirmEliminar(false);
     } catch (error) {
@@ -167,10 +194,24 @@ export default function PermisosDashboard() {
   };
 
   return (
-    <ManagementDashboardLayout title="PERMISOS:" user={user} negocio={negocio}>
-      <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4 mx-[18px] w-[96%]">
-        <div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
+    <ManagementDashboardLayout title={(
+ <>
           <div>
+            <span className="font-bold">PERMISOS:</span>
+            <span className="font-light w-100 text-[16px] ml-2">{`${totalRecords} Total`}</span>
+          </div>
+          <span></span>
+         {registrosPrueba > 0 && (
+            <span className="text-white flex justify-end">
+              <p className='rounded-lg bg-red-400 w-8 px-2 py-1 text-center'>{`${registrosPrueba}`}</p>
+            </span>
+          )}
+       
+        </>
+      )}  user={user} negocio={negocio}>
+      <div className="bg-white border-b border-l border-r border-gray-300 rounded-b p-4">
+<div className="grid grid-cols-3 items-center gap-2 mb-4 min-h-[48px]">
+<div className="flex gap-2">
             <ButtonGroup
               buttons={[{
                 label: 'Nuevo',
@@ -179,6 +220,77 @@ export default function PermisosDashboard() {
                 className: 'bg-white border-[#1e4e9c] border px-8 py-1 font-bold hover:text-white hover:bg-[#1e4e9c]'
               }]}
             />
+             
+        {/* Modal de filtros para permisos */}
+        <PermisosFilterModal
+          isOpen={mostrarModalFiltros}
+          onClose={() => setMostrarModalFiltros(false)}
+          onApply={(filtrosAplicados) => {
+            setFiltros(filtrosAplicados);
+            setMostrarModalFiltros(false);
+            // Solo enviar los filtros requeridos
+            cargarPermisos(1, '', {
+              FiltroEstadoPermiso: filtrosAplicados.FiltroEstadoPermiso,
+              FiltroTodasEmpresas: filtrosAplicados.FiltroTodasEmpresas,
+              FiltroMasDeUnaSesion: filtrosAplicados.FiltroMasDeUnaSesion
+            });
+          }}
+        />
+              <div className="relative">
+                <div className="flex items-center">
+                  <button
+                    onClick={() => setMostrarModalFiltros(true)}
+                  className="flex items-center text-[#1e4e9c]  gap-1 bg-white border-[#1e4e9c] border px-4 py-3 font-bold hover:text-white hover:bg-[#1e4e9c] rounded"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                    </svg>
+                    {Object.keys(filtros).length > 0 && (
+                      <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                        {Object.keys(filtros).length}
+                      </span>
+                    )}
+                  </button>
+                  {Object.keys(filtros).length > 0 && (
+                    <button
+                      className="ml-2 text-xs text-blue-700"
+                      style={{ height: '32px', textDecoration: 'none' }}
+                      onClick={() => setMostrarListaFiltros((v) => !v)}
+                    >Ver/Quitar filtros</button>
+                  )}
+                </div>
+                {mostrarListaFiltros && (
+                  <div className="absolute z-50 bg-white border rounded shadow-lg mt-2 right-0 min-w-[180px]">
+                    <div className="p-2 border-b font-bold">Filtros activos</div>
+                    {Object.entries(filtros).map(([key, value]) => (
+                      value ? (
+                        <div key={key} className="flex items-center justify-between px-2 py-1 text-sm">
+                          <span>{key}: {typeof value === 'boolean' ? (value ? 'Sí' : 'No') : value}</span>
+                          <button
+                            className="ml-2 text-blue-600 hover:text-blue-800"
+                            onClick={() => {
+                              const nuevos = { ...filtros };
+                              nuevos[key] = typeof value === 'boolean' ? false : '';
+                              setFiltros(nuevos);
+                              cargarPermisos(1, '', nuevos);
+                            }}
+                          >Quitar</button>
+                        </div>
+                      ) : null
+                    ))}
+                    <div className="px-2 py-1">
+                      <button
+                        className="text-xs text-blue-700 hover:text-blue-900 font-bold"
+                        onClick={() => {
+                          setFiltros({});
+                          setMostrarListaFiltros(false);
+                          cargarPermisos(1, '', {});
+                        }}
+                      >Quitar todos</button>
+                    </div>
+                  </div>
+                )}
+              </div>
           </div>
           <div className="w-full flex justify-center">
             <div className="w-full sm:w-auto">
@@ -207,7 +319,7 @@ export default function PermisosDashboard() {
               onSearch={handleBuscar}
               value={filtro}
               onChange={setFiltro}
-              placeholder="Buscar por usuario, permiso o función..."
+              placeholder="Buscar por usuario..."
               className="w-[300px]"
               debounceTime={300}
             />
@@ -218,7 +330,7 @@ export default function PermisosDashboard() {
             columns={[
               {
                 key: 'regPermiso',
-                label: 'N° Registro',
+                label: 'N° Reg',
                 render: (row) => row.regPermiso || 'N/A'
               },
               { 
@@ -274,11 +386,21 @@ export default function PermisosDashboard() {
             showActions={{
               edit: true,
               delete: true,
-              updatePermissions: false // Ocultar el botón de actualizar permisos
+              updatePermissions: false 
+              
+            }}
+             rowClassName={(row) => {
+              const enviroment = (row.ambiente);
+              if (enviroment === 'PRUEBA') {
+                return 'bg-red-100';
+              }
+              return '';
             }}
             onEdit={handleEditClick}
             onDelete={handleDeleteClick}
-            onUpdatePermissions={null} // Asegurarse de que no hay función de actualización de permisos
+            onUpdatePermissions={null}
+          
+          
           />
         </div>
         {mostrarModalEdicion && permisoAEditar && (

@@ -2,7 +2,7 @@ import React from 'react';
 
 /**
  * columns: [
- *   { key: 'nombre', label: 'Nombre', render?: (row) => ReactNode }
+ *   { key: 'nombre', label: 'Nombre', render?: (row) => ReactNode, align?: 'left' | 'center' | 'right' }
  * ]
  * data: array of objects
  * onEdit, onDelete: (row) => void
@@ -15,6 +15,7 @@ export default function GenericTable({
   onUpdatePermissions,
   rowKey = 'id', 
   actions = true,
+  rowClassName,
   showActions = {
     edit: true,
     delete: true,
@@ -22,21 +23,39 @@ export default function GenericTable({
   }
 }) {
   return (
-    <div className="overflow-x-auto w-full rounded-lg border border-gray-300 bg-white">
-      <table className="w-full text-xs text-gray-700">
-        <thead className="bg-gray-200 text-gray-700 uppercase text-xs">
-          <tr>
-            {actions && showActions.edit && <th className="p-2">Edit</th>}
+    <table className="w-full text-xs text-gray-700 rounded-lg border border-gray-300 bg-white">
+        <thead className="bg-gray-200 text-gray-700 uppercase text-xs sticky top-0 z-10">
+          <tr style={{zIndex: 20}} >
+            {actions && showActions.edit && <th className="p-2 left-0 bg-gray-200 sticky z-20">Accion</th>}
+           
           
-            {actions && showActions.updatePermissions && onUpdatePermissions && <th className="p-2">Permisos</th>}
-            {columns.map(col => (
-              <th key={col.key} className="p-2 text-center min-h-[20px]">{col.label}</th>
-            ))}
+            {actions && showActions.updatePermissions && onUpdatePermissions && <th className="p-2 left-0 bg-gray-200 sticky z-20">Permisos</th>}
+            {columns.reduce((acc, col, idx) => {
+              let left = 0;
+              // Calcula left acumulado para sticky
+              if (col.sticky) {
+                for (let i = 0; i < idx; i++) {
+                  if (columns[i].sticky) {
+                    left += columns[i].width || 140;
+                  }
+                }
+              }
+              acc.push(
+                <th
+                  key={col.key}
+                  className={`p-2 text-${col.align || 'left'} min-h-[20px]${col.sticky ? ' bg-gray-200 sticky z-20' : ''}`}
+                  style={col.sticky ? { left, minWidth: col.width || 140, maxWidth: col.width || 140 } : {}}
+                >
+                  {col.label}
+                </th>
+              );
+              return acc;
+            }, [])}
           </tr>
         </thead>
         <tbody>
           {data.map((row, idx) => (
-            <tr key={rowKey && row[rowKey] !== undefined ? row[rowKey] : idx} className="border-t min-h-[20px]">
+            <tr key={rowKey && row[rowKey] !== undefined ? row[rowKey] : idx} className={`border-t min-h-[20px] ${rowClassName ? rowClassName(row) : ''}`}>
               {actions && (showActions.edit || showActions.delete || showActions.updatePermissions) && (
                 <td className="p-2 text-center">
                   <div className="flex space-x-1">
@@ -70,7 +89,7 @@ export default function GenericTable({
                     )}
                     {showActions.delete && onDelete && (
                       <button 
-                        className="text-red-600 hover:text-red-900"
+                        className="text-red-600 hover:text-red-900 pl-3"
                         onClick={(e) => {
                           e.stopPropagation();
                           onDelete(row);
@@ -85,15 +104,29 @@ export default function GenericTable({
                   </div>
                 </td>
               )}
-              {columns.map(col => (
-                <td key={col.key} className="p-2 text-center min-h-[20px]">
-                  {col.render ? col.render(row) : row[col.key]}
-                </td>
-              ))}
+              {columns.reduce((acc, col, idx) => {
+                let left = 0;
+                if (col.sticky) {
+                  for (let i = 0; i < idx; i++) {
+                    if (columns[i].sticky) {
+                      left += columns[i].width || 140;
+                    }
+                  }
+                }
+                acc.push(
+                  <td
+                    key={col.key}
+                    className={`p-2 text-${col.align || 'left'} min-h-[20px]${col.sticky ? ' bg-white sticky z-10' : ''}`}
+                    style={col.sticky ? { left, minWidth: col.width || 140, maxWidth: col.width || 140 } : {}}
+                  >
+                    {col.render ? col.render(row) : row[col.key]}
+                  </td>
+                );
+                return acc;
+              }, [])}
             </tr>
           ))}
         </tbody>
       </table>
-    </div>
   );
 }

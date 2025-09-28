@@ -57,14 +57,16 @@ export default function EmpresaUpdateModal({ empresa, onClose, onUpdate }) {
 
 
   // Efecto para inicializar datos cuando se recibe la empresa
+  // Efecto para inicializar datos cuando se recibe la empresa
   useEffect(() => {
-    if (empresa) {
-      setFormData({
+    if (empresa && typeof empresa === 'object') {
+      setFormData(prev => ({
+        ...prev,
         ...empresa,
         // Asegurar que state sea número (0 o 1)
         state: typeof empresa.state === 'number' ? empresa.state : Number(empresa.state) || 0,
         province: empresa.province || ''
-      });
+      }));
 
       // Configurar provincia y ciudades disponibles
       if (empresa.city) {
@@ -79,6 +81,29 @@ export default function EmpresaUpdateModal({ empresa, onClose, onUpdate }) {
           setFormData(prev => ({ ...prev, province: nombreProvincia }));
         }
       }
+    } else {
+      // Si la empresa es nula, resetear el formulario a su estado inicial
+      setFormData({
+        codeEntity: '',
+        typeEntity: '',
+        matrix: false,
+        ruc: '',
+        businessName: '',
+        commercialName: '',
+        province: '',
+        city: '',
+        address: '',
+        phone: '',
+        email: '',
+        economicActivity: '',
+        salesReceipt: '',
+        taxRegime: '',
+        regimeLegend: '',
+        keepsAccounting: false,
+        retentionAgent: false,
+        nameGroup: '',
+        state: 0
+      });
     }
   }, [empresa]);
 
@@ -122,26 +147,69 @@ export default function EmpresaUpdateModal({ empresa, onClose, onUpdate }) {
     event.preventDefault();
     setLoading(true);
     try {
-      // Construir payload solo con los campos que cambiaron
+      // Construir payload con todos los campos necesarios
       const payload = {};
       
-      // Mapear codeEntity a codeCompany si existe
+      // Mapear codeEntity a codeCompany si existe (campo requerido para actualizar)
       if (formData.codeEntity) {
         payload.codeCompany = formData.codeEntity;
+      } else {
+        console.error('Error: codeEntity/codeCompany es requerido para actualizar');
+        throw new Error('Falta el código de empresa para actualizar');
       }
       
-      // Comparar y agregar solo campos modificados
+      // Campos requeridos por el backend (según documentación)
+      const camposRequeridos = ['businessName', 'codeGroup'];
+      const camposFaltantes = [];
+      
+      // Verificar campos requeridos
+      camposRequeridos.forEach(campo => {
+        if (!formData[campo] && formData[campo] !== 0 && formData[campo] !== false) {
+          camposFaltantes.push(campo);
+        }
+      });
+      
+      if (camposFaltantes.length > 0) {
+        console.error('Error: Faltan campos requeridos:', camposFaltantes);
+        throw new Error(`Faltan campos requeridos: ${camposFaltantes.join(', ')}`);
+      }
+      
+      // Agregar todos los campos relevantes, incluso si no cambiaron
       Object.keys(formData).forEach(key => {
         if (key === 'codeEntity') return; // Ya mapeado arriba
         
-        if (formData[key] !== empresa[key]) {
+        // Asegurarse de que los valores vacíos o undefined se envíen como null explícitamente
+        if (formData[key] === '' || formData[key] === undefined) {
+          payload[key] = null;
+        } else {
           payload[key] = formData[key];
         }
       });
       
-      // Convertir state a booleano si existe
-      if ('state' in payload) {
-        payload.state = payload.state === 1;
+      // Convertir campos booleanos a su tipo correcto
+      const camposBooleanos = ['state', 'matrix', 'keepsAccounting', 'retentionAgent'];
+      camposBooleanos.forEach(campo => {
+        if (campo in payload) {
+          // Asegurarse de que sea un booleano real, no un string
+          if (typeof payload[campo] === 'string') {
+            payload[campo] = payload[campo].toLowerCase() === 'true';
+          } else if (typeof payload[campo] === 'number') {
+            payload[campo] = payload[campo] === 1;
+          }
+        }
+      });
+      
+      // Asegurar que codeGroup sea un número si existe y mayor que 0
+      if (payload.codeGroup !== null && payload.codeGroup !== undefined) {
+        const codeGroupNum = Number(payload.codeGroup);
+        if (!isNaN(codeGroupNum)) {
+          payload.codeGroup = codeGroupNum;
+          
+          // Si codeGroup es 0, establecerlo como 1 (asumiendo que 0 no es válido)
+          if (payload.codeGroup === 0) {
+            payload.codeGroup = 1;
+          }
+        }
       }
       console.log('Payload enviado a putEmpresa:', payload);
       await putEmpresa(payload);
@@ -151,19 +219,55 @@ export default function EmpresaUpdateModal({ empresa, onClose, onUpdate }) {
       // Mostrar mensaje de éxito usando el contexto global
       showSuccessMessage('¡Empresa actualizada exitosamente!');
       
-      // Llamar a onUpdate para refrescar la lista en EmpresasDashboard
-      if (onUpdate) {
-        onUpdate();
-      }
-      
-      // Cerrar modal
+      // Cerrar modal primero
       if (onClose) {
         onClose();
       }
       
+      // Llamar a onUpdate para refrescar la lista en EmpresasDashboard
+      // Pasamos null para evitar que se intente actualizar nuevamente
+      if (onUpdate) {
+        // Usar setTimeout para asegurar que el modal se cierre primero
+        setTimeout(() => {
+          onUpdate(null);
+        }, 100);
+      }
+      
     } catch (error) {
       setLoading(false);
-      alert('Error al actualizar la empresa');
+      
+      // Extraer mensaje de error detallado
+      let errorMessage = 'Error al actualizar la empresa';
+      
+      if (error.response) {
+        // El servidor respondió con un código de error
+        console.error('Error de respuesta del servidor:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+        
+        // Intentar obtener mensaje del backend
+        if (error.response.data?.message) {
+          errorMessage = `Error: ${error.response.data.message}`;
+        } else if (typeof error.response.data === 'string') {
+          errorMessage = `Error: ${error.response.data}`;
+        } else {
+          errorMessage = `Error ${error.response.status}: ${error.response.statusText}`;
+        }
+      } else if (error.request) {
+        // La petición fue hecha pero no se recibió respuesta
+        console.error('No se recibió respuesta del servidor:', error.request);
+        errorMessage = 'No se recibió respuesta del servidor';
+      } else {
+        // Error al configurar la petición
+        console.error('Error de configuración de la petición:', error.message);
+        errorMessage = `Error: ${error.message}`;
+      }
+      
+      // Mostrar mensaje de error al usuario
+      alert(errorMessage);
       console.error('Error al actualizar empresa:', error);
     }
   };
@@ -174,20 +278,12 @@ export default function EmpresaUpdateModal({ empresa, onClose, onUpdate }) {
         {/* Overlay de carga */}
         {loading && <LoadingOverlay isLoading={true} message="Actualizando empresa..." />}
         
-        {/* Botón cerrar */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl font-bold focus:outline-none"
-          aria-label="Cerrar"
-        >
-          ×
-        </button>
+   
 
         {/* Header con título y botones */}
-        <div className="grid grid-cols-2 items-center mb-2">
-          <h2 className="text-2xl font-bold text-gray-800 pt-4">Actualizar Empresa</h2>
-          <div className="flex justify-end gap-3 mr-[25px]">
+        <div className="grid grid-cols-2 items-center ">
+          <h2 className="text-2xl font-bold text-gray-800 mt-6">Editar Empresa</h2>
+          <div className="flex justify-end gap-3 mr-[25px] mb-2">
             <ActionButtons 
               onClose={onClose} 
               handleSubmit={handleSubmit} 
@@ -203,6 +299,13 @@ export default function EmpresaUpdateModal({ empresa, onClose, onUpdate }) {
             
             {/* Row 2: Checkbox + Estado */}
             <div className="flex items-center h-10">
+            <div className={`inline-flex px-4 py-2 text-[1rem] rounded-full text-xs font-medium ${formData.state === 1 ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}> 
+                {formData.state === 1 ? 'ACTIVO' : 'INACTIVO'}
+              </div>
+            </div>
+            <div className="flex items-center h-10">
+             
+
               <label className="text-sm text-gray-700 font-medium">Es Activo</label>
               <input
                 type="checkbox"
@@ -212,11 +315,9 @@ export default function EmpresaUpdateModal({ empresa, onClose, onUpdate }) {
                 className="h-4 w-4 ml-2 rounded border-gray-200 text-blue-600 focus:ring-blue-500 outline-none"
               />
             </div>
-            <div className="flex items-center h-10">
-              <div className={`inline-flex px-4 py-2 text-[1rem] rounded-full text-xs font-medium ${formData.state === 1 ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}> 
-                {formData.state === 1 ? 'ACTIVO' : 'INACTIVO'}
-              </div>
-            </div>
+
+
+
             {/* Row 1: Código Entidad (solo lectura) + Estado */}
             <div>
               <label className="block text-sm font-medium text-gray-700">Código Entidad</label>
@@ -244,16 +345,18 @@ export default function EmpresaUpdateModal({ empresa, onClose, onUpdate }) {
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Nombre Comercial</label>
+             <div>
+              <label className="block text-sm font-medium text-gray-700">Razón Social</label>
               <input
                 type="text"
-                name="commercialName"
-                value={formData.commercialName}
+                name="businessName"
+                value={formData.businessName}
                 onChange={handleChange}
                 className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
+                required
               />
             </div>
+           
 
             {/* Row 3: Tipo Entidad + Razón Social */}
             <div>
@@ -267,15 +370,14 @@ export default function EmpresaUpdateModal({ empresa, onClose, onUpdate }) {
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Razón Social</label>
+             <div>
+              <label className="block text-sm font-medium text-gray-700">Nombre Comercial</label>
               <input
                 type="text"
-                name="businessName"
-                value={formData.businessName}
+                name="commercialName"
+                value={formData.commercialName}
                 onChange={handleChange}
                 className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
-                required
               />
             </div>
 
@@ -362,27 +464,41 @@ export default function EmpresaUpdateModal({ empresa, onClose, onUpdate }) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Comprobante de Venta</label>
-              <input
-                type="text"
+              <label className="block text-sm font-medium text-gray-700">Tipo Comprobante de Venta</label>
+              <select
                 name="salesReceipt"
                 value={formData.salesReceipt}
                 onChange={handleChange}
                 className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
-              />
+              >
+              <option value="">Seleccione...</option>
+              <option value="FACTURA">Factura</option>
+              <option value="NOTA DE VENTA">Nota de venta - RISE</option>
+              <option value="LIQUIDACION DE COMPRA">Liquidacion de compra de bienes y prestación de servicios</option>
+              <option value="TICKET">Tiquet emitidos por máquinas registradoras</option>
+              <option value="BOLETO">Boleto o entrada a espectáculos públicos</option>
+              <option value="DOC">Otro documento</option>
+              </select>
             </div>
 
             {/* Row 7: Régimen Tributario + Leyenda de Régimen */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Régimen Tributario</label>
-              <input
-                type="text"
-                name="taxRegime"
-                value={formData.taxRegime}
-                onChange={handleChange}
-                className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
-              />
-            </div>
+           <div>
+            <label className="block text-sm font-medium text-gray-700">Régimen Tributario</label>
+            <select
+              name="taxRegime"
+              value={formData.taxRegime}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border border-gray-200 shadow-sm focus:border-[#285398] focus:ring-0 px-2 py-1 bg-white hover:bg-gray-50 transition-colors outline-none"
+            >
+              <option value="">Seleccione...</option>
+              <option value="Régimen RIMPE Negocio Popular">Régimen RIMPE Negocio Popular</option>
+              <option value="Régimen RIMPE Emprendedor (PN)">Régimen RIMPE Emprendedor (PN)</option>
+              <option value="Régimen RIMPE Emprendedor (SOCIEDAD)">Régimen RIMPE Emprendedor (SOCIEDAD)</option>
+              <option value="Régimen General">Régimen General</option>
+              <option value="Régimen Sociedades">Régimen Sociedades</option>
+              <option value="Instituciones de carácter privado sin fines de lucro">Instituciones de carácter privado sin fines de lucro</option>
+            </select>
+          </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Leyenda de Régimen</label>
               <input

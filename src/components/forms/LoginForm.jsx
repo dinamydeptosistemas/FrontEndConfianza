@@ -3,11 +3,22 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { FormInput } from './FormInput';
 import MensajeHead from './MensajeHead';
+import { getLoginConfig } from '../../services/config/ConfigService';
+
 
 export const LoginForm = () => {
     const { login } = useAuth();
     const navigate = useNavigate();
     const [userType, setUserType] = useState(0);
+    const [loginConfig, setLoginConfig] = useState({
+        mostrarNombreComercial: false,
+        nombreComercialLogin: "CONFIANZA SCGC",
+        mostrarColorLogin: false,
+        colorLogin: "#217346",
+        mostrarImagenLogin: false,
+        archivoLogo: "",
+        imageUrls: []
+    });
 
     const [formData, setFormData] = useState({
         username: '',
@@ -18,6 +29,18 @@ export const LoginForm = () => {
     });
     const [globalError, setGlobalError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        const fetchLoginConfig = async () => {
+            try {
+                const config = await getLoginConfig();
+                setLoginConfig(config);
+            } catch (error) {
+                console.error("Error fetching login config:", error);
+            }
+        };
+        fetchLoginConfig();
+    }, []);
 
     useEffect(() => {
         if (userType !== 0) {
@@ -109,13 +132,24 @@ export const LoginForm = () => {
         }
     };
 
+
+
     return (
-        <div className="relative w-full">
+        <div className="relative w-full bg-im bg-cover bg-center">
+         
+
             <MensajeHead mensaje={globalError} />
             <div className="w-full max-w-md mx-auto">
                 <div className="p-6">
-                    <h1 className="text-3xl font-bold text-center text-[#0047BB] mb-8">SG CONFIANZA 2.5</h1>
-
+                    {loginConfig.mostrarImagenLogin ? (
+                        <h1 className="text-3xl font-bold text-center  mb-8 bg-white p-2 rounded" style={{ color: loginConfig.colorLogin }}>
+                            {loginConfig.nombreComercialLogin ? loginConfig.nombreComercialLogin : "N/A"}
+                        </h1>
+                    ) : (
+                        <h1 className="text-3xl font-bold text-center mb-8" style={{ color: loginConfig.colorLogin }}>
+                            {loginConfig.nombreComercialLogin ? loginConfig.nombreComercialLogin : "N/A"}
+                        </h1>
+                    )}
                     <div className="flex justify-center space-x-4 mb-6">
                         <button
                             type="button"
@@ -143,7 +177,10 @@ export const LoginForm = () => {
                         </button>
                     </div>
 
-                    <div className="bg-[#0047BB] rounded-lg p-8 shadow-lg">
+                    <div 
+                        className="rounded-lg p-8 shadow-lg" 
+                        style={{ backgroundColor: loginConfig.mostrarColorLogin === false ? loginConfig.colorLogin : '#f3f3f3' }}
+                    >
                         <h2 className="text-2xl font-semibold text-white text-center mb-6">Iniciar Sesión</h2>
 
                         <MensajeHead mensaje={globalError} />

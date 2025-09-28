@@ -43,7 +43,7 @@ const handleLogout = async (isAutomatic = false) => {
             window.location.replace('/login');
         }
     } catch (error) {
-        console.error('Error durante el logout:', error);
+     
         // Aún así, limpiar la sesión y redirigir
         clearSession();
         if (!window.location.pathname.includes('/login')) {
@@ -134,8 +134,11 @@ const authService = {
                 throw new Error(response.Message || 'Error en la autenticación');
             }
 
+            // Extraer datos del objeto Data anidado
+            const responseData = response.Data || response;
+
             // Limpiar las barras invertidas de los permisos
-            let cleanPermissions = response.Permissions;
+            let cleanPermissions = responseData.Permissions || response.Permissions;
             if (cleanPermissions) {
                 try {
                     // Si es un string, limpiar las barras invertidas
@@ -145,33 +148,33 @@ const authService = {
                         cleanPermissions = JSON.parse(cleanPermissions);
                     }
                 } catch (error) {
-                    console.error('[authService] Error al limpiar permisos:', error);
+                   
                 }
             }
 
             // Crear objeto de usuario con solo los campos necesarios
             const userData = {
-                userId: response.UserId,
-                username: response.Username,
-                userFunction: response.UserFunction,
-                codeFunction: response.CodeFunction,
-                codeEntity: response.CodeEntity,
-                nameEntity: response.NameEntity,
+                userId: responseData.UserID || response.UserId,
+                username: responseData.Username || response.Username,
+                userFunction: responseData.UserFunction || response.UserFunction,
+                codeFunction: responseData.CodeFunction || response.CodeFunction,
+                codeEntity: responseData.CodeEntity || response.CodeEntity,
+                nameEntity: responseData.NameEntity || response.NameEntity,
                 permissions: cleanPermissions,
-                tipoUsuario: response.TipoUsuario,
-                estadousuario: response.estadousuario
+                tipoUsuario: responseData.TipoUsuario || response.TipoUsuario,
+                estadousuario: responseData.estadousuario || response.estadousuario
             };
 
-            // Guardar token y datos esenciales
-            localStorage.setItem('token', response.TokenSession);
+            // Guardar token y datos esenciales - usar el JWT del nivel raíz
+            localStorage.setItem('token', response.TokenSession || responseData.TokenSession);
             localStorage.setItem('user', JSON.stringify(userData));
-            localStorage.setItem('userId', response.UserId);
-            localStorage.setItem('negocio', response.NameEntity);
+            localStorage.setItem('userId', responseData.UserID || response.UserId);
+            localStorage.setItem('negocio', responseData.NameEntity || response.NameEntity);
             
             // Determinar la ruta de redirección según el tipo de usuario y función
             let redirectPath = '/login';
-            if (response.TipoUsuario === 'INTERNO') {
-                switch (response.CodeFunction) {
+            if ((responseData.TipoUsuario || response.TipoUsuario) === 'INTERNO') {
+                switch (responseData.CodeFunction || response.CodeFunction) {
                     case 1:
                         redirectPath = '/dashboard/internal';
                         break;
@@ -196,7 +199,7 @@ const authService = {
                     default:
                         redirectPath = '/dashboard';
                 }
-            } else if (response.TipoUsuario === 'EXTERNO') {
+            } else if ((responseData.TipoUsuario || response.TipoUsuario) === 'EXTERNO') {
                 redirectPath = '/dashboard-lighter/externo';
             }
             
@@ -204,24 +207,24 @@ const authService = {
             if (typeof window !== 'undefined' && window.globalState) {
                 window.globalState.setLoginResponse?.(response);
                 window.globalState.setUser?.(userData);
-                window.globalState.setUserId?.(response.UserId);
+                window.globalState.setUserId?.(responseData.UserID || response.UserId);
             }
             
             return {
                 success: true,
                 message: response.Message || 'Inicio de sesión exitoso',
                 statusCode: response.StatusCode,
-                userId: response.UserId,
-                username: response.Username,
-                userFunction: response.UserFunction,
-                codeFunction: response.CodeFunction,
-                codeEntity: response.CodeEntity,
-                nameEntity: response.NameEntity,
+                userId: responseData.UserID || response.UserId,
+                username: responseData.Username || response.Username,
+                userFunction: responseData.UserFunction || response.UserFunction,
+                codeFunction: responseData.CodeFunction || response.CodeFunction,
+                codeEntity: responseData.CodeEntity || response.CodeEntity,
+                nameEntity: responseData.NameEntity || response.NameEntity,
                 permissions: cleanPermissions,
-                estadousuario: response.estadousuario,
-                tipoUsuario: response.TipoUsuario,
-                token: response.TokenSession,
-                newBitacoraRegAcceso: response.NewBitacoraRegAcceso,
+                estadousuario: responseData.estadousuario || response.estadousuario,
+                tipoUsuario: responseData.TipoUsuario || response.TipoUsuario,
+                token: response.TokenSession || responseData.TokenSession,
+                newBitacoraRegAcceso: responseData.NewBitacoraRegAcceso || response.NewBitacoraRegAcceso,
                 redirectTo: redirectPath
             };
 

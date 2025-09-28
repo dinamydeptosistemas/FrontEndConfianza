@@ -46,7 +46,7 @@ Autentica a un usuario y genera un token JWT.
 }
 ```
 
-### Logout (`POST /api/Auth/logout`)
+### Logout (`POST /api/auth/logout-cookie`)
 
 Cierra la sesión del usuario y ejecuta el stored procedure `sp_CloseSession`.
 
@@ -98,26 +98,3 @@ JWT_KEY=your_jwt_key
 JWT_ISSUER=your_issuer
 JWT_AUDIENCE=your_audience
 ```
-
-## Seguridad
-
-- Tokens JWT con expiración de 8 horas
-- Almacenamiento seguro en localStorage
-- Limpieza automática en cierre de sesión
-- Validación de permisos por tipo de usuario
-
-## Base de Datos
-
-### Stored Procedures
-
-- `sp_UserLogin`: Valida credenciales y retorna datos del usuario
-- `sp_CloseSession`: Registra el cierre de sesión y calcula horas trabajadas
-
-## Tipos de Usuario
-
-1. **Usuario Interno (userType: 1)**
-   - Admin (userFunction: 1): Acceso total
-   - Regular: Acceso limitado a funciones internas
-
-2. **Usuario Externo (userType: 2)**
-   - Acceso a funciones específicas para externos 
