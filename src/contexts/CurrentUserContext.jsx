@@ -5,7 +5,7 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { SecondWarningModal } from '../components/common/SecondWarningModal';
 import { SessionExpiredModal } from '../components/common/SessionExpiredModal';
-// import axiosInstance from '../config/axios';
+import axiosInstance from '../config/axios';
 
 
 const getTimeForToday = (timeString) => {
@@ -22,36 +22,6 @@ const cleanTimeString = (timeString) => {
   // Toma los primeros 5 caracteres ("HH:MM")
   return timeString.substring(0, 5); 
 };
-
-
-
-
-
-const MOCK_SERVER_RESPONSE = {
-  "success": true,
-  "statusCode": 200,
-  "userId": 1,
-  "username": "XAVIER",
-  "userFunction": "MANAGER SYSTEM",
-  "codeFunction": 1,
-  "codeEntity": "999",
-  "nameEntity": "EMPRESA DE PRUEBA",
-  "permissions": "True",
-  "estadousuario": 1,
-  "tokenSession": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6MSwidXNlcklkIjoxLCJ1c2VybmFtZSI6IlhBVklFUiIsInVzZXJUeXBlIjoxLCJOZXdCaXRhY29yYVJlZ0FjY2VzbyI6MywiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiaW50ZXJuYWwiLCJ1c2VyRnVuY3Rpb24iOiJNQU5BR0VSIFNZU1RFTSIsImNvZGVGdW5jdGlvbiI6MSwiaXNQb3N0dWxhbnRlIjpmYWxzZSwiY29kZUVudGl0eSI6Ijk5OSIsIm5hbWVFbnRpdHkiOiJFTVBSRVNBIERFIFBSVUVCQSIsInBlcm1pc3Npb25zIjoiVHJ1ZSIsImVzdGFkb3VzdWFyaW8iOjEsIkNpZXJyZVNlc2lvbkpvcm5hZGEiOjEsIkJsb3F1ZW9TZXNpb25NYXhpbWEiOjEyLCJsYXN0QWN0aXZpdHkiOiIyMDI1LTA5LTI3VDAzOjIxOjAwLjc3NzU5MTlaIiwiZXhwIjoxNzkwNDc5MjYwLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjUyMDEiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjMwMDAifQ.uy4cK4rjUw0th3QYOCouAIbPBRAYGNPX6nmpr69-Bpg",
-  "tipoUsuario": "INTERNO",
-  "newBitacoraRegAcceso": 3,
-  "isPostulante": false,
-  "data": null,
-  "horaDeIngreso": "23:35:00.6433333",
-  "cierreSesionJornada": 1,
-  "bloqueoSesionMaxima": 12,
-  "horaTerminoJornadaLaboral": "11:40:00",
-  "primerAviso": "11:35:00",
-  "segundoAviso": "11:37:00"
-};
-// --- Fin de Configuración de Tiempos ---
-
 
 // =================================================================================
 // 3. CONTEXTO DE USUARIO (CurrentUserContext)
@@ -90,24 +60,21 @@ export const CurrentUserProvider = ({ children }) => {
   const fetchCurrentUser = useCallback(async () => {
     updateState({ loading: true, error: null });
     try {
-      // Simular un delay de red
-      await new Promise(resolve => setTimeout(resolve, 500)); 
+      const response = await axiosInstance.get('/api/auth/current-user');
 
-      const response = MOCK_SERVER_RESPONSE;
-
-      // Usamos 'response.success' para el chequeo de éxito, ya que el JSON lo tiene en minúsculas.
-      if (response.success) {
+      if (response.data && response.data.success) {
+        const userData = response.data;
         // Mapeo de campos del JSON a la estructura esperada por la aplicación
         const normalizedUser = {
-          Username: response.username,
-          UserType: response.userFunction, // userFunction mapeado a UserType
-          NameEntity: response.nameEntity,
-          CodeEntity: response.codeEntity,
+          Username: userData.username,
+          UserType: userData.userFunction, // userFunction mapeado a UserType
+          NameEntity: userData.nameEntity,
+          CodeEntity: userData.codeEntity,
           avisos: {
             // Normalización de HH:MM:SS a HH:MM
-            primeraviso: cleanTimeString(response.primerAviso),
-            segundoaviso: cleanTimeString(response.segundoAviso),
-            expiracion: cleanTimeString(response.horaTerminoJornadaLaboral),
+            primeraviso: cleanTimeString(userData.primerAviso),
+            segundoaviso: cleanTimeString(userData.segundoAviso),
+            expiracion: cleanTimeString(userData.horaTerminoJornadaLaboral),
           },
         };
         
@@ -119,10 +86,10 @@ export const CurrentUserProvider = ({ children }) => {
         });
         return normalizedUser;
       } else {
-        throw new Error(response.Message || 'Fallo al cargar usuario ficticio.');
+        throw new Error(response.data.Message || 'Fallo al cargar usuario.');
       }
     } catch (error) {
-      console.error('Error al simular la obtención del usuario actual:', error);
+      console.error('Error al obtener el usuario actual:', error);
       updateState({ 
         user: null, 
         loading: false, 
