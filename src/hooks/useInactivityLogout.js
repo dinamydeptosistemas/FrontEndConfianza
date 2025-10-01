@@ -29,6 +29,7 @@ const useInactivityLogout = (options = {}) => {
         if (debug) {
             console.log('[InactivityLogout] Timer reset due to activity.');
         }
+        console.log('[InactivityLogout] Resetting timer. Last activity:', new Date(lastActivityRef.current));
     }, [debug, inactivityThreshold]);
 
     const checkInactivity = useCallback(() => {
@@ -44,6 +45,7 @@ const useInactivityLogout = (options = {}) => {
 
         if (timeSinceLastActivity >= inactivityThreshold) {
             if (onInactivity) {
+                console.log('[InactivityLogout] Inactivity detected. Calling onInactivity.', { timeSinceLastActivity });
                 const data = {
                     lastActivity: new Date(lastActivityRef.current),
                     minutesInactive: Math.floor(timeSinceLastActivity / 60000),
@@ -99,6 +101,10 @@ const useInactivityLogout = (options = {}) => {
             cleanupAxios = setupAxiosInterceptor(window.axios);
         }
 
+        // Añadir listeners para detectar actividad de usuario (mouse, teclado)
+        document.addEventListener('mousemove', resetTimer);
+        document.addEventListener('keydown', resetTimer);
+        document.addEventListener('click', resetTimer);
 
         // Iniciar el timer para chequear inactividad
         inactivityTimerRef.current = setInterval(checkInactivity, 1000); // Chequea cada segundo
@@ -109,6 +115,10 @@ const useInactivityLogout = (options = {}) => {
             if (inactivityTimerRef.current) {
                 clearInterval(inactivityTimerRef.current);
             }
+            // Limpiar listeners de actividad del usuario
+            document.removeEventListener('mousemove', resetTimer);
+            document.removeEventListener('keydown', resetTimer);
+            document.removeEventListener('click', resetTimer);
         };
     }, [enabled, user, resetTimer, checkInactivity]);
 

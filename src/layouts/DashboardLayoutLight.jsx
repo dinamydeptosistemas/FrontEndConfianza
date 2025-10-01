@@ -49,8 +49,8 @@ const DashboardLayoutLight = () => {
                 {/* Sidebar izquierdo simplificado */}
                 <div className="w-[180px] bg-[#1e4e9c] flex flex-col flex-shrink-0">
                     <div className="text-white text-center py-4">
-                        <h1 className="text-xl font-bold">CONFIANZA</h1>
-                        <h2 className="text-xl font-bold">2.5</h2>
+                        <h1 className="text-xl font-bold"> {config?.nombrecomerciallogin || 'N/A'} </h1>
+                     
                         <p className="text-xs mt-1">Sistema de Control</p>
                     </div>
 

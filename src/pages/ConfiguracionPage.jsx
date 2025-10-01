@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useBlocker } from 'react-router-dom';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { getEmpresas } from '../services/company/CompanyService';
@@ -262,10 +262,13 @@ const ConfiguracionPage = () => {
 
   const isInitialMountGestionGrupo = useRef(true);
   const isInitialMountTipoGestion = useRef(true);
+  const hasInitializedRef = useRef(false); // Nueva referencia para controlar la inicialización única
 
   const blocker = useBlocker(() => isDirty);
 
-  const resetToOriginalConfig = () => {
+  console.log('[ConfiguracionPage] Re-render. Creating resetToOriginalConfig...');
+  const resetToOriginalConfig = useCallback(() => {
+    console.log('[ConfiguracionPage] resetToOriginalConfig ejecutada.');
     if (!originalConfig) return;
 
     const newEditableConfig = {
@@ -294,26 +297,79 @@ const ConfiguracionPage = () => {
         eliminarPruebaHabilitado: originalConfig.eliminarpruebahabilitado,
         colorLogin: originalConfig.colorlogin,
     };
-    setEditableConfig(newEditableConfig);
+    // Actualizar editableConfig solo si hay cambios reales
+    setEditableConfig(prev => {
+      // Comparación superficial para evitar re-renders innecesarios
+      const hasChanges = Object.keys(newEditableConfig).some(key => prev?.[key] !== newEditableConfig[key]);
+      return hasChanges ? newEditableConfig : prev;
+    });
 
-    setModoEntidad(!!originalConfig.modorentidad);
-    setTipoEntidad(originalConfig.nombremodorentidad || 'AMBOS');
-    setGestionGrupo(!!originalConfig.gestiongrupomatriz);
-    setTipoGestion(originalConfig.nombregestiongrupo || 'INDIVIDUAL');
-    setSelectedUsuario(originalConfig.nombreusuariomanagersystem || '');
-    setLogoPath(originalConfig.archivologo || '');
-    setColorTema(originalConfig.colorLogin || TEMA_COLORS[0]);
-    setConfiguraciones({
-      ambienteTrabajo: {
-        checked: originalConfig.ambienteTrabajoModo === 'PRUEBA',
-        modo: originalConfig.ambiente_creacion_prueba_modo || 'TODO_SISTEMA',
-      },
-      eliminarRegistros: {
-        checked: !!originalConfig.eliminarPruebaHabilitado,
-      }
+    // Actualizar estados auxiliares solo si hay cambios reales
+    setModoEntidad(prev => {
+      const newValue = !!originalConfig.modorentidad;
+      return prev === newValue ? prev : newValue;
+    });
+    setTipoEntidad(prev => {
+      const newValue = originalConfig.nombremodorentidad || 'AMBOS';
+      return prev === newValue ? prev : newValue;
+    });
+    setGestionGrupo(prev => {
+      const newValue = !!originalConfig.gestiongrupomatriz;
+      return prev === newValue ? prev : newValue;
+    });
+    setTipoGestion(prev => {
+      const newValue = originalConfig.nombregestiongrupo || 'INDIVIDUAL';
+      return prev === newValue ? prev : newValue;
+    });
+    setSelectedUsuario(prev => {
+      const newValue = originalConfig.nombreusuariomanagersystem || '';
+      return prev === newValue ? prev : newValue;
+    });
+    setLogoPath(prev => {
+      const newValue = originalConfig.archivologo || '';
+      return prev === newValue ? prev : newValue;
+    });
+    setColorTema(prev => {
+      const newValue = originalConfig.colorLogin || TEMA_COLORS[0];
+      return prev === newValue ? prev : newValue;
+    });
+    setConfiguraciones(prev => {
+      const newConfiguraciones = {
+        ambienteTrabajo: {
+          checked: originalConfig.ambienteTrabajoModo === 'PRUEBA',
+          modo: originalConfig.ambiente_creacion_prueba_modo || 'TODO_SISTEMA',
+        },
+        eliminarRegistros: {
+          checked: !!originalConfig.eliminarPruebaHabilitado,
+        }
+      };
+      // Comparación superficial para evitar re-renders innecesarios de configuraciones
+      const hasChangesAmbiente = prev?.ambienteTrabajo?.checked !== newConfiguraciones.ambienteTrabajo.checked ||
+                                 prev?.ambienteTrabajo?.modo !== newConfiguraciones.ambienteTrabajo.modo;
+      const hasChangesEliminar = prev?.eliminarRegistros?.checked !== newConfiguraciones.eliminarRegistros.checked;
+                                 
+      if (hasChangesAmbiente || hasChangesEliminar) {
+        return newConfiguraciones;
+      } 
+      return prev;
     });
     setIsDirty(false);
-  };
+  }, [originalConfig, TEMA_COLORS, setEditableConfig, setModoEntidad, setTipoEntidad, setGestionGrupo, setTipoGestion, setSelectedUsuario, setLogoPath, setColorTema, setConfiguraciones, setIsDirty]);
+
+  console.log('[ConfiguracionPage] Dependencias de useCallback (resetToOriginalConfig):', {
+    originalConfig,
+    TEMA_COLORS,
+    setEditableConfig,
+    setModoEntidad,
+    setTipoEntidad,
+    setGestionGrupo,
+    setTipoGestion,
+    setSelectedUsuario,
+    setLogoPath,
+    setColorTema,
+    setConfiguraciones,
+    setIsDirty
+  });
 
   const showSaveModal = () => {
     if(saving) return;
@@ -321,21 +377,110 @@ const ConfiguracionPage = () => {
     setShowModal(true);
   };
 
+  // Refactorizar este useEffect para inicializar originalConfig y editableConfig una sola vez
   useEffect(() => {
-    if (config) {
-      setOriginalConfig(JSON.parse(JSON.stringify(config)));
-      setIsInitializing(false);
-    }
-  }, [config]);
+    if (config && !hasInitializedRef.current) {
+      console.log('[ConfiguracionPage] Inicializando configuración por primera vez...');
+      const initialConfig = JSON.parse(JSON.stringify(config));
+      setOriginalConfig(initialConfig);
+      
+      // Actualizar editableConfig y otros estados auxiliares directamente aquí
+      setEditableConfig(prev => {
+        const newEditableConfig = {
+          mostrarNombreComercial: initialConfig.mostrarnombrecomerciallogin,
+          nombrecomerciallogin: initialConfig.nombrecomerciallogin || '',
+          mostrarImagenLogo: initialConfig.mostrarimagenlogologin,
+          valorImagenLogo: initialConfig.archivologo,
+          permitirAccesoManager: initialConfig.permitiraccesomanagersystem,
+          valorAccesoManager: initialConfig.nombreusuariomanagersystem,
+          sesionInactiva: initialConfig.cerradosesioninactiva,
+          valorSesionInactiva: initialConfig.minutoscerrarsesion,
+          justificarPausa: initialConfig.opcionjustificarsesionpausada,
+          valorJustificarPausa: initialConfig.minutosjustificarsesion,
+          reportarTareasPausa: initialConfig.opcionreportartareasdespues,
+          valorReportarTareasPausa: initialConfig.minutosreportartareas,
+          reportarProyectoTareas: initialConfig.opcionreportarproyectotareasdespues,
+          valorReportarProyectoTareas: initialConfig.minutosreportarproyectotareas,
+          periodoVigente: initialConfig.periodovigente,
+          periodoAnteriorHabilitado: !!initialConfig.periodoanteriorhabilitado,
+          fechaInicioPeriodo: initialConfig.fechainicioperiodovigente,
+          fechaFinPeriodo: initialConfig.fechafinalperiodovigente,
+          bloqueoAsientosAnteriores: initialConfig.bloqueomodificacionasientosanteriores,
+          permitirNuevosAsientosAnterior: initialConfig.permitirnuevosasientosanterior,
+          permitirCrearNuevosLibros: initialConfig.permitircrearnuevoslibros,
+          permitirCrearNuevasCuentas: initialConfig.permitircrearnuevascuentas,
+          eliminarPruebaHabilitado: initialConfig.eliminarpruebahabilitado,
+          colorLogin: initialConfig.colorlogin,
+        };
+        // Compara con prev para evitar re-renderizados si ya está bien inicializado
+        const hasChanges = Object.keys(newEditableConfig).some(key => prev?.[key] !== newEditableConfig[key]);
+        return hasChanges ? newEditableConfig : prev;
+      });
 
-  useEffect(() => {
-    if (!isInitializing && originalConfig) {
-      resetToOriginalConfig();
+      setModoEntidad(prev => {
+        const newValue = !!initialConfig.modorentidad;
+        return prev === newValue ? prev : newValue;
+      });
+      setTipoEntidad(prev => {
+        const newValue = initialConfig.nombremodorentidad || 'AMBOS';
+        return prev === newValue ? prev : newValue;
+      });
+      setGestionGrupo(prev => {
+        const newValue = !!initialConfig.gestiongrupomatriz;
+        return prev === newValue ? prev : newValue;
+      });
+      setTipoGestion(prev => {
+        const newValue = initialConfig.nombregestiongrupo || 'INDIVIDUAL';
+        return prev === newValue ? prev : newValue;
+      });
+      setSelectedUsuario(prev => {
+        const newValue = initialConfig.nombreusuariomanagersystem || '';
+        return prev === newValue ? prev : newValue;
+      });
+      setLogoPath(prev => {
+        const newValue = initialConfig.archivologo || '';
+        return prev === newValue ? prev : newValue;
+      });
+      setColorTema(prev => {
+        const newValue = initialConfig.colorLogin || TEMA_COLORS[0];
+        return prev === newValue ? prev : newValue;
+      });
+      setConfiguraciones(prev => {
+        const newConfiguraciones = {
+          ambienteTrabajo: {
+            checked: initialConfig.ambienteTrabajoModo === 'PRUEBA',
+            modo: initialConfig.ambiente_creacion_prueba_modo || 'TODO_SISTEMA',
+          },
+          eliminarRegistros: {
+            checked: !!initialConfig.eliminarPruebaHabilitado,
+          }
+        };
+        const hasChangesAmbiente = prev?.ambienteTrabajo?.checked !== newConfiguraciones.ambienteTrabajo.checked ||
+                                   prev?.ambienteTrabajo?.modo !== newConfiguraciones.ambienteTrabajo.modo;
+        const hasChangesEliminar = prev?.eliminarRegistros?.checked !== newConfiguraciones.eliminarRegistros.checked;
+        
+        if (hasChangesAmbiente || hasChangesEliminar) {
+          return newConfiguraciones;
+        }
+        return prev;
+      });
+      setIsDirty(false);
+      setIsInitializing(false);
+      hasInitializedRef.current = true; // Marca como inicializado
     }
-  }, [originalConfig, isInitializing]);
+  }, [config, TEMA_COLORS, setOriginalConfig, setEditableConfig, setModoEntidad, setTipoEntidad, setGestionGrupo, setTipoGestion, setSelectedUsuario, setLogoPath, setColorTema, setConfiguraciones, setIsDirty, setIsInitializing]);
+
+  // Este useEffect ya no es necesario con la nueva lógica
+  // useEffect(() => {
+  //   if (!isInitializing && originalConfig) {
+  //     console.log('[ConfiguracionPage] useEffect (originalConfig, isInitializing) disparado. Llamando a resetToOriginalConfig.', { originalConfig, isInitializing });
+  //     resetToOriginalConfig();
+  //   }
+  // }, [originalConfig, isInitializing, resetToOriginalConfig]);
 
   useEffect(() => {
     if (blocker && blocker.state === 'blocked') {
+      console.log('[ConfiguracionPage] Blocker activado.');
       setShowNavBlockerModal(true);
     }
   }, [blocker]);
@@ -348,17 +493,14 @@ const ConfiguracionPage = () => {
       if (gestionGrupo) {
         if (tipoGestion === 'INDIVIDUAL') {
           setTipoGestion('MULTINEGOCIO');
-          setIsDirty(true);
         }
       } else {
         if (tipoGestion !== 'INDIVIDUAL') {
           setTipoGestion('INDIVIDUAL');
-          setIsDirty(true);
         }
       }
-      if (isDirty) showSaveModal();
     }
-  }, [gestionGrupo, isInitializing]);
+  }, [gestionGrupo, isInitializing, tipoGestion]);
 
   useEffect(() => {
     if (isInitializing) return;
@@ -368,15 +510,12 @@ const ConfiguracionPage = () => {
       if (tipoGestion === 'MULTINEGOCIO') {
         setModoEntidad(true);
         setTipoEntidad('NEGOCIO');
-        setIsDirty(true);
       } else if (tipoGestion === 'MULTIEMPRESA') {
         setModoEntidad(true);
         setTipoEntidad('EMPRESA');
-        setIsDirty(true);
       }
-      if (isDirty) showSaveModal();
     }
-  }, [tipoGestion, isInitializing]);
+  }, [tipoGestion, isInitializing, setModoEntidad, setTipoEntidad]);
 
   useEffect(() => {
     const fetchEmpresas = async () => {
@@ -1098,7 +1237,7 @@ const ConfiguracionPage = () => {
             <div className="flex justify-end gap-4">
               <button
                 className="px-4 py-2 bg-gray-300 text-black rounded hover:bg-gray-400"
-                onClick={() => setShowModal(false)}
+                onClick={revertChanges}
               >
                 Rechazar
               </button>

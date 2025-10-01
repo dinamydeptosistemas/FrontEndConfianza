@@ -169,6 +169,7 @@ const getInitialAuthState = () => {
 const initialState = getInitialAuthState();
 
 export const AuthProvider = ({ children }) => {
+    console.log('[AuthProvider] Renderizando...');
   // Estados principales
   const [state, setState] = useState(initialState);
   const { reloadConfig, clearConfig } = useConfig();
@@ -323,6 +324,8 @@ export const AuthProvider = ({ children }) => {
     cleanupAndRedirect,
     setNegocio,
   }), [state, login, logout, directLogout, confirmLogout, cleanupAndRedirect, setNegocio]);
+
+    console.log('[AuthProvider] Context Value:', contextValue);
 
   if (!state.isInitialized) {
     return null; // O un spinner de carga global

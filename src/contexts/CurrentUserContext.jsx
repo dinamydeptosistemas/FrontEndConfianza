@@ -42,9 +42,11 @@ const initialState = {
 };
 
 export const CurrentUserProvider = ({ children }) => {
+    console.log('[CurrentUserProvider] Renderizando...');
   const location = useLocation();
   const [state, setState] = useState(initialState);
-  const { directLogout } = useAuth();
+
+  const { directLogout } = useAuth(); // Llamada incondicional
   const { config, loading: configLoading } = useConfig();
 
   const updateState = useCallback((updates) => {
@@ -59,6 +61,8 @@ export const CurrentUserProvider = ({ children }) => {
         const userData = response.data;
         const normalizedUser = {
           Username: userData.username,
+          iduser: userData.idUser, // Asumiendo que el backend envía idUser
+          usernameInterno: userData.username, // Asumiendo que el backend envía username
           UserType: userData.userFunction,
           NameEntity: userData.nameEntity,
           CodeEntity: userData.codeEntity,
@@ -180,7 +184,7 @@ export const CurrentUserProvider = ({ children }) => {
         clearInterval(sessionClockInterval);
       }
     };
-  }, [state.user, updateState, location.pathname, config, configLoading]);
+  }, [state.user, updateState, location.pathname, config, configLoading, state.isFirstWarningModalOpen, state.isSecondWarningModalOpen]);
 
   const contextValue = useMemo(() => ({
     ...state,
