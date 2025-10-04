@@ -48,7 +48,7 @@ const MetaDataGrid = ({ controlText, currentTime, headerTitle }) => {
 
 // --- 1. Formulario JUSTIFICAR PAUSA ---
 export const PausaForm = () => {
-    const { currentTimeString, handleSubmit } = useReportTask();
+    const { currentTimeString, handleSubmit, currentUserLoading, currentUserInitialized } = useReportTask();
 
     const onSubmit = (e) => {
         e.preventDefault();
@@ -90,9 +90,9 @@ export const PausaForm = () => {
             </div>
             <div className="p-4 flex justify-center gap-3 ">
                
-                <button type="submit" className="bg-orange-400 hover:bg-orange-700 text-white font-bold py-1 px-2 rounded-lg transition duration-150 ease-in-out shadow-lg flex items-center justify-center">
+                <button type="submit" disabled={currentUserLoading || !currentUserInitialized} className="bg-orange-400 hover:bg-orange-700 text-white font-bold py-1 px-2 rounded-lg transition duration-150 ease-in-out shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
                     <CheckCircle className="w-4 h-4 mr-2" />
-                    Justificar
+                    {currentUserLoading ? 'Cargando Usuario...' : 'Justificar'}
                 </button>
             </div>
         </form>
@@ -101,7 +101,7 @@ export const PausaForm = () => {
 
 // --- 2. Formulario REPORTAR TAREA ---
 export const TareaForm = () => {
-    const { currentTimeString, handleSubmit } = useReportTask();
+    const { currentTimeString, handleSubmit, currentUserLoading, currentUserInitialized } = useReportTask();
 
     const onSubmit = (e) => {
         e.preventDefault();
@@ -143,9 +143,9 @@ export const TareaForm = () => {
             </div>
             <div className="p-4 flex justify-center gap-3 ">
              
-                <button type="submit" className="bg-orange-400 hover:bg-orange-700 text-white font-bold py-1 px-2 rounded-lg transition duration-150 ease-in-out shadow-lg flex items-center justify-center">
+                <button type="submit" disabled={currentUserLoading || !currentUserInitialized} className="bg-orange-400 hover:bg-orange-700 text-white font-bold py-1 px-2 rounded-lg transition duration-150 ease-in-out shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
                     <Briefcase className="w-4 h-4 mr-2" />
-                    Reportar
+                    {currentUserLoading ? 'Cargando Usuario...' : 'Reportar'}
                 </button>
             </div>
         </form>
@@ -154,7 +154,7 @@ export const TareaForm = () => {
 
 // --- 3. Formulario REPORTAR PROYECTO - TAREA ---
 export const ProyectoTareaForm = () => {
-    const { currentTimeString, handleSubmit } = useReportTask();
+    const { currentTimeString, handleSubmit, currentUserLoading, currentUserInitialized } = useReportTask();
 
     const onSubmit = (e) => {
         e.preventDefault();
@@ -229,9 +229,9 @@ export const ProyectoTareaForm = () => {
             </div>
             <div className="p-4 flex justify-center gap-3">
              
-                <button type="submit" className="bg-orange-400 hover:bg-orange-700 text-white font-bold py-1 px-2 rounded-lg transition duration-150 ease-in-out shadow-lg flex items-center justify-center">
+                <button type="submit" disabled={currentUserLoading || !currentUserInitialized} className="bg-orange-400 hover:bg-orange-700 text-white font-bold py-1 px-2 rounded-lg transition duration-150 ease-in-out shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
                     <Briefcase className="w-4 h-4 mr-2" />
-                    Reportar
+                    {currentUserLoading ? 'Cargando Usuario...' : 'Reportar'}
                 </button>
             </div>
         </form>

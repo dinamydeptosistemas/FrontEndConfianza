@@ -54,14 +54,16 @@ export const CurrentUserProvider = ({ children }) => {
   }, []);
 
   const fetchCurrentUser = useCallback(async () => {
+    console.log('[CurrentUserContext] Iniciando fetchCurrentUser...');
     updateState({ loading: true, error: null });
     try {
       const response = await axiosInstance.get('/api/auth/current-user');
+      console.log('[CurrentUserContext] Respuesta del API /api/auth/current-user:', response.data);
       if (response.data && response.data.success) {
         const userData = response.data;
         const normalizedUser = {
           Username: userData.username,
-          iduser: userData.idUser, // Asumiendo que el backend envía idUser
+          iduser: userData.userId, // Corregido: el backend envía 'userId'
           usernameInterno: userData.username, // Asumiendo que el backend envía username
           UserType: userData.userFunction,
           NameEntity: userData.nameEntity,
@@ -72,7 +74,9 @@ export const CurrentUserProvider = ({ children }) => {
             expiracion: cleanTimeString(userData.horaTerminoJornadaLaboral),
           },
         };
+        console.log('[CurrentUserContext] normalizedUser creado:', normalizedUser);
         updateState({ user: normalizedUser, loading: false, isInitialized: true, error: null });
+        console.log('[CurrentUserContext] Estado actualizado con user:', normalizedUser);
         return normalizedUser;
       } else {
         throw new Error(response.data.Message || 'Fallo al cargar usuario.');
@@ -98,10 +102,8 @@ export const CurrentUserProvider = ({ children }) => {
       updateState({ loading: false, isInitialized: true, user: null });
       return;
     }
-    if (!state.isInitialized) {
-      fetchCurrentUser();
-    }
-  }, [state.isInitialized, fetchCurrentUser, location.pathname, updateState]);
+    fetchCurrentUser();
+  }, [fetchCurrentUser, location.pathname, updateState]);
 
   useEffect(() => {
     console.log('[Debug] Evaluando useEffect del reloj de sesión...');
@@ -196,6 +198,7 @@ export const CurrentUserProvider = ({ children }) => {
 
   return (
     <CurrentUserContext.Provider value={contextValue}>
+      {console.log('[CurrentUserContext] Valor del contexto provisto:', contextValue.user)}
       {children}
       <FirstWarningModal isOpen={state.isFirstWarningModalOpen} onClose={handleCloseFirstWarning} />
       <SecondWarningModal isOpen={state.isSecondWarningModalOpen} onClose={handleCloseSecondWarning} />

@@ -36,6 +36,13 @@ const formatTime = (totalSeconds) => {
     return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 };
 
+const addMinutesToTime = (timeString, minutesToAdd) => {
+    const [hours, minutes, seconds] = timeString.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes + minutesToAdd, seconds, 0);
+    return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); // Vuelve a HH:MM:SS
+};
+
 const statusMap = {
     'Trabajando...': { class: 'bg-blue-50 border-blue-500 text-blue-800', Icon: Clock },
     'Pausa Requerida. ¡Justifique!': { class: 'bg-yellow-50 border-yellow-500 text-yellow-800', Icon: AlertTriangle },
@@ -50,13 +57,18 @@ const ReportTaskProvider = ({ children }) => {
     // Dummy call to useReportTask to satisfy linter, as the hook is for external consumption
     // This ensures the linter doesn't flag it as unused in its defining file.
   // Destructure nothing, just call it
-    const { currentUser } = useCurrentUser();
+    const { user: currentUser, loading: currentUserLoading, isInitialized: currentUserInitialized } = useCurrentUser();
+
+    console.log('[ReportTaskContext] currentUser:', currentUser);
+    console.log('[ReportTaskContext] currentUserLoading:', currentUserLoading);
+    console.log('[ReportTaskContext] currentUserInitialized:', currentUserInitialized);
 
     const [elapsedTimeUnits, setElapsedTimeUnits] = useState(0);
     const [formsShown, setFormsShown] = useState({ pausa: false, tarea: false, proyecto: false });
     const [activeModal, setActiveModal] = useState(null); // 'pausa', 'tarea', 'proyecto'
     const [statusText, setStatusText] = useState('Trabajando...');
     const [responseData, setResponseData] = useState({}); // Nuevo estado para la respuesta del API
+    const [pauseCounter, setPauseCounter] = useState(0); // Nuevo estado para el contador de pausas
 
     console.log('[ReportTaskContext] Render. activeModal:', activeModal, 'formsShown:', formsShown, 'elapsedTimeUnits:', elapsedTimeUnits);
 
@@ -78,83 +90,113 @@ const ReportTaskProvider = ({ children }) => {
         console.log(`[REGISTRO ${formType.toUpperCase()}]`, formData);
         console.log("Datos del formulario recibidos:", formData);
 
-        if (!currentUser || !currentUser.iduser || !currentUser.usernameinterno) {
-            console.error("Error: No se encontró información del usuario actual.");
+        if (currentUserLoading || !currentUserInitialized || !currentUser || !currentUser.iduser || !currentUser.usernameInterno) {
+            console.error("Error: No se encontró información del usuario actual. O no está cargada o inicializada.");
             return;
         }
 
         const baseTaskData = {
-            iduser: currentUser.iduser,
+            idUser: currentUser.iduser, // Corregido a idUser para coincidir con el backend
             usernameInterno: currentUser.usernameInterno,
             fechaPausa: new Date().toISOString(), // Formato ISO 8601
             horaInicioPausa: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }), // Formato HH:MM:SS
             // Campos por defecto o nulos para evitar errores si no se usan
-            regPausa: 0,
-            horaFinalPausa: "", // Si el backend necesita un valor específico, ajustar aquí
+            // regPausa: 1, // Ajustado a 1 como en el ejemplo del backend
+            horaFinalPausa: "", // Ajustado a valor vacío según el JSON del usuario
             controlDePausa: "",
-            duracionDePausa: 0,
-            numeroDePausa: 0,
-            justificarPausa: "",
-            lapsoDeRegistrosEnHoras: "", // Asumiendo que esto se calcula en el backend o se deja vacío inicialmente
-            registrosContadosNuevos: 0,
-            registrosContadosActualizados: 0,
-            detalleDeRegistros: "",
-            reportarProyecto: "", // Inicialmente vacío
-            reportarEtapa: "",     // Inicialmente vacío
-            reportarArea: "",      // Inicialmente vacío
-            reportarTrabajo: "",   // Inicialmente vacío
-            reportarTarea: "",     // Inicialmente vacío
-            esInicioTarea: false,    // Por defecto false
-            esAvanceTarea: false,    // Por defecto false
-            esFinalTarea: false,     // Por defecto false
+            duracionDePausa: 0, // Se sobrescribe en el caso 'pausa'
+            numeroDePausa: pauseCounter, // Usar el contador de pausas
+            justificarPausa: "", 
+            lapsoDeRegistrosEnHoras: "2 Horas", // Ajustado a "2 Horas" según el JSON del usuario
+            registrosContadosNuevos: 0, // Ajustado a 0 según el JSON del usuario
+            registrosContadosActualizados: 0, // Ajustado a 0 según el JSON del usuario
+            detalleDeRegistros: "", // Ajustado a valor vacío según el JSON del usuario
+            reportarProyecto: "", // Ajustado a valor vacío según el JSON del usuario
+            reportarEtapa: "",     
+            reportarArea: "",      
+            reportarTrabajo: "",   
+            reportarTarea: "", // Ajustado a cadena vacía por defecto
+            esInicioTarea: false,    // Ajustado a false por defecto
+            esAvanceTarea: false,    // Ajustado a false por defecto
+            esFinalTarea: false,     // Ajustado a false por defecto
             fechaRegistro: new Date().toISOString(),
             userSystem: currentUser.usernameInterno, // Usar el username del usuario actual
-            ambienteDeTrabajo: process.env.NODE_ENV === 'production' ? 'PRODUCCION' : 'DESARROLLO',
+            ambienteDeTrabajo: 'PRODUCCION', // Ajustado a PRODUCCION para coincidir con el ejemplo del backend
             periodoContable: new Date().getFullYear(),
         };
 
-        let taskDataToSend = { ...baseTaskData };
+        let taskDataToSend = { 
+            ...baseTaskData, 
+            Process: 'putTasks' // Asegura que 'Process' esté con 'P' mayúscula desde el inicio
+        };
 
         switch (formType) {
             case 'pausa':
                 taskDataToSend = {
                     ...taskDataToSend,
-                    process: 'putTasks',
-                    controlDePausa: 'Pausa',
+                    fechaPausa: new Date().toISOString(),
+                    numeroDePausa: pauseCounter + 1,
+                    controlDePausa: 'JUSTIFICAR PAUSA', 
                     duracionDePausa: parseInt(formData.duracion || 0, 10),
-                    justificarPausa: `${formData.motivo} / ${formData.explicacion}`,
+                    justificarPausa: `${formData.motivo} / ${formData.explicacion || ''}`.trim(),
+                    fechaRegistro: new Date().toISOString(),
+                    userSystem: currentUser.usernameInterno,
+                    ambienteDeTrabajo: 'PRODUCCION',
+                    periodoContable: new Date().getFullYear(),
                     horaInicioPausa: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+                    horaFinalPausa: addMinutesToTime(new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }), parseInt(formData.duracion || 0, 10)),
+                    esInicioTarea: true,    // Ajustado a true según el JSON de referencia
+                    esAvanceTarea: true,    // Ajustado a true según el JSON de referencia
+                    esFinalTarea: true,     // Ajustado a true según el JSON de referencia
                 };
+                console.log("[DEBUG] Task Data (Pausa):", taskDataToSend);
                 break;
             case 'tarea':
                 taskDataToSend = {
                     ...taskDataToSend,
-                    process: 'putTasks',
-                    controlDePausa: 'Tarea',
-                    reportarTarea: formData.explicacion, // El ejemplo indica que 'reportarTarea' es la explicación
-                    detalleDeRegistros: formData.estado, // El ejemplo no especifica, pero 'estado' podría ir aquí
+                    controlDePausa: 'REPORTAR TAREA', // Ajustado a 'REPORTAR TAREA' según el JSON del usuario
+                    reportarTarea: formData.explicacion, 
+                    detalleDeRegistros: formData.estado, 
                     horaInicioPausa: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
-                    esInicioTarea: formData.estado === 'INICIANDO', // Asumiendo que 'INICIANDO' es inicio
-                    esAvanceTarea: formData.estado === 'CONTINUANDO', // Asumiendo que 'CONTINUANDO' es avance
-                    esFinalTarea: formData.estado === 'FINALIZANDO', // Asumiendo que 'FINALIZANDO' es final
+                    esInicioTarea: formData.estado === 'INICIANDO', 
+                    esAvanceTarea: formData.estado === 'CONTINUANDO', 
+                    esFinalTarea: formData.estado === 'FINALIZANDO', 
+                    fechaRegistro: new Date().toISOString(),
+                    userSystem: currentUser.usernameInterno,
+
+                    ambienteDeTrabajo: 'PRODUCCION',
+                    periodoContable: new Date().getFullYear(),
+                    horaFinalPausa: "", // Sobrescribir a cadena vacía
+                    justificarPausa: "", // Sobrescribir a cadena vacía
+                    numeroDePausa: 0, // Sobrescribir a 0
+                    lapsoDeRegistrosEnHoras: "", // Sobrescribir a cadena vacía
+                    registrosContadosNuevos: 0, // Sobrescribir a 0
+                    registrosContadosActualizados: 0, // Sobrescribir a 0
                 };
+                console.log("[DEBUG] Task Data (Tarea):", taskDataToSend);
                 break;
             case 'proyecto':
                 taskDataToSend = {
                     ...taskDataToSend,
-                    process: 'putTasks',
                     controlDePausa: 'Proyecto',
                     reportarProyecto: formData.proyecto,
                     reportarEtapa: formData.etapa,
                     reportarArea: formData.area,
                     reportarTrabajo: formData.trabajo || "", 
-                    reportarTarea: formData.explicacion, // El ejemplo indica que 'reportarTarea' es la explicación
-                    detalleDeRegistros: formData.estado, // El ejemplo no especifica, pero 'estado' podría ir aquí
+                    reportarTarea: formData.explicacion, 
+                    detalleDeRegistros: formData.estado, 
                     horaInicioPausa: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
                     esInicioTarea: formData.estado === 'INICIO', 
                     esAvanceTarea: formData.estado === 'AVANCE', 
                     esFinalTarea: formData.estado === 'FINAL', 
+                    horaFinalPausa: "", // Sobrescribir a cadena vacía
+                    justificarPausa: "", // Sobrescribir a cadena vacía
+                    numeroDePausa: 0, // Sobrescribir a 0
+                    lapsoDeRegistrosEnHoras: "", // Sobrescribir a cadena vacía
+                    registrosContadosNuevos: 0, // Sobrescribir a 0
+                    registrosContadosActualizados: 0, // Sobrescribir a 0
                 };
+                console.log("[DEBUG] Task Data (Proyecto):", taskDataToSend);
                 break;
             default:
                 console.error("Tipo de formulario desconocido:", formType);
@@ -164,7 +206,7 @@ const ReportTaskProvider = ({ children }) => {
         console.log("Final taskData enviado a putTask:", taskDataToSend);
 
         try {
-            const response = await putTask(taskDataToSend); // Llama al servicio putTask con los datos completos
+            const response = await putTask(taskDataToSend); // Envía taskDataToSend directamente, sin el objeto 'request'
             setResponseData(response); // Guarda la respuesta en el estado
             console.log("Respuesta del API:", response);
         } catch (error) {
@@ -208,6 +250,10 @@ const ReportTaskProvider = ({ children }) => {
                     setFormsShown(prev => ({ ...prev, tarea: true }));
                     setStatusText('Reporte de Tarea Pendiente.');
                 }
+                
+                if (newTime === TIME_PAUSA && !formsShown.pausa) {
+                    setPauseCounter(prev => prev + 1);
+                }
 
                 // 3. Mostrar Reportar Proyecto - Tarea (35 unidades)
                 else if (newTime === TIME_PROYECTO && !formsShown.proyecto) {
@@ -236,6 +282,8 @@ const ReportTaskProvider = ({ children }) => {
         handleModalClose,
         handleSubmit,
         responseData, // Añadir la respuesta al contexto
+        currentUserLoading,
+        currentUserInitialized,
     };
 
     return (

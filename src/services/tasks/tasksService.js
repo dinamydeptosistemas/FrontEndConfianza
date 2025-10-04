@@ -38,7 +38,7 @@ export const putTask = async (taskData) => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error al crear tarea:", error);
+    console.error("Error al crear tarea:", error.response ? error.response.data : error.message);
     throw error;
   }
 };
