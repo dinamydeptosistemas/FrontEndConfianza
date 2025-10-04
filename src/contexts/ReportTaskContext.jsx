@@ -166,7 +166,7 @@ const ReportTaskProvider = ({ children }) => {
 
                     ambienteDeTrabajo: 'PRODUCCION',
                     periodoContable: new Date().getFullYear(),
-                    horaFinalPausa: "", // Sobrescribir a cadena vacía
+                    horaFinalPausa: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
                     justificarPausa: "", // Sobrescribir a cadena vacía
                     numeroDePausa: 0, // Sobrescribir a 0
                     lapsoDeRegistrosEnHoras: "", // Sobrescribir a cadena vacía
@@ -178,7 +178,7 @@ const ReportTaskProvider = ({ children }) => {
             case 'proyecto':
                 taskDataToSend = {
                     ...taskDataToSend,
-                    controlDePausa: 'Proyecto',
+                    controlDePausa: 'PROYECTO / TAREA',
                     reportarProyecto: formData.proyecto,
                     reportarEtapa: formData.etapa,
                     reportarArea: formData.area,
@@ -189,7 +189,7 @@ const ReportTaskProvider = ({ children }) => {
                     esInicioTarea: formData.estado === 'INICIO', 
                     esAvanceTarea: formData.estado === 'AVANCE', 
                     esFinalTarea: formData.estado === 'FINAL', 
-                    horaFinalPausa: "", // Sobrescribir a cadena vacía
+                    horaFinalPausa: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
                     justificarPausa: "", // Sobrescribir a cadena vacía
                     numeroDePausa: 0, // Sobrescribir a 0
                     lapsoDeRegistrosEnHoras: "", // Sobrescribir a cadena vacía
